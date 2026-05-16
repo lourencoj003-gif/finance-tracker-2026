@@ -10,6 +10,27 @@ const N = "#1a3a5c";   // navy
 const P = "#7F77DD";   // purple
 const AM = "#F5A623";  // amber (warning)
 
+/* ── Animation keyframes ─────────────────────────────────────────── */
+const GLOBAL_CSS = `
+  @keyframes celebPulse {
+    0%   { transform: translate(-50%,-50%) scale(0.8); opacity: 0.9; }
+    100% { transform: translate(-50%,-50%) scale(3);   opacity: 0;   }
+  }
+  button { transition: transform 0.15s ease; }
+  button:active { transform: scale(0.95); }
+`;
+
+/* ── Greeting tips (rotate by day of week) ───────────────────────── */
+const GREETING_TIPS = [
+  "Check if any subscriptions can be cancelled this month.",
+  "Move surplus cash to your ISA before 5 April.",
+  "Your emergency fund target is 3–6 months of expenses.",
+  "Automate a standing order on payday — out of sight, out of mind.",
+  "Paying off high-interest debt above 5% beats most investments.",
+  "A global index fund gives exposure to 3,000+ companies at low cost.",
+  "Small cuts compound — £10/day saved is £3,650 extra per year.",
+];
+
 /* ── Financial tips (rotate every 6 s) ──────────────────────────── */
 const TIPS = [
   "Save at least 20% of your take-home pay each month to build long-term financial security.",
@@ -112,6 +133,29 @@ export default function Dashboard({ data }) {
     }, []),
   [netArr]);
 
+  /* ── Mobile detection ── */
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => {
+    const h = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
+  }, []);
+
+  /* ── Streak counter (localStorage) ── */
+  const [streak, setStreak] = useState(1);
+  useEffect(() => {
+    try {
+      const today     = new Date().toDateString();
+      const yesterday = new Date(Date.now() - 86400000).toDateString();
+      const stored    = JSON.parse(localStorage.getItem("financeStreak") || "{}");
+      let s = 1;
+      if (stored.last === today) s = stored.streak || 1;
+      else if (stored.last === yesterday) s = (stored.streak || 0) + 1;
+      localStorage.setItem("financeStreak", JSON.stringify({ streak: s, last: today }));
+      setStreak(s);
+    } catch { /* private browsing / storage blocked */ }
+  }, []);
+
   /* ── Rotating tip ── */
   const [tipIdx, setTipIdx] = useState(0);
   useEffect(() => {
@@ -139,6 +183,12 @@ export default function Dashboard({ data }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
+      {/* ── Global CSS ── */}
+      <style>{GLOBAL_CSS}</style>
+
+      {/* ── Greeting + streak ── */}
+      <GreetingCard streak={streak} />
+
       {/* ── 0. Spending pace alert ────────────────────────────── */}
       <SpendingPaceAlert
         dayPct={spendingPace.dayPct}
@@ -149,14 +199,42 @@ export default function Dashboard({ data }) {
       />
 
       {/* ── 1. Six metric cards ─────────────────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(155px,1fr))", gap: 12 }}>
-        <MetricCard label="Annual Income"    value={fmt(yearInc)}         color={G}       sub="Total earned this year" />
-        <MetricCard label="Annual Expenses"  value={fmt(yearExp)}         color={R}       sub="Total spent this year" />
-        <MetricCard label="Total Invested"   value={fmt(yearInv)}         color={B}       sub="Across all investments" />
-        <MetricCard label="Year Net"         value={fmtSigned(yearNet)}   color={netColor} sub={yearNet >= 0 ? "Cash surplus" : "Cash deficit"} />
-        <MetricCard label="Savings Rate"     value={fmtPct(savingsRate)}  color={srColor} sub="Target: ≥ 20%" />
-        <MetricCard label="ISA Remaining"    value={fmt(isaRemaining)}    color={P}       sub="of £20,000 allowance" />
-      </div>
+      {isMobile ? (
+        /* Mobile: horizontal snap scroll, one card at a time */
+        <div style={{
+          display: "flex",
+          overflowX: "auto",
+          scrollSnapType: "x mandatory",
+          gap: 12,
+          padding: "4px 2px 12px",
+          WebkitOverflowScrolling: "touch",
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
+        }}>
+          {[
+            { label: "Annual Income",   rawValue: yearInc,      format: "currency", color: G,        sub: "Total earned this year" },
+            { label: "Annual Expenses", rawValue: yearExp,      format: "currency", color: R,        sub: "Total spent this year" },
+            { label: "Total Invested",  rawValue: yearInv,      format: "currency", color: B,        sub: "Across all investments" },
+            { label: "Year Net",        rawValue: yearNet,      format: "signed",   color: netColor, sub: yearNet >= 0 ? "Cash surplus" : "Cash deficit" },
+            { label: "Savings Rate",    rawValue: savingsRate,  format: "percent",  color: srColor,  sub: "Target: ≥ 20%", celebrate: savingsRate >= 20 },
+            { label: "ISA Remaining",   rawValue: isaRemaining, format: "currency", color: P,        sub: "of £20,000 allowance" },
+          ].map(card => (
+            <div key={card.label} style={{ scrollSnapAlign: "start", flex: "0 0 calc(100vw - 32px)" }}>
+              <MetricCard {...card} />
+            </div>
+          ))}
+        </div>
+      ) : (
+        /* Desktop: grid with hover-lift */
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 14 }}>
+          <MetricCard label="Annual Income"   rawValue={yearInc}      format="currency" color={G}        sub="Total earned this year" />
+          <MetricCard label="Annual Expenses" rawValue={yearExp}      format="currency" color={R}        sub="Total spent this year" />
+          <MetricCard label="Total Invested"  rawValue={yearInv}      format="currency" color={B}        sub="Across all investments" />
+          <MetricCard label="Year Net"        rawValue={yearNet}      format="signed"   color={netColor} sub={yearNet >= 0 ? "Cash surplus" : "Cash deficit"} />
+          <MetricCard label="Savings Rate"    rawValue={savingsRate}  format="percent"  color={srColor}  sub="Target: ≥ 20%" celebrate={savingsRate >= 20} />
+          <MetricCard label="ISA Remaining"   rawValue={isaRemaining} format="currency" color={P}        sub="of £20,000 allowance" />
+        </div>
+      )}
 
       {/* ── 1b. Health score + net worth ─────────────────────────── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 16 }}>
@@ -231,18 +309,123 @@ export default function Dashboard({ data }) {
    SUB-COMPONENTS
    ════════════════════════════════════════════════════════════════════ */
 
-/* ── Metric card ── */
-function MetricCard({ label, value, color, sub }) {
+/* ── Metric card (count-up + hover lift + celebration pulse) ── */
+function MetricCard({ label, rawValue, format, color, sub, celebrate }) {
+  const [displayed, setDisplayed] = useState(0);
+  const [hovered, setHovered]     = useState(false);
+  const animated                  = useRef(false);
+
+  useEffect(() => {
+    if (animated.current) return;
+    animated.current = true;
+    const target = Math.abs(rawValue || 0);
+    if (target === 0) return;
+    const steps    = 24;
+    const interval = 33; // ~800 ms total
+    let step = 0;
+    const id = setInterval(() => {
+      step++;
+      const t      = step / steps;
+      const eased  = 1 - Math.pow(1 - t, 3); // ease-out cubic
+      setDisplayed(target * eased);
+      if (step >= steps) { setDisplayed(target); clearInterval(id); }
+    }, interval);
+    return () => clearInterval(id);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function fmtDisplayed() {
+    const d    = displayed;
+    const isNeg = rawValue < 0;
+    if (format === "currency") return "£" + Math.round(d).toLocaleString("en-GB");
+    if (format === "percent")  return d.toFixed(1) + "%";
+    if (format === "signed")   return (isNeg ? "−" : "+") + "£" + Math.round(d).toLocaleString("en-GB");
+    return Math.round(d).toString();
+  }
+
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        background: "#fff",
+        borderRadius: 16,
+        boxShadow: hovered
+          ? "0 12px 36px rgba(0,0,0,0.14)"
+          : "0 4px 20px rgba(0,0,0,0.08)",
+        padding: "16px 18px",
+        borderLeft: `4px solid ${color}`,
+        transform: hovered ? "translateY(-4px)" : "translateY(0)",
+        transition: "all 0.3s ease",
+        position: "relative",
+        overflow: "hidden",
+        cursor: "default",
+      }}
+    >
+      {/* Celebration pulse ring */}
+      {celebrate && (
+        <div style={{
+          position: "absolute",
+          top: "50%", left: "50%",
+          width: 48, height: 48,
+          borderRadius: "50%",
+          border: "3px solid #1D9E75",
+          animation: "celebPulse 1.6s ease-out infinite",
+          pointerEvents: "none",
+        }} />
+      )}
+      <div style={{ fontSize: 11, color: "#aaa", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>
+        {label}
+      </div>
+      <div style={{ fontSize: 28, fontWeight: 800, color, lineHeight: 1, letterSpacing: "-0.02em", marginBottom: 8 }}>
+        {fmtDisplayed()}
+      </div>
+      <div style={{ fontSize: 11, color: "#bbb" }}>{sub}</div>
+    </div>
+  );
+}
+
+/* ── Greeting + streak card ── */
+function GreetingCard({ streak }) {
+  const h        = new Date().getHours();
+  const greeting = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+  const tip      = GREETING_TIPS[new Date().getDay() % GREETING_TIPS.length];
+
   return (
     <div style={{
-      background: "#fff", borderRadius: 8,
-      boxShadow: "0 1px 4px rgba(0,0,0,0.07)",
-      padding: "14px 16px",
-      borderTop: `3px solid ${color}`,
+      background: "linear-gradient(135deg, #1a3a5c 0%, #2d5a8e 100%)",
+      borderRadius: 16,
+      padding: "20px 24px",
+      color: "#fff",
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: 16,
+      boxShadow: "0 4px 20px rgba(26,58,92,0.25)",
+      flexWrap: "wrap",
     }}>
-      <div style={{ fontSize: 11, color: "#999", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: 22, fontWeight: 700, color, lineHeight: 1 }}>{value}</div>
-      <div style={{ fontSize: 11, color: "#aaa", marginTop: 6 }}>{sub}</div>
+      <div style={{ flex: 1, minWidth: 200 }}>
+        <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.01em", marginBottom: 6 }}>
+          {greeting} 👋
+        </div>
+        <div style={{ fontSize: 13, opacity: 0.75, lineHeight: 1.6 }}>
+          💡 {tip}
+        </div>
+      </div>
+      <div style={{
+        textAlign: "center",
+        background: "rgba(255,255,255,0.12)",
+        borderRadius: 14,
+        padding: "14px 20px",
+        minWidth: 90,
+        flexShrink: 0,
+        backdropFilter: "blur(4px)",
+      }}>
+        <div style={{ fontSize: 32, fontWeight: 800, lineHeight: 1 }}>{streak}</div>
+        <div style={{ fontSize: 10, opacity: 0.7, marginTop: 4, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+          day streak
+        </div>
+        <div style={{ fontSize: 20, marginTop: 6 }}>🔥</div>
+      </div>
     </div>
   );
 }

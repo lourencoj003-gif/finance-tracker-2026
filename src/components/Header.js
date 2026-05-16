@@ -1,5 +1,9 @@
 import { useMemo } from "react";
 
+const TODAY = new Date().toLocaleDateString("en-GB", {
+  weekday: "long", day: "numeric", month: "long", year: "numeric",
+});
+
 export default function Header({ data }) {
   const yearNet = useMemo(() => {
     if (!data) return 0;
@@ -14,16 +18,35 @@ export default function Header({ data }) {
   }, [data]);
 
   const formatted = "£" + Math.round(Math.abs(yearNet)).toLocaleString("en-GB");
+  const netColor = yearNet >= 0 ? "#5DCAA5" : "#E24B4A";
 
   return (
-    <div style={{ background:"#1a3a5c", color:"#fff", padding:"14px 20px", display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:8 }}>
+    <div style={{
+      background: "linear-gradient(135deg, #1a3a5c 0%, #2d5a8e 100%)",
+      color: "#fff",
+      padding: "18px 24px",
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      flexWrap: "wrap",
+      gap: 8,
+      boxShadow: "0 2px 16px rgba(26,58,92,0.35)",
+    }}>
       <div>
-        <div style={{ fontSize:18, fontWeight:700 }}>Financial Command Centre 2026</div>
-        <div style={{ fontSize:12, opacity:0.7, marginTop:2 }}>Your personal finance tracker</div>
+        <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.1 }}>
+          Finance Command Centre
+        </div>
+        <div style={{ fontSize: 12, opacity: 0.6, marginTop: 5, fontWeight: 400 }}>
+          {TODAY}
+        </div>
       </div>
-      <div style={{ textAlign:"right" }}>
-        <div style={{ fontSize:22, fontWeight:700, color: yearNet >= 0 ? "#5DCAA5" : "#E24B4A" }}>{formatted}</div>
-        <div style={{ fontSize:11, opacity:0.7 }}>{yearNet >= 0 ? "year surplus" : "year deficit"}</div>
+      <div style={{ textAlign: "right" }}>
+        <div style={{ fontSize: 28, fontWeight: 800, color: netColor, lineHeight: 1, letterSpacing: "-0.02em" }}>
+          {formatted}
+        </div>
+        <div style={{ fontSize: 11, opacity: 0.6, marginTop: 5 }}>
+          {yearNet >= 0 ? "year surplus" : "year deficit"}
+        </div>
       </div>
     </div>
   );

@@ -120,7 +120,24 @@ export default function AIAdvisor({ data }) {
         }
       );
       const data = await res.json();
-      const reply = data.candidates[0].content.parts[0].text;
+      const FALLBACK = "Sorry, Marcus is unavailable right now — please try again in a moment.";
+      let reply;
+      try {
+        if (
+          data.error ||
+          !data.candidates ||
+          data.candidates.length === 0 ||
+          !data.candidates[0].content ||
+          !data.candidates[0].content.parts ||
+          data.candidates[0].content.parts.length === 0
+        ) {
+          reply = FALLBACK;
+        } else {
+          reply = data.candidates[0].content.parts[0].text;
+        }
+      } catch {
+        reply = FALLBACK;
+      }
       setMessages(prev => [...prev, { role: "assistant", text: reply }]);
     } catch (err) {
       console.error("AIAdvisor: Gemini API call failed:", err);
