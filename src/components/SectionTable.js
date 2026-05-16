@@ -10,8 +10,10 @@ const BLUE          = "#378ADD";
 const PURPLE        = "#7F77DD";
 const RED           = "#E24B4A";
 
-/* ── Income summary metric card ───────────────────────────────────── */
-function SummaryCard({ label, value, color, growth }) {
+const MONTHS_ELAPSED = 5; // Jan–May (indices 0–4)
+
+/* ── Summary metric card ───────────────────────────────────────────────── */
+function SummaryCard({ label, value, color, growth, sub }) {
   const growthPositive = growth >= 0;
   return (
     <div style={{
@@ -20,8 +22,8 @@ function SummaryCard({ label, value, color, growth }) {
       boxShadow: "0 2px 14px rgba(0,0,0,0.08)",
       padding: "14px 18px",
       borderLeft: `4px solid ${color}`,
-      flex: "1 1 150px",
-      minWidth: 150,
+      flex: "1 1 140px",
+      minWidth: 140,
     }}>
       <div style={{ fontSize: 10, color: "#aaa", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
         {label}
@@ -42,6 +44,9 @@ function SummaryCard({ label, value, color, growth }) {
           }}>
             {growthPositive ? "+" : ""}{growth.toFixed(1)}% Jan→Dec
           </span>
+        )}
+        {sub && (
+          <span style={{ fontSize: 12, color: "#aaa", whiteSpace: "nowrap" }}>{sub}</span>
         )}
       </div>
     </div>
@@ -71,16 +76,17 @@ export default function SectionTable({
     return () => window.removeEventListener("resize", h);
   }, []);
 
-  const isIncome  = section === "income";
-  const rows      = data[section] || {};
-  const rowNames  = Object.keys(rows);
+  const isIncome   = section === "income";
+  const isExpenses = section === "expenses";
+  const rows       = data[section] || {};
+  const rowNames   = Object.keys(rows);
 
   const monthTotals = MONTHS.map((_, i) =>
     rowNames.reduce((sum, name) => sum + (parseFloat(rows[name][i]) || 0), 0)
   );
   const grandTotal = monthTotals.reduce((a, v) => a + v, 0);
 
-  /* ── Income-specific summary metrics ── */
+  /* ── Income-specific metrics ── */
   const monthlyAvg  = grandTotal / 12;
   const maxMonthVal = isIncome ? Math.max(0, ...monthTotals) : 0;
   const maxMonthIdx = isIncome ? monthTotals.findIndex(t => t === maxMonthVal) : -1;
@@ -88,18 +94,48 @@ export default function SectionTable({
     ? ((monthTotals[11] - monthTotals[0]) / monthTotals[0]) * 100
     : null;
 
-  /* ── Income desktop theming ── */
-  const thBg         = isIncome ? "linear-gradient(135deg, #1a3a5c 0%, #2d5a8e 100%)" : "#f5f7fa";
-  const stickyThBg   = isIncome ? "#1a3a5c" : "#f5f7fa";
-  const thTextColor  = isIncome ? "#fff" : NAVY;
-  const thBorder     = isIncome ? "rgba(255,255,255,0.15)" : "#e8ecf0";
-  const totalRowBg   = isIncome ? GREEN : "#f0f4f8";
-  const totalRowText = isIncome ? "#fff" : NAVY;
-  const totalRowBdr  = isIncome ? `2px solid ${GREEN}` : "2px solid #d0d8e0";
-  const stickyTotalBg = isIncome ? "#17875f" : "#f0f4f8";
+  /* ── Expense-specific metrics ── */
+  const totalIncome = isExpenses
+    ? Object.values(data.income || {}).reduce(
+        (sum, arr) => sum + arr.reduce((a, v) => a + (parseFloat(v) || 0), 0), 0)
+    : 0;
+  const expIncPct = isExpenses && totalIncome > 0
+    ? (grandTotal / totalIncome) * 100 : null;
+  const expIncPctColor = expIncPct === null ? NAVY
+    : expIncPct < 50 ? GREEN : expIncPct < 70 ? "#F5A623" : RED;
+  const biggestCat = isExpenses && rowNames.length > 0
+    ? rowNames.reduce((best, name) => {
+        const t = rows[name].reduce((a, v) => a + (parseFloat(v) || 0), 0);
+        return t > best.total ? { name, total: t } : best;
+      }, { name: "", total: 0 })
+    : null;
 
-  /* ── Mobile grid columns: income = 3 cols (3×4), others = 4 cols (4×3) ── */
-  const mobileCols   = isIncome ? 3 : 4;
+  /* ── Budget vs actual helpers (YTD Jan–May) ── */
+  function rowYtdActual(name) {
+    return rows[name].slice(0, MONTHS_ELAPSED).reduce((a, v) => a + (parseFloat(v) || 0), 0);
+  }
+  function rowYtdBudget(name) {
+    const rt = rows[name].reduce((a, v) => a + (parseFloat(v) || 0), 0);
+    return (rt / 12) * MONTHS_ELAPSED;
+  }
+
+  /* ── Theming ── */
+  const thBg        = isIncome
+    ? "linear-gradient(135deg, #1a3a5c 0%, #2d5a8e 100%)"
+    : isExpenses
+    ? "linear-gradient(135deg, #c53030 0%, #e05252 100%)"
+    : "#f5f7fa";
+  const stickyThBg  = isIncome ? "#1a3a5c" : isExpenses ? "#c53030" : "#f5f7fa";
+  const thTextColor = (isIncome || isExpenses) ? "#fff" : NAVY;
+  const thBorder    = (isIncome || isExpenses) ? "rgba(255,255,255,0.15)" : "#e8ecf0";
+
+  const totalRowBg    = (isIncome || isExpenses) ? GREEN : "#f0f4f8";
+  const totalRowText  = (isIncome || isExpenses) ? "#fff" : NAVY;
+  const totalRowBdr   = (isIncome || isExpenses) ? `2px solid ${GREEN}` : "2px solid #d0d8e0";
+  const stickyTotalBg = (isIncome || isExpenses) ? "#17875f" : "#f0f4f8";
+
+  /* ── Mobile grid columns ── */
+  const mobileCols         = isIncome ? 3 : 4;
   const mobileRightBorder  = (mi) => mi % mobileCols !== mobileCols - 1 ? "1px solid #f0f0f0" : "none";
   const mobileBottomBorder = (mi) => mi < 12 - mobileCols ? "1px solid #f0f0f0" : "none";
 
@@ -153,27 +189,31 @@ export default function SectionTable({
     );
   }
 
-  /* ────────────────────────────────────────────────────────────────
-     MOBILE — card per category
-  ──────────────────────────────────────────────────────────────── */
+  /* ──────────────────────────────────────────────────────────────────
+     MOBILE
+  ────────────────────────────────────────────────────────────────── */
   if (isMobile) {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 0, borderRadius: 16, overflow: "hidden", boxShadow: "0 4px 20px rgba(0,0,0,0.08)" }}>
 
         {/* Header */}
         <div style={{
-          background: isIncome ? "linear-gradient(135deg, #1a3a5c 0%, #2d5a8e 100%)" : headerBg,
+          background: isIncome
+            ? "linear-gradient(135deg, #1a3a5c 0%, #2d5a8e 100%)"
+            : isExpenses
+            ? "linear-gradient(135deg, #c53030 0%, #e05252 100%)"
+            : headerBg,
           padding: "14px 16px",
           fontWeight: 700,
           fontSize: 15,
-          color: isIncome ? "#fff" : NAVY,
+          color: (isIncome || isExpenses) ? "#fff" : NAVY,
           borderBottom: "1px solid rgba(0,0,0,0.06)",
         }}>
           {title}
         </div>
 
-        {/* Income mobile summary strip */}
-        {isIncome && (
+        {/* Summary strip (income or expenses) */}
+        {(isIncome || isExpenses) && (
           <div style={{
             background: "#f8f9fc",
             padding: "10px 12px",
@@ -184,15 +224,27 @@ export default function SectionTable({
             WebkitOverflowScrolling: "touch",
             scrollbarWidth: "none",
           }}>
-            <div style={{ flexShrink: 0, background: "#fff", borderRadius: 10, padding: "8px 14px", borderLeft: `3px solid ${GREEN}` }}>
+            <div style={{ flexShrink: 0, background: "#fff", borderRadius: 10, padding: "8px 14px", borderLeft: `3px solid ${isExpenses ? RED : GREEN}` }}>
               <div style={{ fontSize: 9, color: "#aaa", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 3 }}>Annual</div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: GREEN }}>{fmt(grandTotal)}</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: isExpenses ? RED : GREEN }}>{fmt(grandTotal)}</div>
             </div>
             <div style={{ flexShrink: 0, background: "#fff", borderRadius: 10, padding: "8px 14px", borderLeft: `3px solid ${BLUE}` }}>
-              <div style={{ fontSize: 9, color: "#aaa", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 3 }}>Monthly avg</div>
+              <div style={{ fontSize: 9, color: "#aaa", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 3 }}>Avg/month</div>
               <div style={{ fontSize: 15, fontWeight: 800, color: BLUE }}>{fmt(monthlyAvg)}</div>
             </div>
-            {maxMonthIdx >= 0 && maxMonthVal > 0 && (
+            {isExpenses && biggestCat && biggestCat.total > 0 && (
+              <div style={{ flexShrink: 0, background: "#fff", borderRadius: 10, padding: "8px 14px", borderLeft: `3px solid ${PURPLE}` }}>
+                <div style={{ fontSize: 9, color: "#aaa", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 3 }}>Biggest</div>
+                <div style={{ fontSize: 13, fontWeight: 800, color: PURPLE }}>{biggestCat.name}</div>
+              </div>
+            )}
+            {isExpenses && expIncPct !== null && (
+              <div style={{ flexShrink: 0, background: "#fff", borderRadius: 10, padding: "8px 14px", borderLeft: `3px solid ${expIncPctColor}` }}>
+                <div style={{ fontSize: 9, color: "#aaa", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 3 }}>% of income</div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: expIncPctColor }}>{Math.round(expIncPct)}%</div>
+              </div>
+            )}
+            {isIncome && maxMonthIdx >= 0 && maxMonthVal > 0 && (
               <div style={{ flexShrink: 0, background: "#fff", borderRadius: 10, padding: "8px 14px", borderLeft: `3px solid ${PURPLE}` }}>
                 <div style={{ fontSize: 9, color: "#aaa", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 3 }}>Peak month</div>
                 <div style={{ fontSize: 15, fontWeight: 800, color: PURPLE }}>{MONTHS[maxMonthIdx]}</div>
@@ -204,45 +256,87 @@ export default function SectionTable({
         {/* One card per row */}
         <div style={{ background: "#FAFAF8", display: "flex", flexDirection: "column", gap: 10, padding: 12 }}>
           {rowNames.map(name => {
-            const rowTotal = rows[name].reduce((a, v) => a + (parseFloat(v) || 0), 0);
+            const rowTotal   = rows[name].reduce((a, v) => a + (parseFloat(v) || 0), 0);
+            const ytdAct     = isExpenses ? rowYtdActual(name) : 0;
+            const ytdBud     = isExpenses ? rowYtdBudget(name) : 0;
+            const overBudget = isExpenses && ytdBud > 0 && ytdAct > ytdBud;
+            const barPct     = isExpenses && ytdBud > 0 ? Math.min(100, (ytdAct / ytdBud) * 100) : 0;
+
             return (
               <div key={name} style={{
                 background: "#fff",
                 borderRadius: 12,
                 boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
                 overflow: "hidden",
-                borderLeft: isIncome ? `3px solid ${GREEN}` : "none",
+                borderLeft: isIncome
+                  ? `3px solid ${GREEN}`
+                  : isExpenses
+                  ? `3px solid ${overBudget ? RED : GREEN}`
+                  : "none",
               }}>
                 {/* Card header */}
                 <div style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
                   padding: "10px 14px",
                   borderBottom: "1px solid #f0f0f0",
-                  background: isIncome ? "#f0faf6" : "#f8f9fc",
+                  background: isIncome ? "#f0faf6" : isExpenses ? "#fdf5f5" : "#f8f9fc",
                 }}>
-                  <div style={{ fontWeight: 600, fontSize: 13, color: NAVY, flex: 1 }}>
-                    <NameCell name={name} />
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: isExpenses && ytdBud > 0 ? 8 : 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: 13, color: NAVY, flex: 1 }}>
+                      <NameCell name={name} />
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontWeight: 700, fontSize: 13, color: isIncome ? GREEN : isExpenses ? RED : NAVY }}>{fmt(rowTotal)}</span>
+                      {isExpenses && ytdBud > 0 && (
+                        <span style={{
+                          fontSize: 10, fontWeight: 700,
+                          color: overBudget ? RED : GREEN,
+                          background: overBudget ? "#fff0f0" : "#f0faf6",
+                          border: `1px solid ${overBudget ? "#fcd0d0" : "#c0ead8"}`,
+                          borderRadius: 99,
+                          padding: "2px 7px",
+                          whiteSpace: "nowrap",
+                        }}>
+                          {overBudget ? "▲ Over" : "✓ Track"}
+                        </span>
+                      )}
+                      <button
+                        onClick={() => onDeleteRow(section, name)}
+                        style={{
+                          background: "none", border: "none", cursor: "pointer",
+                          color: "#ccc", fontSize: 20, lineHeight: 1, padding: 0,
+                          transition: "color 0.2s ease",
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.color = RED}
+                        onMouseLeave={e => e.currentTarget.style.color = "#ccc"}
+                      >
+                        ×
+                      </button>
+                    </div>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ fontWeight: 700, fontSize: 13, color: isIncome ? GREEN : NAVY }}>{fmt(rowTotal)}</span>
-                    <button
-                      onClick={() => onDeleteRow(section, name)}
-                      style={{
-                        background: "none", border: "none", cursor: "pointer",
-                        color: "#ccc", fontSize: 20, lineHeight: 1, padding: 0,
-                        transition: "color 0.2s ease",
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.color = RED}
-                      onMouseLeave={e => e.currentTarget.style.color = "#ccc"}
-                    >
-                      ×
-                    </button>
-                  </div>
+
+                  {/* Mini budget bar for expenses */}
+                  {isExpenses && ytdBud > 0 && (
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: "#aaa", marginBottom: 3 }}>
+                        <span>YTD spend</span>
+                        <span>{fmt(ytdAct)} / {fmt(Math.round(ytdBud))} budget</span>
+                      </div>
+                      <div style={{ height: 5, background: "#f0f0f0", borderRadius: 99, overflow: "hidden" }}>
+                        <div style={{
+                          height: "100%",
+                          width: barPct + "%",
+                          background: overBudget
+                            ? `linear-gradient(90deg, ${RED}, #ff6b6b)`
+                            : `linear-gradient(90deg, ${GREEN}, #5DCAA5)`,
+                          borderRadius: 99,
+                          transition: "width 0.4s ease",
+                        }} />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* Month grid — 3 cols for income, 4 cols for others */}
+                {/* Month grid */}
                 <div style={{ display: "grid", gridTemplateColumns: `repeat(${mobileCols}, 1fr)`, gap: 0 }}>
                   {MONTHS.map((m, mi) => {
                     const semi = isSemiCell(name, mi);
@@ -300,10 +394,10 @@ export default function SectionTable({
             <div style={{ background: "#fff", borderRadius: 12, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
               <div style={{
                 padding: "10px 14px",
-                background: isIncome ? GREEN : "#f0f4f8",
+                background: (isIncome || isExpenses) ? GREEN : "#f0f4f8",
                 fontWeight: 700, fontSize: 13,
-                color: isIncome ? "#fff" : NAVY,
-                borderBottom: `1px solid ${isIncome ? "#17875f" : "#e0e8f0"}`,
+                color: (isIncome || isExpenses) ? "#fff" : NAVY,
+                borderBottom: `1px solid ${(isIncome || isExpenses) ? "#17875f" : "#e0e8f0"}`,
               }}>
                 Monthly Totals — {fmt(grandTotal)}
               </div>
@@ -316,7 +410,7 @@ export default function SectionTable({
                     textAlign: "center",
                   }}>
                     <div style={{ fontSize: 9, color: "#aaa", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", marginBottom: 2 }}>{MONTHS[i]}</div>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: isIncome ? GREEN : NAVY }}>{t > 0 ? "£" + Math.round(t) : "—"}</div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: (isIncome || isExpenses) ? GREEN : NAVY }}>{t > 0 ? "£" + Math.round(t) : "—"}</div>
                   </div>
                 ))}
               </div>
@@ -354,49 +448,67 @@ export default function SectionTable({
     );
   }
 
-  /* ────────────────────────────────────────────────────────────────
-     DESKTOP — sticky table with income enhancements
-  ──────────────────────────────────────────────────────────────── */
+  /* ──────────────────────────────────────────────────────────────────
+     DESKTOP
+  ────────────────────────────────────────────────────────────────── */
   return (
     <div style={{ background: "#fff", borderRadius: 16, boxShadow: "0 4px 20px rgba(0,0,0,0.08)", overflow: "hidden" }}>
 
       {/* Section title */}
       <div style={{
-        background: isIncome ? "linear-gradient(135deg, #1a3a5c 0%, #2d5a8e 100%)" : headerBg,
+        background: isIncome
+          ? "linear-gradient(135deg, #1a3a5c 0%, #2d5a8e 100%)"
+          : isExpenses
+          ? "linear-gradient(135deg, #c53030 0%, #e05252 100%)"
+          : headerBg,
         padding: "16px 20px",
         fontWeight: 700,
         fontSize: 15,
-        color: isIncome ? "#fff" : NAVY,
+        color: (isIncome || isExpenses) ? "#fff" : NAVY,
         borderBottom: "1px solid rgba(0,0,0,0.06)",
       }}>
         {title}
       </div>
 
-      {/* Income summary bar */}
-      {isIncome && (
+      {/* Summary bar */}
+      {(isIncome || isExpenses) && (
         <div style={{
           display: "flex", gap: 14, padding: "16px 20px",
           background: "#f8f9fc", borderBottom: "1px solid rgba(0,0,0,0.05)",
           flexWrap: "wrap",
         }}>
-          <SummaryCard
-            label="Annual Total"
-            value={fmt(grandTotal)}
-            color={GREEN}
-            growth={growth}
-          />
-          <SummaryCard
-            label="Monthly Average"
-            value={fmt(monthlyAvg)}
-            color={BLUE}
-          />
-          <SummaryCard
-            label="Highest Month"
-            value={maxMonthIdx >= 0 && maxMonthVal > 0
-              ? `${MONTHS[maxMonthIdx]}: ${fmt(maxMonthVal)}`
-              : "—"}
-            color={PURPLE}
-          />
+          {isIncome && (
+            <>
+              <SummaryCard label="Annual Total"    value={fmt(grandTotal)}  color={GREEN} growth={growth} />
+              <SummaryCard label="Monthly Average" value={fmt(monthlyAvg)}  color={BLUE} />
+              <SummaryCard
+                label="Highest Month"
+                value={maxMonthIdx >= 0 && maxMonthVal > 0 ? `${MONTHS[maxMonthIdx]}: ${fmt(maxMonthVal)}` : "—"}
+                color={PURPLE}
+              />
+            </>
+          )}
+          {isExpenses && (
+            <>
+              <SummaryCard label="Annual Total"    value={fmt(grandTotal)}  color={RED} />
+              <SummaryCard label="Monthly Average" value={fmt(monthlyAvg)}  color={BLUE} />
+              {biggestCat && biggestCat.total > 0 && (
+                <SummaryCard
+                  label="Biggest Category"
+                  value={biggestCat.name}
+                  color={PURPLE}
+                  sub={fmt(biggestCat.total)}
+                />
+              )}
+              {expIncPct !== null && (
+                <SummaryCard
+                  label="% of Income"
+                  value={Math.round(expIncPct) + "%"}
+                  color={expIncPctColor}
+                />
+              )}
+            </>
+          )}
         </div>
       )}
 
@@ -418,7 +530,7 @@ export default function SectionTable({
                 <th key={m} style={{
                   padding: "11px 6px", textAlign: "right", minWidth: 72,
                   borderBottom: `1px solid ${thBorder}`,
-                  color: isIncome ? "rgba(255,255,255,0.75)" : "#666",
+                  color: (isIncome || isExpenses) ? "rgba(255,255,255,0.75)" : "#666",
                   fontWeight: 600, fontSize: 12,
                 }}>
                   {m}
@@ -428,22 +540,48 @@ export default function SectionTable({
                 padding: "11px 14px", textAlign: "right", minWidth: 90,
                 borderBottom: `1px solid ${thBorder}`,
                 color: thTextColor, fontWeight: 700,
-                position: "sticky", right: 0, zIndex: 2, background: stickyThBg,
-                boxShadow: "-2px 0 6px rgba(0,0,0,0.06)",
+                /* expenses: not sticky so YTD Budget can be the sticky right column */
+                position: isExpenses ? "static" : "sticky",
+                right: isExpenses ? "auto" : 0,
+                zIndex: isExpenses ? "auto" : 2,
+                background: isExpenses ? "transparent" : stickyThBg,
+                boxShadow: isExpenses ? "none" : "-2px 0 6px rgba(0,0,0,0.06)",
               }}>
                 Total
               </th>
-              <th style={{ padding: "11px 4px", borderBottom: `1px solid ${thBorder}`, width: 32 }} />
+              {isExpenses && (
+                <th style={{
+                  padding: "11px 12px", textAlign: "center", minWidth: 120,
+                  borderBottom: `1px solid ${thBorder}`,
+                  color: "rgba(255,255,255,0.85)", fontWeight: 700, fontSize: 12,
+                  position: "sticky", right: 32, zIndex: 2, background: stickyThBg,
+                  boxShadow: "-2px 0 6px rgba(0,0,0,0.06)",
+                }}>
+                  YTD vs Budget
+                </th>
+              )}
+              <th style={{
+                padding: "11px 4px", borderBottom: `1px solid ${thBorder}`, width: 32,
+                background: isExpenses ? stickyThBg : "transparent",
+                position: isExpenses ? "sticky" : "static",
+                right: isExpenses ? 0 : "auto",
+                zIndex: isExpenses ? 2 : "auto",
+              }} />
             </tr>
           </thead>
 
           <tbody>
             {rowNames.map((name, ri) => {
-              const rowTotal  = rows[name].reduce((a, v) => a + (parseFloat(v) || 0), 0);
-              const isHovered = hoveredRow === ri;
-              const evenBg    = isIncome ? "#ffffff" : "#fff";
-              const oddBg     = isIncome ? "#f8f9fa" : "#f9fafc";
-              const bg        = isHovered ? "#f0f6ff" : ri % 2 === 0 ? evenBg : oddBg;
+              const rowTotal   = rows[name].reduce((a, v) => a + (parseFloat(v) || 0), 0);
+              const isHovered  = hoveredRow === ri;
+              const evenBg     = "#fff";
+              const oddBg      = isIncome ? "#f8f9fa" : "#f9fafc";
+              const hoverBg    = isExpenses ? "#fff5f5" : "#f0f6ff";
+              const bg         = isHovered ? hoverBg : ri % 2 === 0 ? evenBg : oddBg;
+              const ytdAct     = isExpenses ? rowYtdActual(name) : 0;
+              const ytdBud     = isExpenses ? rowYtdBudget(name) : 0;
+              const overBudget = isExpenses && ytdBud > 0 && ytdAct > ytdBud;
+              const variance   = isExpenses ? ytdAct - ytdBud : 0;
 
               return (
                 <tr
@@ -503,15 +641,55 @@ export default function SectionTable({
                   <td style={{
                     padding: "6px 14px", textAlign: "right",
                     borderBottom: "1px solid #f0f0f0",
-                    fontWeight: 700, color: isIncome ? GREEN : NAVY,
-                    position: "sticky", right: 0, zIndex: 1, background: bg,
-                    boxShadow: "-2px 0 6px rgba(0,0,0,0.04)",
+                    fontWeight: 700,
+                    color: isIncome ? GREEN : isExpenses ? RED : NAVY,
+                    position: isExpenses ? "static" : "sticky",
+                    right: isExpenses ? "auto" : 0,
+                    zIndex: isExpenses ? "auto" : 1,
+                    background: isExpenses ? "transparent" : bg,
+                    boxShadow: isExpenses ? "none" : "-2px 0 6px rgba(0,0,0,0.04)",
                     whiteSpace: "nowrap", transition: "background 0.15s ease",
                   }}>
                     {fmt(rowTotal)}
                   </td>
 
-                  <td style={{ padding: "6px 4px", borderBottom: "1px solid #f0f0f0", textAlign: "center" }}>
+                  {isExpenses && (
+                    <td style={{
+                      padding: "6px 12px",
+                      borderBottom: "1px solid #f0f0f0",
+                      textAlign: "center",
+                      position: "sticky", right: 32, zIndex: 1,
+                      background: bg,
+                      boxShadow: "-2px 0 6px rgba(0,0,0,0.04)",
+                      transition: "background 0.15s ease",
+                      whiteSpace: "nowrap",
+                    }}>
+                      {ytdBud > 0 ? (
+                        <span style={{
+                          display: "inline-block",
+                          fontSize: 11, fontWeight: 700,
+                          color: overBudget ? RED : GREEN,
+                          background: overBudget ? "#fff0f0" : "#f0faf6",
+                          border: `1px solid ${overBudget ? "#fcd0d0" : "#c0ead8"}`,
+                          borderRadius: 99,
+                          padding: "3px 9px",
+                        }}>
+                          {overBudget ? "▲ +" : "✓ -"}{fmt(Math.abs(variance))}
+                        </span>
+                      ) : (
+                        <span style={{ color: "#ccc", fontSize: 11 }}>—</span>
+                      )}
+                    </td>
+                  )}
+
+                  <td style={{
+                    padding: "6px 4px", borderBottom: "1px solid #f0f0f0", textAlign: "center",
+                    position: isExpenses ? "sticky" : "static",
+                    right: isExpenses ? 0 : "auto",
+                    zIndex: isExpenses ? 1 : "auto",
+                    background: isExpenses ? bg : "transparent",
+                    transition: "background 0.15s ease",
+                  }}>
                     <button
                       onClick={() => onDeleteRow(section, name)}
                       title="Delete row"
@@ -554,13 +732,42 @@ export default function SectionTable({
                 padding: "11px 14px", textAlign: "right",
                 borderTop: totalRowBdr,
                 color: totalRowText,
-                position: "sticky", right: 0, zIndex: 1, background: stickyTotalBg,
-                boxShadow: "-2px 0 6px rgba(0,0,0,0.06)",
+                position: isExpenses ? "static" : "sticky",
+                right: isExpenses ? "auto" : 0,
+                zIndex: isExpenses ? "auto" : 1,
+                background: isExpenses ? totalRowBg : stickyTotalBg,
+                boxShadow: isExpenses ? "none" : "-2px 0 6px rgba(0,0,0,0.06)",
                 whiteSpace: "nowrap", fontWeight: 800,
               }}>
                 {fmt(grandTotal)}
               </td>
-              <td style={{ borderTop: totalRowBdr, background: totalRowBg }} />
+              {isExpenses && (() => {
+                const ytdTotalAct = monthTotals.slice(0, MONTHS_ELAPSED).reduce((a, v) => a + v, 0);
+                const ytdTotalBud = (grandTotal / 12) * MONTHS_ELAPSED;
+                const over = ytdTotalBud > 0 && ytdTotalAct > ytdTotalBud;
+                const diff = ytdTotalAct - ytdTotalBud;
+                return (
+                  <td style={{
+                    padding: "11px 12px", textAlign: "center",
+                    borderTop: totalRowBdr,
+                    color: totalRowText,
+                    position: "sticky", right: 32, zIndex: 1,
+                    background: stickyTotalBg,
+                    boxShadow: "-2px 0 6px rgba(0,0,0,0.06)",
+                    whiteSpace: "nowrap", fontWeight: 800, fontSize: 12,
+                  }}>
+                    {ytdTotalBud > 0
+                      ? `${over ? "▲ +" : "✓ -"}${fmt(Math.abs(diff))}`
+                      : "—"}
+                  </td>
+                );
+              })()}
+              <td style={{
+                borderTop: totalRowBdr, background: totalRowBg,
+                position: isExpenses ? "sticky" : "static",
+                right: isExpenses ? 0 : "auto",
+                zIndex: isExpenses ? 1 : "auto",
+              }} />
             </tr>
           </tbody>
         </table>
