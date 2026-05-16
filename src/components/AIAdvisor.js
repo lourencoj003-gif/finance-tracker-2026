@@ -92,6 +92,8 @@ export default function AIAdvisor({ data }) {
   }, [messages, loading]);
 
   async function handleSend() {
+    console.log("Groq key present:", !!process.env.REACT_APP_GROQ_API_KEY, "Key starts with:", process.env.REACT_APP_GROQ_API_KEY ? process.env.REACT_APP_GROQ_API_KEY.substring(0, 8) : "MISSING");
+
     const clean = sanitise(chatInput);
     if (!clean || cooldown) return;
 
