@@ -106,18 +106,25 @@ export default function AIAdvisor({ data }) {
     setLoading(true);
 
     try {
-      const groqMessages = [
-        { role: "system", content: systemPrompt },
-        ...next.map(m => ({ role: m.role === "user" ? "user" : "assistant", content: m.text })),
-      ];
+      const userMessage = clean;
+      const requestBody = {
+        model: "llama3-8b-8192",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userMessage },
+        ],
+        max_tokens: 500,
+        temperature: 0.7,
+      };
+      console.log("Groq request body:", JSON.stringify(requestBody, null, 2));
 
       const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${process.env.REACT_APP_GROQ_API_KEY}`,
+          "Authorization": "Bearer " + process.env.REACT_APP_GROQ_API_KEY,
         },
-        body: JSON.stringify({ model: "llama3-8b-8192", messages: groqMessages }),
+        body: JSON.stringify(requestBody),
       });
       const data = await res.json();
       const FALLBACK = "Sorry, Marcus is unavailable right now — please try again in a moment.";

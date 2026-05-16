@@ -1,10 +1,52 @@
 import { useState, useEffect } from "react";
 import { MONTHS, fmt } from "../utils/helpers";
 
-const SEMI_ROW     = "Semi-Annual Sub";
-const YELLOW_BG    = "#fffde7";
+const SEMI_ROW      = "Semi-Annual Sub";
+const YELLOW_BG     = "#fffde7";
 const YELLOW_BORDER = "#f9e400";
-const NAVY         = "#1a3a5c";
+const NAVY          = "#1a3a5c";
+const GREEN         = "#1D9E75";
+const BLUE          = "#378ADD";
+const PURPLE        = "#7F77DD";
+const RED           = "#E24B4A";
+
+/* ── Income summary metric card ───────────────────────────────────── */
+function SummaryCard({ label, value, color, growth }) {
+  const growthPositive = growth >= 0;
+  return (
+    <div style={{
+      background: "#fff",
+      borderRadius: 14,
+      boxShadow: "0 2px 14px rgba(0,0,0,0.08)",
+      padding: "14px 18px",
+      borderLeft: `4px solid ${color}`,
+      flex: "1 1 150px",
+      minWidth: 150,
+    }}>
+      <div style={{ fontSize: 10, color: "#aaa", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
+        {label}
+      </div>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+        <span style={{ fontSize: 22, fontWeight: 800, color, letterSpacing: "-0.02em", lineHeight: 1 }}>
+          {value}
+        </span>
+        {growth !== null && growth !== undefined && (
+          <span style={{
+            fontSize: 11, fontWeight: 700,
+            color: growthPositive ? GREEN : RED,
+            background: growthPositive ? "#f0faf6" : "#fff5f5",
+            border: `1px solid ${growthPositive ? "#c0ead8" : "#fcd0d0"}`,
+            borderRadius: 99,
+            padding: "2px 8px",
+            whiteSpace: "nowrap",
+          }}>
+            {growthPositive ? "+" : ""}{growth.toFixed(1)}% Jan→Dec
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function SectionTable({
   title,
@@ -29,12 +71,37 @@ export default function SectionTable({
     return () => window.removeEventListener("resize", h);
   }, []);
 
+  const isIncome  = section === "income";
   const rows      = data[section] || {};
   const rowNames  = Object.keys(rows);
+
   const monthTotals = MONTHS.map((_, i) =>
     rowNames.reduce((sum, name) => sum + (parseFloat(rows[name][i]) || 0), 0)
   );
   const grandTotal = monthTotals.reduce((a, v) => a + v, 0);
+
+  /* ── Income-specific summary metrics ── */
+  const monthlyAvg  = grandTotal / 12;
+  const maxMonthVal = isIncome ? Math.max(0, ...monthTotals) : 0;
+  const maxMonthIdx = isIncome ? monthTotals.findIndex(t => t === maxMonthVal) : -1;
+  const growth      = isIncome && monthTotals[0] > 0
+    ? ((monthTotals[11] - monthTotals[0]) / monthTotals[0]) * 100
+    : null;
+
+  /* ── Income desktop theming ── */
+  const thBg         = isIncome ? "linear-gradient(135deg, #1a3a5c 0%, #2d5a8e 100%)" : "#f5f7fa";
+  const stickyThBg   = isIncome ? "#1a3a5c" : "#f5f7fa";
+  const thTextColor  = isIncome ? "#fff" : NAVY;
+  const thBorder     = isIncome ? "rgba(255,255,255,0.15)" : "#e8ecf0";
+  const totalRowBg   = isIncome ? GREEN : "#f0f4f8";
+  const totalRowText = isIncome ? "#fff" : NAVY;
+  const totalRowBdr  = isIncome ? `2px solid ${GREEN}` : "2px solid #d0d8e0";
+  const stickyTotalBg = isIncome ? "#17875f" : "#f0f4f8";
+
+  /* ── Mobile grid columns: income = 3 cols (3×4), others = 4 cols (4×3) ── */
+  const mobileCols   = isIncome ? 3 : 4;
+  const mobileRightBorder  = (mi) => mi % mobileCols !== mobileCols - 1 ? "1px solid #f0f0f0" : "none";
+  const mobileBottomBorder = (mi) => mi < 12 - mobileCols ? "1px solid #f0f0f0" : "none";
 
   function isSemiCell(rowName, monthIdx) {
     return rowName === SEMI_ROW && semiMos.includes(monthIdx);
@@ -95,15 +162,44 @@ export default function SectionTable({
 
         {/* Header */}
         <div style={{
-          background: headerBg,
+          background: isIncome ? "linear-gradient(135deg, #1a3a5c 0%, #2d5a8e 100%)" : headerBg,
           padding: "14px 16px",
           fontWeight: 700,
           fontSize: 15,
-          color: NAVY,
+          color: isIncome ? "#fff" : NAVY,
           borderBottom: "1px solid rgba(0,0,0,0.06)",
         }}>
           {title}
         </div>
+
+        {/* Income mobile summary strip */}
+        {isIncome && (
+          <div style={{
+            background: "#f8f9fc",
+            padding: "10px 12px",
+            display: "flex",
+            gap: 8,
+            overflowX: "auto",
+            borderBottom: "1px solid rgba(0,0,0,0.06)",
+            WebkitOverflowScrolling: "touch",
+            scrollbarWidth: "none",
+          }}>
+            <div style={{ flexShrink: 0, background: "#fff", borderRadius: 10, padding: "8px 14px", borderLeft: `3px solid ${GREEN}` }}>
+              <div style={{ fontSize: 9, color: "#aaa", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 3 }}>Annual</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: GREEN }}>{fmt(grandTotal)}</div>
+            </div>
+            <div style={{ flexShrink: 0, background: "#fff", borderRadius: 10, padding: "8px 14px", borderLeft: `3px solid ${BLUE}` }}>
+              <div style={{ fontSize: 9, color: "#aaa", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 3 }}>Monthly avg</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: BLUE }}>{fmt(monthlyAvg)}</div>
+            </div>
+            {maxMonthIdx >= 0 && maxMonthVal > 0 && (
+              <div style={{ flexShrink: 0, background: "#fff", borderRadius: 10, padding: "8px 14px", borderLeft: `3px solid ${PURPLE}` }}>
+                <div style={{ fontSize: 9, color: "#aaa", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 3 }}>Peak month</div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: PURPLE }}>{MONTHS[maxMonthIdx]}</div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* One card per row */}
         <div style={{ background: "#FAFAF8", display: "flex", flexDirection: "column", gap: 10, padding: 12 }}>
@@ -115,6 +211,7 @@ export default function SectionTable({
                 borderRadius: 12,
                 boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
                 overflow: "hidden",
+                borderLeft: isIncome ? `3px solid ${GREEN}` : "none",
               }}>
                 {/* Card header */}
                 <div style={{
@@ -123,13 +220,13 @@ export default function SectionTable({
                   alignItems: "center",
                   padding: "10px 14px",
                   borderBottom: "1px solid #f0f0f0",
-                  background: "#f8f9fc",
+                  background: isIncome ? "#f0faf6" : "#f8f9fc",
                 }}>
                   <div style={{ fontWeight: 600, fontSize: 13, color: NAVY, flex: 1 }}>
                     <NameCell name={name} />
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ fontWeight: 700, fontSize: 13, color: NAVY }}>{fmt(rowTotal)}</span>
+                    <span style={{ fontWeight: 700, fontSize: 13, color: isIncome ? GREEN : NAVY }}>{fmt(rowTotal)}</span>
                     <button
                       onClick={() => onDeleteRow(section, name)}
                       style={{
@@ -137,7 +234,7 @@ export default function SectionTable({
                         color: "#ccc", fontSize: 20, lineHeight: 1, padding: 0,
                         transition: "color 0.2s ease",
                       }}
-                      onMouseEnter={e => e.currentTarget.style.color = "#E24B4A"}
+                      onMouseEnter={e => e.currentTarget.style.color = RED}
                       onMouseLeave={e => e.currentTarget.style.color = "#ccc"}
                     >
                       ×
@@ -145,20 +242,17 @@ export default function SectionTable({
                   </div>
                 </div>
 
-                {/* 4-column month grid */}
-                <div style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(4, 1fr)",
-                  gap: 0,
-                }}>
+                {/* Month grid — 3 cols for income, 4 cols for others */}
+                <div style={{ display: "grid", gridTemplateColumns: `repeat(${mobileCols}, 1fr)`, gap: 0 }}>
                   {MONTHS.map((m, mi) => {
                     const semi = isSemiCell(name, mi);
                     return (
                       <div key={mi} style={{
                         background: semi ? YELLOW_BG : "transparent",
-                        borderRight: mi % 4 !== 3 ? "1px solid #f0f0f0" : "none",
-                        borderBottom: mi < 8 ? "1px solid #f0f0f0" : "none",
+                        borderRight: mobileRightBorder(mi),
+                        borderBottom: mobileBottomBorder(mi),
                         padding: "6px 4px 4px",
+                        transition: "background 0.15s ease",
                       }}>
                         <div style={{ fontSize: 9, color: "#aaa", fontWeight: 600, textAlign: "center", marginBottom: 2, textTransform: "uppercase", letterSpacing: "0.03em" }}>
                           {m}
@@ -183,8 +277,15 @@ export default function SectionTable({
                             MozAppearance: "textfield",
                             fontFamily: "inherit",
                           }}
-                          onFocus={e => { e.target.parentElement.style.outline = `2px solid ${NAVY}`; e.target.parentElement.style.outlineOffset = "-2px"; }}
-                          onBlur={e => { e.target.parentElement.style.outline = "none"; }}
+                          onFocus={e => {
+                            e.target.parentElement.style.background = isIncome ? "#e8f4ff" : (semi ? YELLOW_BG : "#f0f4ff");
+                            e.target.parentElement.style.outline = `2px solid ${isIncome ? BLUE : NAVY}`;
+                            e.target.parentElement.style.outlineOffset = "-2px";
+                          }}
+                          onBlur={e => {
+                            e.target.parentElement.style.background = semi ? YELLOW_BG : "transparent";
+                            e.target.parentElement.style.outline = "none";
+                          }}
                         />
                       </div>
                     );
@@ -194,22 +295,28 @@ export default function SectionTable({
             );
           })}
 
-          {/* Monthly totals row */}
+          {/* Monthly totals */}
           {rowNames.length > 0 && (
             <div style={{ background: "#fff", borderRadius: 12, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-              <div style={{ padding: "10px 14px", background: "#f0f4f8", fontWeight: 700, fontSize: 13, color: NAVY, borderBottom: "1px solid #e0e8f0" }}>
+              <div style={{
+                padding: "10px 14px",
+                background: isIncome ? GREEN : "#f0f4f8",
+                fontWeight: 700, fontSize: 13,
+                color: isIncome ? "#fff" : NAVY,
+                borderBottom: `1px solid ${isIncome ? "#17875f" : "#e0e8f0"}`,
+              }}>
                 Monthly Totals — {fmt(grandTotal)}
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 0 }}>
+              <div style={{ display: "grid", gridTemplateColumns: `repeat(${mobileCols}, 1fr)`, gap: 0 }}>
                 {monthTotals.map((t, i) => (
                   <div key={i} style={{
                     padding: "6px 4px",
-                    borderRight: i % 4 !== 3 ? "1px solid #f0f0f0" : "none",
-                    borderBottom: i < 8 ? "1px solid #f0f0f0" : "none",
+                    borderRight: mobileRightBorder(i),
+                    borderBottom: mobileBottomBorder(i),
                     textAlign: "center",
                   }}>
                     <div style={{ fontSize: 9, color: "#aaa", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", marginBottom: 2 }}>{MONTHS[i]}</div>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: NAVY }}>{t > 0 ? "£" + Math.round(t) : "—"}</div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: isIncome ? GREEN : NAVY }}>{t > 0 ? "£" + Math.round(t) : "—"}</div>
                   </div>
                 ))}
               </div>
@@ -225,14 +332,9 @@ export default function SectionTable({
             onKeyDown={e => e.key === "Enter" && addRow()}
             placeholder="New category name…"
             style={{
-              flex: 1,
-              border: "1px solid #d0d8e0",
-              borderRadius: 8,
-              padding: "8px 12px",
-              fontSize: 13,
-              outline: "none",
-              fontFamily: "inherit",
-              transition: "border-color 0.2s ease",
+              flex: 1, border: "1px solid #d0d8e0", borderRadius: 8,
+              padding: "8px 12px", fontSize: 13, outline: "none",
+              fontFamily: "inherit", transition: "border-color 0.2s ease",
             }}
             onFocus={e => e.target.style.borderColor = NAVY}
             onBlur={e => e.target.style.borderColor = "#d0d8e0"}
@@ -240,10 +342,9 @@ export default function SectionTable({
           <button
             onClick={addRow}
             style={{
-              background: NAVY, color: "#fff", border: "none",
-              borderRadius: 8, padding: "8px 16px", cursor: "pointer",
-              fontSize: 13, fontWeight: 600, whiteSpace: "nowrap",
-              transition: "all 0.2s ease",
+              background: NAVY, color: "#fff", border: "none", borderRadius: 8,
+              padding: "8px 16px", cursor: "pointer", fontSize: 13, fontWeight: 600,
+              whiteSpace: "nowrap", transition: "all 0.2s ease",
             }}
           >
             + Add
@@ -254,63 +355,95 @@ export default function SectionTable({
   }
 
   /* ────────────────────────────────────────────────────────────────
-     DESKTOP — sticky table with hover highlights
+     DESKTOP — sticky table with income enhancements
   ──────────────────────────────────────────────────────────────── */
   return (
     <div style={{ background: "#fff", borderRadius: 16, boxShadow: "0 4px 20px rgba(0,0,0,0.08)", overflow: "hidden" }}>
 
+      {/* Section title */}
       <div style={{
-        background: headerBg,
-        padding: "14px 18px",
+        background: isIncome ? "linear-gradient(135deg, #1a3a5c 0%, #2d5a8e 100%)" : headerBg,
+        padding: "16px 20px",
         fontWeight: 700,
         fontSize: 15,
-        color: NAVY,
+        color: isIncome ? "#fff" : NAVY,
         borderBottom: "1px solid rgba(0,0,0,0.06)",
       }}>
         {title}
       </div>
 
+      {/* Income summary bar */}
+      {isIncome && (
+        <div style={{
+          display: "flex", gap: 14, padding: "16px 20px",
+          background: "#f8f9fc", borderBottom: "1px solid rgba(0,0,0,0.05)",
+          flexWrap: "wrap",
+        }}>
+          <SummaryCard
+            label="Annual Total"
+            value={fmt(grandTotal)}
+            color={GREEN}
+            growth={growth}
+          />
+          <SummaryCard
+            label="Monthly Average"
+            value={fmt(monthlyAvg)}
+            color={BLUE}
+          />
+          <SummaryCard
+            label="Highest Month"
+            value={maxMonthIdx >= 0 && maxMonthVal > 0
+              ? `${MONTHS[maxMonthIdx]}: ${fmt(maxMonthVal)}`
+              : "—"}
+            color={PURPLE}
+          />
+        </div>
+      )}
+
+      {/* Table */}
       <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, tableLayout: "auto" }}>
           <thead>
-            <tr style={{ background: "#f5f7fa" }}>
+            <tr style={{ background: thBg }}>
               <th style={{
-                padding: "10px 12px", textAlign: "left", minWidth: 155,
-                borderBottom: "1px solid #e8ecf0",
-                position: "sticky", left: 0, zIndex: 2, background: "#f5f7fa",
-                boxShadow: "2px 0 6px rgba(0,0,0,0.04)",
-                color: NAVY, fontWeight: 700,
+                padding: "11px 14px", textAlign: "left", minWidth: 155,
+                borderBottom: `1px solid ${thBorder}`,
+                position: "sticky", left: 0, zIndex: 2, background: stickyThBg,
+                boxShadow: "2px 0 6px rgba(0,0,0,0.06)",
+                color: thTextColor, fontWeight: 700,
               }}>
                 Category
               </th>
               {MONTHS.map(m => (
                 <th key={m} style={{
-                  padding: "10px 6px", textAlign: "right", minWidth: 72,
-                  borderBottom: "1px solid #e8ecf0",
-                  color: "#666", fontWeight: 600,
+                  padding: "11px 6px", textAlign: "right", minWidth: 72,
+                  borderBottom: `1px solid ${thBorder}`,
+                  color: isIncome ? "rgba(255,255,255,0.75)" : "#666",
+                  fontWeight: 600, fontSize: 12,
                 }}>
                   {m}
                 </th>
               ))}
               <th style={{
-                padding: "10px 14px", textAlign: "right", minWidth: 90,
-                borderBottom: "1px solid #e8ecf0",
-                color: NAVY, fontWeight: 700,
-                position: "sticky", right: 0, zIndex: 2, background: "#f5f7fa",
-                boxShadow: "-2px 0 6px rgba(0,0,0,0.04)",
+                padding: "11px 14px", textAlign: "right", minWidth: 90,
+                borderBottom: `1px solid ${thBorder}`,
+                color: thTextColor, fontWeight: 700,
+                position: "sticky", right: 0, zIndex: 2, background: stickyThBg,
+                boxShadow: "-2px 0 6px rgba(0,0,0,0.06)",
               }}>
                 Total
               </th>
-              <th style={{ padding: "10px 4px", borderBottom: "1px solid #e8ecf0", width: 32 }} />
+              <th style={{ padding: "11px 4px", borderBottom: `1px solid ${thBorder}`, width: 32 }} />
             </tr>
           </thead>
 
           <tbody>
             {rowNames.map((name, ri) => {
-              const rowTotal = rows[name].reduce((a, v) => a + (parseFloat(v) || 0), 0);
+              const rowTotal  = rows[name].reduce((a, v) => a + (parseFloat(v) || 0), 0);
               const isHovered = hoveredRow === ri;
-              const bg = isHovered ? "#f0f6ff" : ri % 2 === 0 ? "#fff" : "#f9fafc";
-              const stickyBg = isHovered ? "#f0f6ff" : ri % 2 === 0 ? "#fff" : "#f9fafc";
+              const evenBg    = isIncome ? "#ffffff" : "#fff";
+              const oddBg     = isIncome ? "#f8f9fa" : "#f9fafc";
+              const bg        = isHovered ? "#f0f6ff" : ri % 2 === 0 ? evenBg : oddBg;
 
               return (
                 <tr
@@ -320,8 +453,8 @@ export default function SectionTable({
                   onMouseLeave={() => setHoveredRow(null)}
                 >
                   <td style={{
-                    padding: "6px 12px", borderBottom: "1px solid #f0f0f0",
-                    position: "sticky", left: 0, zIndex: 1, background: stickyBg,
+                    padding: "6px 14px", borderBottom: "1px solid #f0f0f0",
+                    position: "sticky", left: 0, zIndex: 1, background: bg,
                     boxShadow: "2px 0 6px rgba(0,0,0,0.04)",
                     maxWidth: 180, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                     transition: "background 0.15s ease",
@@ -338,6 +471,7 @@ export default function SectionTable({
                         background: semi ? YELLOW_BG : "transparent",
                         outline: semi ? `1px solid ${YELLOW_BORDER}` : "none",
                         outlineOffset: -1,
+                        transition: "background 0.15s ease",
                       }}>
                         <input
                           type="number"
@@ -346,21 +480,21 @@ export default function SectionTable({
                           placeholder="0"
                           onChange={e => onUpdate(section, name, mi, parseFloat(e.target.value) || 0)}
                           style={{
-                            display: "block",
-                            width: "100%",
-                            boxSizing: "border-box",
-                            border: "none",
-                            background: "transparent",
-                            textAlign: "right",
-                            fontSize: 13,
-                            padding: "5px 4px",
-                            outline: "none",
-                            color: "#222",
-                            MozAppearance: "textfield",
-                            fontFamily: "inherit",
+                            display: "block", width: "100%", boxSizing: "border-box",
+                            border: "none", background: "transparent",
+                            textAlign: "right", fontSize: 13, padding: "5px 4px",
+                            outline: "none", color: "#222",
+                            MozAppearance: "textfield", fontFamily: "inherit",
                           }}
-                          onFocus={e => { e.target.parentElement.style.outline = `2px solid ${NAVY}`; }}
-                          onBlur={e => { e.target.parentElement.style.outline = semi ? `1px solid ${YELLOW_BORDER}` : "none"; }}
+                          onFocus={e => {
+                            e.target.parentElement.style.background = isIncome ? "#e8f4ff" : (semi ? YELLOW_BG : "transparent");
+                            e.target.parentElement.style.outline = `2px solid ${isIncome ? BLUE : NAVY}`;
+                            e.target.parentElement.style.outlineOffset = "-1px";
+                          }}
+                          onBlur={e => {
+                            e.target.parentElement.style.background = semi ? YELLOW_BG : "transparent";
+                            e.target.parentElement.style.outline = semi ? `1px solid ${YELLOW_BORDER}` : "none";
+                          }}
                         />
                       </td>
                     );
@@ -369,11 +503,10 @@ export default function SectionTable({
                   <td style={{
                     padding: "6px 14px", textAlign: "right",
                     borderBottom: "1px solid #f0f0f0",
-                    fontWeight: 600, color: NAVY,
-                    position: "sticky", right: 0, zIndex: 1, background: stickyBg,
+                    fontWeight: 700, color: isIncome ? GREEN : NAVY,
+                    position: "sticky", right: 0, zIndex: 1, background: bg,
                     boxShadow: "-2px 0 6px rgba(0,0,0,0.04)",
-                    whiteSpace: "nowrap",
-                    transition: "background 0.15s ease",
+                    whiteSpace: "nowrap", transition: "background 0.15s ease",
                   }}>
                     {fmt(rowTotal)}
                   </td>
@@ -387,7 +520,7 @@ export default function SectionTable({
                         color: "#ccc", fontSize: 18, lineHeight: 1, padding: "0 2px",
                         borderRadius: 4, transition: "color 0.2s ease",
                       }}
-                      onMouseEnter={e => e.currentTarget.style.color = "#E24B4A"}
+                      onMouseEnter={e => e.currentTarget.style.color = RED}
                       onMouseLeave={e => e.currentTarget.style.color = "#ccc"}
                     >
                       ×
@@ -398,45 +531,45 @@ export default function SectionTable({
             })}
 
             {/* Totals row */}
-            <tr style={{ background: "#f0f4f8", fontWeight: 700 }}>
+            <tr style={{ background: totalRowBg, fontWeight: 700 }}>
               <td style={{
-                padding: "10px 12px", color: NAVY,
-                borderTop: "2px solid #d0d8e0",
-                position: "sticky", left: 0, zIndex: 1, background: "#f0f4f8",
-                boxShadow: "2px 0 6px rgba(0,0,0,0.04)",
+                padding: "11px 14px", color: totalRowText,
+                borderTop: totalRowBdr,
+                position: "sticky", left: 0, zIndex: 1, background: stickyTotalBg,
+                boxShadow: "2px 0 6px rgba(0,0,0,0.06)",
+                fontWeight: 800,
               }}>
                 Total
               </td>
               {monthTotals.map((t, i) => (
                 <td key={i} style={{
-                  padding: "10px 6px", textAlign: "right",
-                  borderTop: "2px solid #d0d8e0", color: NAVY,
-                  whiteSpace: "nowrap",
+                  padding: "11px 6px", textAlign: "right",
+                  borderTop: totalRowBdr,
+                  color: totalRowText, whiteSpace: "nowrap",
                 }}>
                   {t > 0 ? fmt(t) : "—"}
                 </td>
               ))}
               <td style={{
-                padding: "10px 14px", textAlign: "right",
-                borderTop: "2px solid #d0d8e0", color: NAVY,
-                position: "sticky", right: 0, zIndex: 1, background: "#f0f4f8",
-                boxShadow: "-2px 0 6px rgba(0,0,0,0.04)",
-                whiteSpace: "nowrap",
+                padding: "11px 14px", textAlign: "right",
+                borderTop: totalRowBdr,
+                color: totalRowText,
+                position: "sticky", right: 0, zIndex: 1, background: stickyTotalBg,
+                boxShadow: "-2px 0 6px rgba(0,0,0,0.06)",
+                whiteSpace: "nowrap", fontWeight: 800,
               }}>
                 {fmt(grandTotal)}
               </td>
-              <td style={{ borderTop: "2px solid #d0d8e0" }} />
+              <td style={{ borderTop: totalRowBdr, background: totalRowBg }} />
             </tr>
           </tbody>
         </table>
       </div>
 
+      {/* Add row */}
       <div style={{
-        padding: "12px 16px",
-        borderTop: "1px solid rgba(0,0,0,0.05)",
-        display: "flex",
-        gap: 8,
-        alignItems: "center",
+        padding: "12px 16px", borderTop: "1px solid rgba(0,0,0,0.05)",
+        display: "flex", gap: 8, alignItems: "center",
       }}>
         <input
           value={newRowName}
@@ -444,14 +577,9 @@ export default function SectionTable({
           onKeyDown={e => e.key === "Enter" && addRow()}
           placeholder="New category name…"
           style={{
-            flex: 1,
-            border: "1px solid #d0d8e0",
-            borderRadius: 8,
-            padding: "8px 12px",
-            fontSize: 13,
-            outline: "none",
-            fontFamily: "inherit",
-            transition: "border-color 0.2s ease",
+            flex: 1, border: "1px solid #d0d8e0", borderRadius: 8,
+            padding: "8px 12px", fontSize: 13, outline: "none",
+            fontFamily: "inherit", transition: "border-color 0.2s ease",
           }}
           onFocus={e => e.target.style.borderColor = NAVY}
           onBlur={e => e.target.style.borderColor = "#d0d8e0"}
@@ -459,10 +587,9 @@ export default function SectionTable({
         <button
           onClick={addRow}
           style={{
-            background: NAVY, color: "#fff", border: "none",
-            borderRadius: 8, padding: "8px 18px", cursor: "pointer",
-            fontSize: 13, fontWeight: 600, whiteSpace: "nowrap",
-            transition: "all 0.2s ease",
+            background: NAVY, color: "#fff", border: "none", borderRadius: 8,
+            padding: "8px 18px", cursor: "pointer", fontSize: 13, fontWeight: 600,
+            whiteSpace: "nowrap", transition: "all 0.2s ease",
           }}
         >
           + Add
