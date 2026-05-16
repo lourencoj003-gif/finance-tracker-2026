@@ -95,8 +95,8 @@ export default function AIAdvisor({ data }) {
     const clean = sanitise(chatInput);
     if (!clean || cooldown) return;
 
-    if (!process.env.REACT_APP_GEMINI_API_KEY) {
-      console.error("AIAdvisor: REACT_APP_GEMINI_API_KEY is not set. Add it to your .env file and restart the dev server.");
+    if (!process.env.REACT_APP_GROQ_API_KEY) {
+      console.error("AIAdvisor: REACT_APP_GROQ_API_KEY is not set. Add it to your .env file and restart the dev server.");
     }
 
     const next = [...messages, { role: "user", text: clean }];
@@ -106,41 +106,40 @@ export default function AIAdvisor({ data }) {
     setLoading(true);
 
     try {
-      const history = next
-        .map(m => `${m.role === "user" ? "User" : "Assistant"}: ${m.text}`)
-        .join("\n");
-      const fullPrompt = systemPrompt + history;
+      const groqMessages = [
+        { role: "system", content: systemPrompt },
+        ...next.map(m => ({ role: m.role === "user" ? "user" : "assistant", content: m.text })),
+      ];
 
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.REACT_APP_GEMINI_API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: fullPrompt }] }] }),
-        }
-      );
+      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.REACT_APP_GROQ_API_KEY}`,
+        },
+        body: JSON.stringify({ model: "llama3-8b-8192", messages: groqMessages }),
+      });
       const data = await res.json();
       const FALLBACK = "Sorry, Marcus is unavailable right now — please try again in a moment.";
       let reply;
       try {
         if (
           data.error ||
-          !data.candidates ||
-          data.candidates.length === 0 ||
-          !data.candidates[0].content ||
-          !data.candidates[0].content.parts ||
-          data.candidates[0].content.parts.length === 0
+          !data.choices ||
+          data.choices.length === 0 ||
+          !data.choices[0].message ||
+          !data.choices[0].message.content
         ) {
           reply = FALLBACK;
         } else {
-          reply = data.candidates[0].content.parts[0].text;
+          reply = data.choices[0].message.content;
         }
       } catch {
         reply = FALLBACK;
       }
       setMessages(prev => [...prev, { role: "assistant", text: reply }]);
     } catch (err) {
-      console.error("AIAdvisor: Gemini API call failed:", err);
+      console.error("AIAdvisor: Groq API call failed:", err);
       setMessages(prev => [...prev, { role: "assistant", text: "Sorry, something went wrong. Please try again." }]);
     } finally {
       setLoading(false);
