@@ -108,15 +108,17 @@ export default function AIAdvisor({ data }) {
     setLoading(true);
 
     try {
-      const userMessage = clean;
+      const history = next.slice(0, -1).map(m => ({
+        role: m.role === "user" ? "user" : "assistant",
+        content: m.text,
+      }));
       const requestBody = {
         model: "llama3-8b-8192",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: userMessage },
+          ...history,
+          { role: "user", content: clean },
         ],
-        max_tokens: 500,
-        temperature: 0.7,
       };
       console.log("Groq request body:", JSON.stringify(requestBody, null, 2));
 
@@ -125,6 +127,7 @@ export default function AIAdvisor({ data }) {
         headers: {
           "Content-Type": "application/json",
           "Authorization": "Bearer " + process.env.REACT_APP_GROQ_API_KEY,
+          "x-groq-api-key": process.env.REACT_APP_GROQ_API_KEY,
         },
         body: JSON.stringify(requestBody),
       });
