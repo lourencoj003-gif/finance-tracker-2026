@@ -1,10 +1,8 @@
 import { useState } from "react";
 
-const NAVY   = "#1a3a5c";
-const GREEN  = "#1D9E75";
-const BLUE   = "#378ADD";
-const RED    = "#E24B4A";
-const ORANGE = "#F5A623";
+const NAVY  = "#1a3a5c";
+const GREEN = "#1D9E75";
+const RED   = "#E24B4A";
 
 const CIRC = 2 * Math.PI * 50; // circumference for r=50
 
