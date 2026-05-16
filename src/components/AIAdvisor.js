@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import { fmt } from "../utils/helpers";
 import { sectionTotal, monthlyNet } from "../utils/calculations";
 
@@ -17,7 +17,10 @@ function sanitise(text) {
 export default function AIAdvisor({ data }) {
   const [chatInput, setChatInput] = useState("");
   const [cooldown, setCooldown] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(false);
   const timerRef = useRef(null);
+  const bottomRef = useRef(null);
 
   const insights = useMemo(() => {
     const inc = sectionTotal(data.income);
@@ -64,15 +67,63 @@ export default function AIAdvisor({ data }) {
     return tips;
   }, [data]);
 
+  const systemPrompt = useMemo(() => {
+    const inc = sectionTotal(data.income);
+    const exp = sectionTotal(data.expenses);
+    const inv = sectionTotal(data.investments);
+    const net = monthlyNet(data);
+    const yearInc = inc.reduce((a, v) => a + v, 0);
+    const yearExp = exp.reduce((a, v) => a + v, 0);
+    const yearInv = inv.reduce((a, v) => a + v, 0);
+    const yearNet = net.reduce((a, v) => a + v, 0);
+    return (
+      `You are a concise financial advisor assistant. The user's 2026 summary: ` +
+      `annual income £${yearInc.toFixed(2)}, expenses £${yearExp.toFixed(2)}, ` +
+      `investments £${yearInv.toFixed(2)}, net £${yearNet.toFixed(2)}. ` +
+      `Give practical, specific guidance. You are not FCA authorised; this is not regulated advice.\n\n`
+    );
+  }, [data]);
+
   const colors = { good:"#5DCAA5", ok:"#F5A623", warn:"#E24B4A" };
   const icons  = { good:"✓", ok:"!", warn:"⚠" };
 
-  function handleSend() {
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loading]);
+
+  async function handleSend() {
     const clean = sanitise(chatInput);
     if (!clean || cooldown) return;
-    // Future: send `clean` to API here
+
+    const next = [...messages, { role: "user", text: clean }];
+    setMessages(next);
     setChatInput("");
     setCooldown(true);
+    setLoading(true);
+
+    try {
+      const history = next
+        .map(m => `${m.role === "user" ? "User" : "Assistant"}: ${m.text}`)
+        .join("\n");
+      const userMessage = history;
+
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.REACT_APP_GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents: [{ parts: [{ text: systemPrompt + userMessage }] }] }),
+        }
+      );
+      const json = await res.json();
+      const reply = json.candidates[0].content.parts[0].text;
+      setMessages(prev => [...prev, { role: "assistant", text: reply }]);
+    } catch {
+      setMessages(prev => [...prev, { role: "assistant", text: "Sorry, something went wrong. Please try again." }]);
+    } finally {
+      setLoading(false);
+    }
+
     timerRef.current = setTimeout(() => setCooldown(false), 3000);
   }
 
@@ -117,6 +168,40 @@ export default function AIAdvisor({ data }) {
       {/* Chat input with rate limiting */}
       <div style={{ background:"#fff", borderRadius:8, boxShadow:"0 1px 4px #0001", padding:16 }}>
         <div style={{ fontWeight:600, fontSize:13, color:"#1a3a5c", marginBottom:8 }}>Ask a question</div>
+
+        {/* Conversation history */}
+        {messages.length > 0 && (
+          <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:12, maxHeight:320, overflowY:"auto" }}>
+            {messages.map((m, i) => (
+              <div key={i} style={{
+                alignSelf: m.role === "user" ? "flex-end" : "flex-start",
+                maxWidth: "80%",
+                background: m.role === "user" ? "#1a3a5c" : "#f0f4f8",
+                color: m.role === "user" ? "#fff" : "#333",
+                borderRadius: m.role === "user" ? "12px 12px 2px 12px" : "12px 12px 12px 2px",
+                padding: "8px 12px",
+                fontSize: 13,
+                lineHeight: 1.6,
+                whiteSpace: "pre-wrap",
+              }}>
+                {m.text}
+              </div>
+            ))}
+            {loading && (
+              <div style={{
+                alignSelf: "flex-start",
+                background: "#f0f4f8",
+                borderRadius: "12px 12px 12px 2px",
+                padding: "8px 12px",
+                fontSize: 13,
+                color: "#888",
+              }}>
+                Thinking…
+              </div>
+            )}
+            <div ref={bottomRef} />
+          </div>
+        )}
         <div style={{ display:"flex", gap:8 }}>
           <textarea
             value={chatInput}
