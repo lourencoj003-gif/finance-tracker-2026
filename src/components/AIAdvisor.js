@@ -95,6 +95,10 @@ export default function AIAdvisor({ data }) {
     const clean = sanitise(chatInput);
     if (!clean || cooldown) return;
 
+    if (!process.env.REACT_APP_GEMINI_API_KEY) {
+      console.error("AIAdvisor: REACT_APP_GEMINI_API_KEY is not set. Add it to your .env file and restart the dev server.");
+    }
+
     const next = [...messages, { role: "user", text: clean }];
     setMessages(next);
     setChatInput("");
@@ -105,20 +109,21 @@ export default function AIAdvisor({ data }) {
       const history = next
         .map(m => `${m.role === "user" ? "User" : "Assistant"}: ${m.text}`)
         .join("\n");
-      const userMessage = history;
+      const fullPrompt = systemPrompt + history;
 
       const res = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.REACT_APP_GEMINI_API_KEY}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ contents: [{ parts: [{ text: systemPrompt + userMessage }] }] }),
+          body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: fullPrompt }] }] }),
         }
       );
-      const json = await res.json();
-      const reply = json.candidates[0].content.parts[0].text;
+      const data = await res.json();
+      const reply = data.candidates[0].content.parts[0].text;
       setMessages(prev => [...prev, { role: "assistant", text: reply }]);
-    } catch {
+    } catch (err) {
+      console.error("AIAdvisor: Gemini API call failed:", err);
       setMessages(prev => [...prev, { role: "assistant", text: "Sorry, something went wrong. Please try again." }]);
     } finally {
       setLoading(false);
