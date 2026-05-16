@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef, useEffect } from "react";
+import { useMemo, useState, useRef, useEffect } from "react"; // useMemo kept for insights
 import { fmt } from "../utils/helpers";
 import { sectionTotal, monthlyNet } from "../utils/calculations";
 
@@ -67,23 +67,6 @@ export default function AIAdvisor({ data }) {
     return tips;
   }, [data]);
 
-  const systemPrompt = useMemo(() => {
-    const inc = sectionTotal(data.income);
-    const exp = sectionTotal(data.expenses);
-    const inv = sectionTotal(data.investments);
-    const net = monthlyNet(data);
-    const yearInc = inc.reduce((a, v) => a + v, 0);
-    const yearExp = exp.reduce((a, v) => a + v, 0);
-    const yearInv = inv.reduce((a, v) => a + v, 0);
-    const yearNet = net.reduce((a, v) => a + v, 0);
-    return (
-      `You are a concise financial advisor assistant. The user's 2026 summary: ` +
-      `annual income £${yearInc.toFixed(2)}, expenses £${yearExp.toFixed(2)}, ` +
-      `investments £${yearInv.toFixed(2)}, net £${yearNet.toFixed(2)}. ` +
-      `Give practical, specific guidance. You are not FCA authorised; this is not regulated advice.\n\n`
-    );
-  }, [data]);
-
   const colors = { good:"#5DCAA5", ok:"#F5A623", warn:"#E24B4A" };
   const icons  = { good:"✓", ok:"!", warn:"⚠" };
 
@@ -108,47 +91,32 @@ export default function AIAdvisor({ data }) {
     setLoading(true);
 
     try {
-      const history = next.slice(0, -1).map(m => ({
-        role: m.role === "user" ? "user" : "assistant",
-        content: m.text,
-      }));
-      const requestBody = {
-        model: "llama3-8b-8192",
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...history,
-          { role: "user", content: clean },
-        ],
-      };
-      console.log("Groq request body:", JSON.stringify(requestBody, null, 2));
+      const inc = sectionTotal(data.income);
+      const exp = sectionTotal(data.expenses);
+      const net = monthlyNet(data);
+      const annualIncome   = inc.reduce((a, v) => a + v, 0).toFixed(2);
+      const annualExpenses = exp.reduce((a, v) => a + v, 0).toFixed(2);
+      const annualNet      = net.reduce((a, v) => a + v, 0).toFixed(2);
 
-      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
+      const systemPrompt = 'You are Marcus, a UK financial advisor. Data: Annual income £' + annualIncome + ', expenses £' + annualExpenses + ', net £' + annualNet + '. Give specific practical advice in 3 sentences max. Not FCA regulated.';
+
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer " + process.env.REACT_APP_GROQ_API_KEY,
-          "x-groq-api-key": process.env.REACT_APP_GROQ_API_KEY,
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + process.env.REACT_APP_GROQ_API_KEY
         },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({
+          model: 'llama3-8b-8192',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: clean }
+          ]
+        })
       });
-      const data = await res.json();
-      const FALLBACK = "Sorry, Marcus is unavailable right now — please try again in a moment.";
-      let reply;
-      try {
-        if (
-          data.error ||
-          !data.choices ||
-          data.choices.length === 0 ||
-          !data.choices[0].message ||
-          !data.choices[0].message.content
-        ) {
-          reply = FALLBACK;
-        } else {
-          reply = data.choices[0].message.content;
-        }
-      } catch {
-        reply = FALLBACK;
-      }
+      const json = await response.json();
+      const reply = json.choices[0].message.content;
+
       setMessages(prev => [...prev, { role: "assistant", text: reply }]);
     } catch (err) {
       console.error("AIAdvisor: Groq API call failed:", err);
