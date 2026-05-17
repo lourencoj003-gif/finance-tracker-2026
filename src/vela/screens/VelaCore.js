@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { getData, saveData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin, getGoals, saveGoals, getLastOpen, setLastOpen } from '../storage';
+import { getData, saveData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin, getGoals, saveGoals, getLastOpen, setLastOpen, getLastCeremonyYM, setLastCeremonyYM } from '../storage';
+import PaydayCeremony from './PaydayCeremony';
 
 const PURPLE = '#7F77DD';
 const BLUE   = '#378ADD';
@@ -184,6 +185,7 @@ export default function VelaCore({ onReset }) {
   const [goals, setGoals]                 = useState(() => getGoals());
   const [celebrate, setCelebrate]         = useState(false);
   const [celebrateMsg, setCelebrateMsg]   = useState('');
+  const [showCeremony, setShowCeremony]   = useState(false);
 
   const orbRef           = useRef('idle');
   const voiceOnRef       = useRef(true);
@@ -228,6 +230,16 @@ export default function VelaCore({ onReset }) {
       setTimeout(() => setCelebrate(false), 2500);
     }
     if (income > 0 && expenses / income >= 0.9) setSpendAlert(true);
+
+    // Payday ceremony — trigger within 2 days of payday, once per calendar month
+    if (income > 0) {
+      const now2   = new Date();
+      const dom    = now2.getDate();
+      const thisYM = `${now2.getFullYear()}-${String(now2.getMonth() + 1).padStart(2, '0')}`;
+      if (Math.abs(dom - payday) <= 2 && getLastCeremonyYM() !== thisYM) {
+        setTimeout(() => setShowCeremony(true), 600);
+      }
+    }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Chat greeting: check-in → alert → normal ──────────────────────
@@ -365,6 +377,13 @@ export default function VelaCore({ onReset }) {
     if (!clean) return;
     unlockAudio();
     if (/\bsettings\b/i.test(clean)) { setShowSettings(true); return; }
+
+    // Payday ceremony trigger
+    if (/\b(payday|pay day)\b|salary.*(just|landed|arrived|here)|just.?got.?paid|been paid|got paid/i.test(clean)) {
+      setChatOpen(false);
+      setTimeout(() => setShowCeremony(true), 320);
+      return;
+    }
 
     // Detect savings goals ("save £X for Y by Z")
     const newGoal = parseGoalFromText(clean);
@@ -766,6 +785,16 @@ Step 5: Save for specific goals using named pots
           >›</button>
         </div>
       </div>
+
+      {/* ══════════════════════════════════════════
+          PAYDAY CEREMONY
+      ══════════════════════════════════════════ */}
+      {showCeremony && (
+        <PaydayCeremony
+          income={income}
+          onComplete={() => { setLastCeremonyYM(); setShowCeremony(false); }}
+        />
+      )}
 
       {/* ══════════════════════════════════════════
           CELEBRATION CONFETTI

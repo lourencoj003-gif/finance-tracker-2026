@@ -12,6 +12,7 @@ const K = {
   TIP_DATE:     'vela_tip_date',
   TIP_IDX:      'vela_tip_idx',
   LAST_OPEN:    'vela_last_open',
+  CEREMONY_YM:  'vela_ceremony_ym',
 };
 
 export const getPin            = ()    => localStorage.getItem(K.PIN);
@@ -55,5 +56,11 @@ export const saveGoals = (g)   => localStorage.setItem(K.GOALS, JSON.stringify(g
 
 export const getLastOpen = () => parseInt(localStorage.getItem(K.LAST_OPEN) || '0', 10);
 export const setLastOpen = () => localStorage.setItem(K.LAST_OPEN, String(Date.now()));
+
+export const getLastCeremonyYM = () => localStorage.getItem(K.CEREMONY_YM) || '';
+export const setLastCeremonyYM = () => {
+  const n = new Date();
+  localStorage.setItem(K.CEREMONY_YM, `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}`);
+};
 
 export const clearAll  = ()    => Object.values(K).forEach(k => localStorage.removeItem(k));
