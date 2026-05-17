@@ -76,8 +76,12 @@ const Q = [
     ph: 'e.g. £3,000 or "none"',
   },
   {
-    ask: () => "Got it. Last one — what's your main financial goal right now? Save for something, pay off debt, build an emergency fund — anything.",
+    ask: () => "Got it. What's your main financial goal right now? Save for something, pay off debt, build an emergency fund — anything.",
     ph:  'e.g. Save a £5,000 emergency fund',
+  },
+  {
+    ask: () => "Last one — what day of the month do you usually get paid? I'll use this to trigger your payday routine at the right moment.",
+    ph:  'e.g. 25 or "last of month"',
   },
 ];
 
@@ -186,6 +190,14 @@ export default function Onboarding({ onDone }) {
     else if (step === 1) nd.expenses = parseAmount(val);
     else if (step === 2) nd.debt     = parseDebt(val);
     else if (step === 3) nd.goal     = val;
+    else if (step === 4) {
+      if (/last|end.?of.?month|eom/i.test(val)) {
+        nd.payday = 28;
+      } else {
+        const m = val.match(/\b(\d{1,2})\b/);
+        nd.payday = m ? Math.min(31, Math.max(1, parseInt(m[0], 10))) : 25;
+      }
+    }
     setData(nd);
 
     const next = step + 1;
@@ -259,7 +271,7 @@ export default function Onboarding({ onDone }) {
 
       {/* Progress dots */}
       <div style={{ position: 'absolute', top: 32, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 8, zIndex: 5 }}>
-        {[0, 1, 2, 3].map(i => (
+        {Q.map((_, i) => (
           <div key={i} style={{
             width: i < step ? 22 : 7, height: 7, borderRadius: 4,
             background: i < step ? PURPLE : 'rgba(255,255,255,0.15)',

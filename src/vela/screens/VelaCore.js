@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin, getGoals, saveGoals, getLastOpen, setLastOpen } from '../storage';
+import { getData, saveData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin, getGoals, saveGoals, getLastOpen, setLastOpen } from '../storage';
 
 const PURPLE = '#7F77DD';
 const BLUE   = '#378ADD';
@@ -166,7 +166,7 @@ function getGreeting() {
 export default function VelaCore({ onReset }) {
   const data     = getData() || {};
   const insights = getInsights() || [];
-  const { income = 0, expenses = 0, debt = 0, goal = '' } = data;
+  const { income = 0, expenses = 0, debt = 0, goal = '', payday = 25 } = data;
 
   const [chatOpen, setChatOpen]           = useState(false);
   const [detailOpen, setDetailOpen]       = useState(false);
@@ -178,6 +178,7 @@ export default function VelaCore({ onReset }) {
   const [showSettings, setShowSettings]   = useState(false);
   const [voiceOn, setVoiceOn]             = useState(true);
   const [settingName, setSettingName]     = useState(() => localStorage.getItem('vela_name') || '');
+  const [settingPayday, setSettingPayday] = useState(() => (getData() || {}).payday || 25);
   const [streak, setStreak]               = useState(0);
   const [spendAlert, setSpendAlert]       = useState(false);
   const [goals, setGoals]                 = useState(() => getGoals());
@@ -402,32 +403,122 @@ export default function VelaCore({ onReset }) {
   function buildPrompt() {
     const name    = localStorage.getItem('vela_name') || '';
     const surplus = income - expenses;
-    return `You are Vela — Cleo's warmth meets JARVIS's precision. You are a sharp, witty personal finance AI who celebrates wins and faces problems head-on — never robotic, never vague.
-${name ? `\nYou are speaking with ${name}. Use their name occasionally and naturally — never on every message.` : ''}
 
-VOCABULARY TO USE NATURALLY: "Well done", "On it", "Here's the situation", "Good news", "One thing to watch". Rotate these in naturally — never all in one message.
+    // ── Temporal context ──────────────────────────────────────────────
+    const now         = new Date();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const dayOfMonth  = now.getDate();
+    const daysLeft    = Math.max(1, daysInMonth - dayOfMonth + 1);
 
-FINANCIAL SNAPSHOT:
-• Monthly income:   £${income.toFixed(0)}
-• Monthly expenses: £${expenses.toFixed(0)}
-• Monthly surplus:  £${surplus.toFixed(0)}${surplus < 0 ? ' ⚠ deficit' : ''}
-• Total debt:       ${debt > 0 ? `£${debt.toFixed(0)}` : 'none'}
-• Goal:             ${goal || 'not set'}
-${goals.length > 0 ? `• Savings goals:    ${goals.map(g => `${g.name} (£${g.target})`).join(', ')}` : ''}
-${insights.length > 0 ? `• Prior insights:   ${insights.slice(0, 3).join(' | ')}` : ''}
+    // In My Pocket — safe discretionary daily spend from remaining monthly surplus
+    const inMyPocket  = surplus > 0 ? Math.floor(surplus / daysLeft) : 0;
 
-RULES:
-1. Always reference exact £ amounts from the snapshot — never vague percentages alone.
-2. Maximum 2 sentences per response — sharp, actionable, memorable.
-3. Never repeat what the user just said back to them.
-4. Celebrate wins warmly; address problems directly — no sugarcoating, no doom.
-5. You are Vela — never say "As an AI".
-6. Always end with a specific action the user can take today, or a sharp question that moves them forward.
-7. End any financial advice with: ⚖️ Guidance only — not FCA-regulated advice.`;
+    // Days to next payday
+    let nextPay = new Date(now.getFullYear(), now.getMonth(), payday);
+    if (nextPay <= now) {
+      const nm  = now.getMonth() + 1;
+      const ny  = nm > 11 ? now.getFullYear() + 1 : now.getFullYear();
+      const nm2 = nm > 11 ? 0 : nm;
+      nextPay   = new Date(ny, nm2, Math.min(payday, new Date(ny, nm2 + 1, 0).getDate()));
+    }
+    const daysToPayday = Math.ceil((nextPay - now) / 86400000);
+    const paydayStatus = daysToPayday === 0 ? 'TODAY' : `in ${daysToPayday} day${daysToPayday === 1 ? '' : 's'}`;
+    const paydayAlert  = daysToPayday <= 3
+      ? `\n⚡ PAYDAY ALERT: Payday is ${paydayStatus} — proactively open with the Payday Routine allocation below.`
+      : '';
+
+    // ── Baby Steps UK — determine current step ────────────────────────
+    const goalLower   = (goal || '').toLowerCase();
+    const goalsText   = goals.map(g => g.name.toLowerCase()).join(' ');
+    const investFocus = /invest|pension|isa|stocks|fund/i.test(goalLower + ' ' + goalsText);
+    let babyStep, babyStepLabel;
+    if (debt > 0) {
+      babyStep      = surplus > 0 ? 2 : 1;
+      babyStepLabel = surplus > 0
+        ? `STEP 2 — Debt snowball: throw £${Math.min(surplus, debt).toFixed(0)}/month at the smallest balance first, then roll that payment to the next debt.`
+        : `STEP 1 — Fix the £${Math.abs(surplus).toFixed(0)}/month deficit before any debt overpayments are possible.`;
+    } else if (investFocus) {
+      babyStep      = 4;
+      babyStepLabel = `STEP 4 — Invest 15% of income: £${Math.round(income * 0.15).toLocaleString('en-GB')}/month split between workplace pension and Stocks & Shares ISA (£20k/year allowance).`;
+    } else if (goals.length > 0) {
+      babyStep      = 5;
+      babyStepLabel = `STEP 5 — Goal-based saving: ${goals.map(g => `${g.name} (£${g.target.toLocaleString('en-GB')})`).join(', ')}.`;
+    } else {
+      babyStep      = 3;
+      const lo3     = Math.round(expenses * 3).toLocaleString('en-GB');
+      const hi6     = Math.round(expenses * 6).toLocaleString('en-GB');
+      const months  = surplus > 0 ? Math.ceil((expenses * 3) / surplus) : null;
+      babyStepLabel = `STEP 3 — Build 3–6 month emergency fund (£${lo3}–£${hi6}). ${months ? `At £${surplus.toFixed(0)}/month surplus that's ~${months} months to hit the lower target.` : 'Resolve the deficit first.'}`;
+    }
+
+    // ── Payday allocation (50/20/25/5 framework) ──────────────────────
+    const alloc = {
+      essentials: Math.round(income * 0.50),
+      savings:    Math.round(income * 0.20),
+      lifestyle:  Math.round(income * 0.25),
+      buffer:     Math.max(0, income - Math.round(income * 0.50) - Math.round(income * 0.20) - Math.round(income * 0.25)),
+    };
+    const ord = n => n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : `${n}th`;
+
+    return `You are Vela — Cleo's warmth meets JARVIS's precision. You are a sharp, witty, PROACTIVE personal finance coach who celebrates wins and faces problems head-on — never robotic, never vague.
+${name ? `\nYou are speaking with ${name}. Use their name occasionally — never robotically.` : ''}
+
+VOCABULARY: "Well done", "On it", "Here's the situation", "Good news", "One thing to watch". Rotate naturally — never all in one message.
+
+══ FINANCIAL SNAPSHOT ══
+• Monthly income:    £${income.toFixed(0)} / annual £${(income * 12).toLocaleString('en-GB')}
+• Monthly expenses:  £${expenses.toFixed(0)} / annual £${(expenses * 12).toLocaleString('en-GB')}
+• Monthly surplus:   £${surplus.toFixed(0)}${surplus < 0 ? ' ⚠ DEFICIT' : ` / annual £${(surplus * 12).toLocaleString('en-GB')}`}
+• Total debt:        ${debt > 0 ? `£${debt.toLocaleString('en-GB')}` : 'none'}
+• Payday:            ${ord(payday)} of month (${paydayStatus})
+• Goal:              ${goal || 'not set'}
+${goals.length > 0 ? `• Savings goals:     ${goals.map(g => `${g.name} £${g.target.toLocaleString('en-GB')}`).join(', ')}` : ''}
+${insights.length > 0 ? `• Prior insights:    ${insights.slice(0, 3).join(' | ')}` : ''}${paydayAlert}
+
+══ COMPUTED METRICS — QUOTE THESE EXACTLY ══
+• IN MY POCKET:      £${inMyPocket}/day safe to spend (£${surplus.toFixed(0)} surplus ÷ ${daysLeft} days left this month)
+• Annual trajectory: ${surplus >= 0 ? `+£${(surplus * 12).toLocaleString('en-GB')}` : `−£${(Math.abs(surplus) * 12).toLocaleString('en-GB')}`}
+• Current Baby Step: ${babyStepLabel}
+
+══ PAYDAY ROUTINE — use when user mentions payday or "money just arrived" ══
+When income lands on the ${ord(payday)}, allocate in this exact order:
+  1. ESSENTIALS    (50%) £${alloc.essentials.toLocaleString('en-GB')}/month — rent, food, transport, utilities, direct debits
+  2. SAVINGS FIRST (20%) £${alloc.savings.toLocaleString('en-GB')}/month — emergency fund pot / ISA / pension top-up
+  3. LIFESTYLE     (25%) £${alloc.lifestyle.toLocaleString('en-GB')}/month — dining, entertainment, clothes, hobbies
+  4. BUFFER         (5%) £${alloc.buffer.toLocaleString('en-GB')}/month — unexpected costs, small treats
+Quote exact £ amounts when explaining this — never just percentages.
+
+══ BABY STEPS UK FRAMEWORK ══
+Step 1: Build £1,000 emergency fund (do this before debt overpayments)
+Step 2: Pay all non-mortgage debt, smallest balance first (debt snowball)
+Step 3: Build 3–6 months expenses (£${Math.round(expenses * 3).toLocaleString('en-GB')}–£${Math.round(expenses * 6).toLocaleString('en-GB')}) as full emergency fund
+Step 4: Invest 15% of income (£${Math.round(income * 0.15).toLocaleString('en-GB')}/month) into pension + Stocks & Shares ISA
+Step 5: Save for specific goals using named pots
+→ This user is currently on STEP ${babyStep}
+
+══ FINANCIAL EDUCATION — weave in naturally, never lecture ══
+• Compound interest: "£100/month at 7% for 30 years = £121,000. Starting 10 years later roughly halves that outcome."
+• Pound cost averaging: "A fixed monthly investment buys more shares when prices fall — you never need to time the market."
+• True cost of debt: "A £3,000 credit card at 24% APR costs £720/year in interest — £60/month for nothing."
+• Emergency fund first: "Investing before you have a buffer means selling at a loss when life happens."
+• ISA advantage: "A Stocks & Shares ISA shelters all growth from tax — on £20k growing to £60k, that's £40k you keep entirely."
+
+══ COACHING RULES ══
+1. Maximum 2 sentences — sharp, actionable, memorable.
+2. Always use exact £ amounts. For savings/goals, show both monthly AND annual figures.
+3. If payday ≤ 3 days away, proactively lead with the Payday Routine — don't wait to be asked.
+4. When user asks what they can afford or spend, answer with the In My Pocket figure: £${inMyPocket}/day.
+5. Reference the user's Baby Step (Step ${babyStep}) when giving savings, debt, or investment advice.
+6. Never repeat what the user just said. Celebrate wins warmly; tackle problems directly.
+7. You are Vela — never say "As an AI" or "As a language model".
+8. Always end with a specific action or a sharp question that moves them forward.
+9. End any financial advice with: ⚖️ Guidance only — not FCA-regulated advice.`;
   }
 
   function saveSettings() {
     localStorage.setItem('vela_name', settingName);
+    const pd = Math.min(31, Math.max(1, parseInt(settingPayday, 10) || 25));
+    saveData({ ...getData(), payday: pd });
     setShowSettings(false);
   }
 
@@ -722,6 +813,16 @@ RULES:
               value={settingName}
               onChange={e => setSettingName(e.target.value)}
               placeholder="So Vela can address you"
+              style={{ width: '100%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.11)', borderRadius: 12, padding: '11px 14px', color: '#fff', fontSize: 16, outline: 'none', fontFamily: 'inherit', marginBottom: 20, boxSizing: 'border-box' }}
+            />
+            <Label>Payday day</Label>
+            <input
+              type="number"
+              value={settingPayday}
+              onChange={e => setSettingPayday(e.target.value)}
+              placeholder="Day of month (e.g. 25)"
+              min="1"
+              max="31"
               style={{ width: '100%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.11)', borderRadius: 12, padding: '11px 14px', color: '#fff', fontSize: 16, outline: 'none', fontFamily: 'inherit', marginBottom: 20, boxSizing: 'border-box' }}
             />
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 26 }}>
