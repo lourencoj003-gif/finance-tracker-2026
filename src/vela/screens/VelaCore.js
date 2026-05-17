@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin, getGoals, saveGoals } from '../storage';
+import { getData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin, getGoals, saveGoals, getLastOpen, setLastOpen } from '../storage';
 
 const PURPLE = '#7F77DD';
 const BLUE   = '#378ADD';
@@ -56,6 +56,10 @@ const KEYFRAMES = `
     0%,100% { transform: scale(1);    opacity: 1; }
     50%     { transform: scale(1.45); opacity: 0.55; }
   }
+  @keyframes confettiFly {
+    0%   { transform: translate(0, 0) scale(1);                           opacity: 1; }
+    100% { transform: translate(var(--dx), var(--dy)) scale(0.35);        opacity: 0; }
+  }
 `;
 
 const ORB_CFG = {
@@ -82,6 +86,19 @@ const ORB_CFG = {
 };
 
 const SLIDE = 'transform 0.42s cubic-bezier(0.32, 0.72, 0, 1)';
+
+const CONFETTI_COLORS = [PURPLE, BLUE, GREEN, AMBER, RED, '#ffffff', '#ee55ff', '#00eeff'];
+const CONFETTI_DOTS = Array.from({ length: 20 }, (_, i) => {
+  const angle = (i / 20) * 2 * Math.PI;
+  const dist  = 120 + (i % 4) * 30;
+  return {
+    dx:    Math.round(Math.cos(angle) * dist),
+    dy:    Math.round(Math.sin(angle) * dist),
+    color: CONFETTI_COLORS[i % 8],
+    size:  6 + (i % 4) * 2,
+    delay: (i % 5) * 0.08,
+  };
+});
 
 const TIPS = [
   'Pay yourself first — automate a transfer to savings the moment your pay lands.',
@@ -164,6 +181,8 @@ export default function VelaCore({ onReset }) {
   const [streak, setStreak]               = useState(0);
   const [spendAlert, setSpendAlert]       = useState(false);
   const [goals, setGoals]                 = useState(() => getGoals());
+  const [celebrate, setCelebrate]         = useState(false);
+  const [celebrateMsg, setCelebrateMsg]   = useState('');
 
   const orbRef           = useRef('idle');
   const voiceOnRef       = useRef(true);
@@ -173,6 +192,7 @@ export default function VelaCore({ onReset }) {
   const touchStartY      = useRef(null);
   const touchStartX      = useRef(null);
   const audioUnlockedRef = useRef(false);
+  const hoursAwayRef     = useRef(0);
 
   function setOrbState(s) { orbRef.current = s; _setOrbState(s); }
 
@@ -191,9 +211,21 @@ export default function VelaCore({ onReset }) {
     };
   }, []);
 
-  // ── On mount: streak + spending alert ────────────────────────────
+  // ── On mount: last-open tracking, streak, spending alert ─────────
   useEffect(() => {
-    setStreak(tickStreak());
+    const lastOpen = getLastOpen();
+    const hoursAway = lastOpen > 0 ? (Date.now() - lastOpen) / 3600000 : 0;
+    hoursAwayRef.current = hoursAway;
+    setLastOpen();
+
+    const s = tickStreak();
+    setStreak(s);
+    if (s === 7 || s === 30) {
+      const msg = s === 7 ? '🔥 7-day streak! You\'re building a real habit.' : '🔥 30 days straight! That\'s exceptional discipline.';
+      setCelebrateMsg(msg);
+      setCelebrate(true);
+      setTimeout(() => setCelebrate(false), 2500);
+    }
     if (income > 0 && expenses / income >= 0.9) setSpendAlert(true);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -213,6 +245,13 @@ export default function VelaCore({ onReset }) {
         ? `You're keeping £${surplus.toFixed(0)}/month — solid position.`
         : `You're running a £${Math.abs(surplus).toFixed(0)}/month deficit — let's fix that this week.`;
       msg = `Monday check-in${hi}. You're on pace to spend £${expenses.toFixed(0)} this month — roughly £${weeklySpend} last week. ${onTrackLine} What's the focus this week?`;
+    } else if (hoursAwayRef.current >= 24) {
+      const h = Math.round(hoursAwayRef.current);
+      const timeAway = h >= 48 ? `${Math.round(h / 24)} days` : 'a day';
+      const finLine  = surplus >= 0
+        ? `Good news — your £${surplus.toFixed(0)} monthly surplus is holding steady.`
+        : `One thing to watch — you're £${Math.abs(surplus).toFixed(0)} short this month.`;
+      msg = `Welcome back${hi}, you've been away for ${timeAway}. ${finLine} What shall we work on?`;
     } else if (spendAlert && !alertFiredRef.current) {
       alertFiredRef.current = true;
       const pct = Math.round((expenses / income) * 100);
@@ -363,8 +402,10 @@ export default function VelaCore({ onReset }) {
   function buildPrompt() {
     const name    = localStorage.getItem('vela_name') || '';
     const surplus = income - expenses;
-    return `You are Vela, an elite personal finance AI. You have the precision of a CFO, the warmth of a trusted friend, and the directness of JARVIS.
+    return `You are Vela — Cleo's warmth meets JARVIS's precision. You are a sharp, witty personal finance AI who celebrates wins and faces problems head-on — never robotic, never vague.
 ${name ? `\nYou are speaking with ${name}. Use their name occasionally and naturally — never on every message.` : ''}
+
+VOCABULARY TO USE NATURALLY: "Well done", "On it", "Here's the situation", "Good news", "One thing to watch". Rotate these in naturally — never all in one message.
 
 FINANCIAL SNAPSHOT:
 • Monthly income:   £${income.toFixed(0)}
@@ -376,14 +417,13 @@ ${goals.length > 0 ? `• Savings goals:    ${goals.map(g => `${g.name} (£${g.t
 ${insights.length > 0 ? `• Prior insights:   ${insights.slice(0, 3).join(' | ')}` : ''}
 
 RULES:
-1. Always reference exact £ amounts from the snapshot — never vague percentages.
-2. Maximum 2 sentences per response — sharp and actionable.
+1. Always reference exact £ amounts from the snapshot — never vague percentages alone.
+2. Maximum 2 sentences per response — sharp, actionable, memorable.
 3. Never repeat what the user just said back to them.
-4. When discussing the plan, cite specific numbers from the snapshot.
-5. Personality: confident, warm, slightly witty, never robotic. You are Vela — never say "As an AI".
-6. Always end with either a specific action the user can take today, or a sharp question that moves them forward.
-7. You know their full financial picture: monthly income, expenses, net surplus, debt, and goal.
-8. End any financial advice with: ⚖️ Guidance only — not FCA-regulated advice.`;
+4. Celebrate wins warmly; address problems directly — no sugarcoating, no doom.
+5. You are Vela — never say "As an AI".
+6. Always end with a specific action the user can take today, or a sharp question that moves them forward.
+7. End any financial advice with: ⚖️ Guidance only — not FCA-regulated advice.`;
   }
 
   function saveSettings() {
@@ -635,6 +675,32 @@ RULES:
           >›</button>
         </div>
       </div>
+
+      {/* ══════════════════════════════════════════
+          CELEBRATION CONFETTI
+      ══════════════════════════════════════════ */}
+      {celebrate && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+          {CONFETTI_DOTS.map((dot, i) => (
+            <div key={i} style={{
+              position: 'absolute',
+              width: dot.size, height: dot.size, borderRadius: '50%',
+              background: dot.color,
+              '--dx': `${dot.dx}px`,
+              '--dy': `${dot.dy}px`,
+              animation: `confettiFly 2s ease-out ${dot.delay}s forwards`,
+            }} />
+          ))}
+          <div style={{
+            position: 'absolute',
+            color: '#fff', fontSize: 20, fontWeight: 800,
+            textAlign: 'center', lineHeight: 1.4,
+            textShadow: '0 2px 24px rgba(0,0,0,0.9)',
+            animation: 'cardIn 0.4s ease-out',
+            maxWidth: 280, padding: '0 24px',
+          }}>{celebrateMsg}</div>
+        </div>
+      )}
 
       {/* ══════════════════════════════════════════
           SETTINGS OVERLAY
