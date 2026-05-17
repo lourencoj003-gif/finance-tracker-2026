@@ -75,14 +75,8 @@ export default function AIAdvisor({ data }) {
   }, [messages, loading]);
 
   async function handleSend() {
-    console.log("Groq key present:", !!process.env.REACT_APP_GROQ_API_KEY, "Key starts with:", process.env.REACT_APP_GROQ_API_KEY ? process.env.REACT_APP_GROQ_API_KEY.substring(0, 8) : "MISSING");
-
     const clean = sanitise(chatInput);
     if (!clean || cooldown) return;
-
-    if (!process.env.REACT_APP_GROQ_API_KEY) {
-      console.error("AIAdvisor: REACT_APP_GROQ_API_KEY is not set. Add it to your .env file and restart the dev server.");
-    }
 
     const next = [...messages, { role: "user", text: clean }];
     setMessages(next);
@@ -98,24 +92,19 @@ export default function AIAdvisor({ data }) {
       const annualExpenses = exp.reduce((a, v) => a + v, 0).toFixed(2);
       const annualNet      = net.reduce((a, v) => a + v, 0).toFixed(2);
 
-      const systemPrompt = 'You are Marcus, a UK financial advisor. Data: Annual income £' + annualIncome + ', expenses £' + annualExpenses + ', net £' + annualNet + '. Give specific practical advice in 3 sentences max. Not FCA regulated.';
+      const financialContext = 'You are Marcus, a UK financial advisor. Data: Annual income £' + annualIncome + ', expenses £' + annualExpenses + ', net £' + annualNet + '. Give specific practical advice in 3 sentences max. Not FCA regulated.';
 
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      const response = await fetch('/api/chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + process.env.REACT_APP_GROQ_API_KEY
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'llama3-8b-8192',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: clean }
-          ]
-        })
+          financialContext,
+          messages: [{ role: 'user', content: clean }],
+        }),
       });
       const json = await response.json();
-      const reply = json.choices[0].message.content;
+      if (!response.ok) throw new Error(json.error || 'API error');
+      const reply = json.text;
 
       setMessages(prev => [...prev, { role: "assistant", text: reply }]);
     } catch (err) {
