@@ -30,7 +30,7 @@ export default async function handler(req, res) {
         "Authorization": "Bearer " + process.env.GROQ_API_KEY,
       },
       body: JSON.stringify({
-        model: "mixtral-8x7b-32768",
+        model: "meta-llama/llama-4-scout-17b-16e-instruct",
         messages: [systemMessage, ...messages],
       }),
     });
