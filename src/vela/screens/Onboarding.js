@@ -111,8 +111,9 @@ export default function Onboarding({ onDone }) {
   const [currentQ, setCurrentQ]   = useState('');
   const [cardKey, setCardKey]     = useState(0);
 
-  const buildingRef = useRef(false);
-  const hasInit     = useRef(false);
+  const buildingRef      = useRef(false);
+  const hasInit          = useRef(false);
+  const audioUnlockedRef = useRef(false);
 
   useEffect(() => { buildingRef.current = building; }, [building]);
 
@@ -133,6 +134,14 @@ export default function Onboarding({ onDone }) {
     const tid = setTimeout(() => { setCurrentQ(q); speak(q); }, 700);
     return () => clearTimeout(tid);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function unlockAudio() {
+    if (audioUnlockedRef.current || !window.speechSynthesis) return;
+    audioUnlockedRef.current = true;
+    const u = new SpeechSynthesisUtterance('');
+    u.volume = 0;
+    window.speechSynthesis.speak(u);
+  }
 
   function speak(text) {
     if (!window.speechSynthesis) return;
@@ -169,6 +178,7 @@ export default function Onboarding({ onDone }) {
   function send() {
     const val = input.trim();
     if (!val || building || step >= Q.length) return;
+    unlockAudio();
     setInput('');
 
     const nd = { ...data };
@@ -312,6 +322,7 @@ export default function Onboarding({ onDone }) {
           <div
             key={cardKey}
             style={{
+              position: 'relative',
               background: 'rgba(255,255,255,0.05)',
               border: '1px solid rgba(255,255,255,0.1)',
               borderRadius: 24,
@@ -322,10 +333,14 @@ export default function Onboarding({ onDone }) {
               boxShadow: '0 8px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06)',
             }}
           >
+            <button
+              onClick={() => { unlockAudio(); speak(currentQ); }}
+              style={{ position: 'absolute', top: 12, right: 16, background: 'none', border: 'none', color: 'rgba(255,255,255,0.28)', fontSize: 13, cursor: 'pointer', padding: 4, lineHeight: 1 }}
+            >🔊</button>
             <div style={{ fontSize: 10, color: 'rgba(127,119,221,0.7)', marginBottom: 12, letterSpacing: '0.9px', textTransform: 'uppercase', fontWeight: 600 }}>
               Vela
             </div>
-            <div style={{ fontSize: 16, color: '#eeeeff', lineHeight: 1.68, whiteSpace: 'pre-wrap', fontWeight: 400 }}>
+            <div style={{ fontSize: 16, color: '#eeeeff', lineHeight: 1.68, whiteSpace: 'pre-wrap', fontWeight: 400, paddingRight: 22 }}>
               {currentQ}
             </div>
           </div>

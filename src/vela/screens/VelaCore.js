@@ -110,8 +110,9 @@ export default function VelaCore({ onReset }) {
   const voiceOnRef     = useRef(true);
   const recognitionRef = useRef(null);
   const greetedRef     = useRef(false);
-  const touchStartY    = useRef(null);
-  const touchStartX    = useRef(null);
+  const touchStartY      = useRef(null);
+  const touchStartX      = useRef(null);
+  const audioUnlockedRef = useRef(false);
 
   function setOrbState(s) { orbRef.current = s; _setOrbState(s); }
 
@@ -156,6 +157,15 @@ export default function VelaCore({ onReset }) {
     if (isDetail  && dy < -55)             setDetailOpen(false);
   }
 
+  // ── Audio unlock (iOS requires speech from a user gesture) ───────
+  function unlockAudio() {
+    if (audioUnlockedRef.current || !window.speechSynthesis) return;
+    audioUnlockedRef.current = true;
+    const u = new SpeechSynthesisUtterance('');
+    u.volume = 0;
+    window.speechSynthesis.speak(u);
+  }
+
   // ── Speech synthesis ─────────────────────────────────────────────
   function speak(text) {
     if (!voiceOnRef.current || !window.speechSynthesis) return;
@@ -194,6 +204,7 @@ export default function VelaCore({ onReset }) {
 
   function startListening() {
     if (!speechSupported || isListening) return;
+    unlockAudio();
     window.speechSynthesis?.cancel();
     const SR  = window.SpeechRecognition || window.webkitSpeechRecognition;
     const rec = new SR();
@@ -227,6 +238,7 @@ export default function VelaCore({ onReset }) {
   async function handleMessage(text) {
     const clean = text.trim();
     if (!clean) return;
+    unlockAudio();
     if (/\bsettings\b/i.test(clean)) { setShowSettings(true); return; }
     pushCard('user', clean);
     setInput('');
@@ -349,7 +361,7 @@ RULES:
 
         {/* Talk to Vela button */}
         <button
-          onClick={() => setChatOpen(true)}
+          onClick={() => { unlockAudio(); setChatOpen(true); }}
           style={{
             width: '100%', height: 58, background: PURPLE, border: 'none', borderRadius: 18,
             color: '#fff', fontSize: 17, fontWeight: 600, cursor: 'pointer',
@@ -461,7 +473,10 @@ RULES:
           padding: '0 16px 8px', overflowY: 'hidden',
         }}>
           {visibleCards.map((c, idx) => (
-            <GlassCard key={c.id} card={c} opacity={cardOpacities[idx] ?? 1} />
+            <GlassCard
+              key={c.id} card={c} opacity={cardOpacities[idx] ?? 1}
+              onSpeak={c.type === 'vela' ? () => { unlockAudio(); speak(c.text); } : null}
+            />
           ))}
         </div>
 
@@ -702,20 +717,27 @@ function MetricPill({ label, value, color }) {
   );
 }
 
-function GlassCard({ card, opacity = 1 }) {
+function GlassCard({ card, opacity = 1, onSpeak }) {
   const isUser = card.type === 'user';
   return (
     <div style={{
+      position: 'relative',
       background: isUser ? 'rgba(127,119,221,0.08)' : 'rgba(255,255,255,0.05)',
       border: `1px solid ${isUser ? 'rgba(127,119,221,0.26)' : 'rgba(255,255,255,0.1)'}`,
       borderRadius: 20, padding: '12px 16px', marginBottom: 10,
       backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
       animation: 'cardIn 0.35s ease-out', opacity, transition: 'opacity 0.5s ease',
     }}>
+      {!isUser && onSpeak && (
+        <button
+          onClick={onSpeak}
+          style={{ position: 'absolute', top: 8, right: 10, background: 'none', border: 'none', color: 'rgba(255,255,255,0.28)', fontSize: 13, cursor: 'pointer', padding: 4, lineHeight: 1 }}
+        >🔊</button>
+      )}
       <div style={{ fontSize: 10, color: isUser ? 'rgba(127,119,221,0.65)' : 'rgba(255,255,255,0.28)', marginBottom: 5, letterSpacing: '0.8px', textTransform: 'uppercase', fontWeight: 600 }}>
         {isUser ? 'You' : 'Vela'}
       </div>
-      <div style={{ fontSize: 14, color: '#eeeeff', lineHeight: 1.62, whiteSpace: 'pre-wrap' }}>{card.text}</div>
+      <div style={{ fontSize: 14, color: '#eeeeff', lineHeight: 1.62, whiteSpace: 'pre-wrap', paddingRight: onSpeak ? 22 : 0 }}>{card.text}</div>
     </div>
   );
 }
