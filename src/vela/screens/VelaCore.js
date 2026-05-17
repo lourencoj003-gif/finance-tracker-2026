@@ -164,10 +164,23 @@ function getGreeting() {
   return name ? `${base}, ${name}` : base;
 }
 
+function calcVelaScore({ income, expenses, debt, streak }) {
+  if (income <= 0) return 0;
+  const surplus = income - expenses;
+  const rate    = surplus / income;
+  const pts = {
+    savings: Math.min(30, Math.max(0, Math.round(rate * 150))),
+    debt:    debt === 0 ? 25 : Math.max(0, 25 - Math.round(Math.min(1, debt / (income * 12)) * 25)),
+    streak:  Math.min(20, Math.round((streak / 30) * 20)),
+    pace:    Math.min(25, Math.max(0, Math.round((1 - expenses / income) * 50))),
+  };
+  return Math.max(0, Math.min(100, pts.savings + pts.debt + pts.streak + pts.pace));
+}
+
 export default function VelaCore({ onReset }) {
   const data     = getData() || {};
   const insights = getInsights() || [];
-  const { income = 0, expenses = 0, debt = 0, goal = '', payday = 25 } = data;
+  const { income = 0, expenses = 0, debt = 0, goal = '', payday = 25, savings = 0 } = data;
 
   const [chatOpen, setChatOpen]           = useState(false);
   const [detailOpen, setDetailOpen]       = useState(false);
@@ -186,6 +199,10 @@ export default function VelaCore({ onReset }) {
   const [celebrate, setCelebrate]         = useState(false);
   const [celebrateMsg, setCelebrateMsg]   = useState('');
   const [showCeremony, setShowCeremony]   = useState(false);
+  const [viewMode, setViewMode]           = useState('monthly');
+  const [scoreDelta, setScoreDelta]       = useState(0);
+  const [freedomDays, setFreedomDays]     = useState(0);
+  const [settingSavings, setSettingSavings] = useState(() => String((getData() || {}).savings || ''));
 
   const orbRef           = useRef('idle');
   const voiceOnRef       = useRef(true);
@@ -231,6 +248,12 @@ export default function VelaCore({ onReset }) {
     }
     if (income > 0 && expenses / income >= 0.9) setSpendAlert(true);
 
+    // Score delta — compare today's score to yesterday's stored score
+    const todayScore = calcVelaScore({ income, expenses, debt, streak: s });
+    const prevScore  = parseInt(localStorage.getItem('vela_prev_score') || String(todayScore), 10);
+    setScoreDelta(todayScore - prevScore);
+    localStorage.setItem('vela_prev_score', String(todayScore));
+
     // Payday ceremony — trigger within 2 days of payday, once per calendar month
     if (income > 0) {
       const now2   = new Date();
@@ -240,6 +263,24 @@ export default function VelaCore({ onReset }) {
         setTimeout(() => setShowCeremony(true), 600);
       }
     }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Days-of-freedom count-up animation ──────────────────────────
+  useEffect(() => {
+    const dailyExp = expenses / 30;
+    const target   = dailyExp > 0 && savings > 0 ? Math.floor(savings / dailyExp) : 0;
+    if (target === 0) return;
+    const duration = Math.min(1600, Math.max(600, target * 30));
+    let start = null;
+    let raf;
+    const step = (ts) => {
+      if (!start) start = ts;
+      const progress = Math.min(1, (ts - start) / duration);
+      setFreedomDays(Math.round(progress * target));
+      if (progress < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Chat greeting: check-in → alert → normal ──────────────────────
@@ -536,25 +577,83 @@ Step 5: Save for specific goals using named pots
 
   function saveSettings() {
     localStorage.setItem('vela_name', settingName);
-    const pd = Math.min(31, Math.max(1, parseInt(settingPayday, 10) || 25));
-    saveData({ ...getData(), payday: pd });
+    const pd  = Math.min(31, Math.max(1, parseInt(settingPayday, 10) || 25));
+    const sav = Math.max(0, parseFloat(settingSavings) || 0);
+    saveData({ ...getData(), payday: pd, savings: sav });
     setShowSettings(false);
   }
 
   // ── Dashboard calculations ───────────────────────────────────────
   const surplus      = income - expenses;
-  const netAnnual    = surplus * 12;
   const isPositive   = surplus >= 0;
-  const displayNum   = isPositive
-    ? `£${Math.abs(netAnnual).toLocaleString('en-GB')}`
-    : `£${Math.abs(surplus).toLocaleString('en-GB')}`;
-  const displaySub   = isPositive ? 'Year surplus' : 'Monthly shortfall';
   const numColor     = isPositive ? GREEN : RED;
   const savingsRate  = income > 0 ? Math.round((surplus / income) * 100) : 0;
-  const healthNum    = Math.max(0, Math.min(100, Math.round(((income > 0 ? surplus / income : 0) + 0.5) * 100)));
   const onTrack      = surplus >= 0;
-  const healthColor  = healthNum >= 70 ? GREEN : healthNum >= 50 ? AMBER : RED;
   const savColor     = savingsRate > 10 ? GREEN : savingsRate >= 0 ? AMBER : RED;
+
+  // Vela Score
+  const velaScore      = calcVelaScore({ income, expenses, debt, streak });
+  const velaScoreColor = velaScore >= 70 ? GREEN : velaScore >= 50 ? AMBER : RED;
+
+  // Days of Financial Freedom (target for display; freedomDays state animates to it)
+  const dailyExpenses      = expenses > 0 ? expenses / 30 : 1;
+  const freedomDaysTarget  = savings > 0 ? Math.floor(savings / dailyExpenses) : 0;
+
+  // In My Pocket — safe daily discretionary spend
+  const nowD         = new Date();
+  const daysInMonthD = new Date(nowD.getFullYear(), nowD.getMonth() + 1, 0).getDate();
+  const daysLeftD    = Math.max(1, daysInMonthD - nowD.getDate() + 1);
+  const inMyPocket2  = surplus > 0 ? Math.floor(surplus / daysLeftD) : 0;
+
+  // Days to next payday
+  let nextPayD = new Date(nowD.getFullYear(), nowD.getMonth(), payday);
+  if (nextPayD <= nowD) {
+    const nm  = nowD.getMonth() + 1;
+    const ny  = nm > 11 ? nowD.getFullYear() + 1 : nowD.getFullYear();
+    const nm2 = nm > 11 ? 0 : nm;
+    nextPayD  = new Date(ny, nm2, Math.min(payday, new Date(ny, nm2 + 1, 0).getDate()));
+  }
+  const daysToNextPay = Math.ceil((nextPayD - nowD) / 86400000);
+
+  // Monthly / Annual toggle values for pills
+  const displayNum = viewMode === 'monthly'
+    ? `£${Math.abs(surplus).toLocaleString('en-GB')}`
+    : `£${Math.abs(surplus * 12).toLocaleString('en-GB')}`;
+  const displaySub = viewMode === 'monthly'
+    ? (isPositive ? 'Monthly surplus' : 'Monthly shortfall')
+    : (isPositive ? 'Annual surplus' : 'Annual shortfall');
+
+  // Forecast cards
+  const forecastCards = [
+    {
+      label: 'Today',
+      value: `£${inMyPocket2}`,
+      sub: 'safe to spend',
+      emoji: inMyPocket2 >= 20 ? '☀️' : inMyPocket2 >= 5 ? '⛅' : '🌩️',
+      color: inMyPocket2 >= 20 ? GREEN : inMyPocket2 >= 5 ? AMBER : RED,
+    },
+    {
+      label: 'This Week',
+      value: daysToNextPay <= 7 ? `Payday in ${daysToNextPay}d` : (surplus >= 0 ? 'On track' : 'Watch spend'),
+      sub: daysToNextPay <= 7 ? 'payday soon' : 'weekly outlook',
+      emoji: daysToNextPay <= 7 ? '💰' : (surplus >= 0 ? '☀️' : '⛅'),
+      color: daysToNextPay <= 7 ? GREEN : (surplus >= 0 ? GREEN : AMBER),
+    },
+    {
+      label: 'This Month',
+      value: surplus >= 0 ? `+£${surplus.toLocaleString('en-GB')}` : `−£${Math.abs(surplus).toLocaleString('en-GB')}`,
+      sub: surplus >= 0 ? 'projected surplus' : 'projected deficit',
+      emoji: surplus >= 200 ? '☀️' : surplus >= 0 ? '⛅' : '🌩️',
+      color: surplus >= 200 ? GREEN : surplus >= 0 ? AMBER : RED,
+    },
+    {
+      label: 'This Year',
+      value: surplus >= 0 ? `+£${(surplus * 12).toLocaleString('en-GB')}` : `−£${(Math.abs(surplus) * 12).toLocaleString('en-GB')}`,
+      sub: 'annual trajectory',
+      emoji: surplus * 12 >= 2000 ? '☀️' : surplus >= 0 ? '⛅' : '🌩️',
+      color: surplus * 12 >= 2000 ? GREEN : surplus >= 0 ? AMBER : RED,
+    },
+  ];
 
   // ── Chat overlay state ───────────────────────────────────────────
   const cfg          = ORB_CFG[orbState] || ORB_CFG.idle;
@@ -597,19 +696,75 @@ Step 5: Save for specific goals using named pots
           aria-label="Settings"
         >⚙</button>
 
+        {/* Monthly / Annual toggle */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 2 }}>
+          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.06)', borderRadius: 20, padding: 3, gap: 2 }}>
+            {['monthly', 'annual'].map(m => (
+              <button key={m} onClick={() => setViewMode(m)} style={{
+                padding: '5px 16px', borderRadius: 16, border: 'none', cursor: 'pointer',
+                background: viewMode === m ? PURPLE : 'transparent',
+                color: viewMode === m ? '#fff' : 'rgba(255,255,255,0.38)',
+                fontSize: 12, fontWeight: 600, letterSpacing: '0.3px',
+                transition: 'all 0.18s', textTransform: 'capitalize',
+              }}>{m}</button>
+            ))}
+          </div>
+        </div>
+
         {/* Top section */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
           <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.36)', letterSpacing: '0.2px' }}>{getGreeting()}</div>
           <SmallOrb alert={spendAlert} />
-          <div style={{ fontSize: 54, fontWeight: 800, color: numColor, letterSpacing: '-2px', lineHeight: 1, textAlign: 'center' }}>{displayNum}</div>
-          <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.36)', letterSpacing: '0.2px' }}>{displaySub}</div>
+          {freedomDaysTarget > 0 ? (
+            <>
+              <div style={{ fontSize: 68, fontWeight: 800, color: GREEN, letterSpacing: '-4px', lineHeight: 1, textAlign: 'center' }}>{freedomDays}</div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.32)', letterSpacing: '0.3px' }}>days of freedom</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', textAlign: 'center', maxWidth: 220 }}>
+                You could live {freedomDaysTarget} day{freedomDaysTarget !== 1 ? 's' : ''} without income
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ fontSize: 54, fontWeight: 800, color: numColor, letterSpacing: '-2px', lineHeight: 1, textAlign: 'center' }}>{displayNum}</div>
+              <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.36)', letterSpacing: '0.2px' }}>{displaySub}</div>
+            </>
+          )}
+
+          {/* Forecast strip */}
+          <div style={{
+            width: '100%', overflowX: 'auto', display: 'flex', gap: 8,
+            scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch',
+            paddingBottom: 2, marginTop: 8,
+            scrollbarWidth: 'none', msOverflowStyle: 'none',
+          }}>
+            {forecastCards.map((fc, i) => (
+              <div key={i} style={{
+                minWidth: 108, flexShrink: 0, scrollSnapAlign: 'start',
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.07)',
+                borderRadius: 14, padding: '10px 8px 8px',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+              }}>
+                <div style={{ fontSize: 18, lineHeight: 1 }}>{fc.emoji}</div>
+                <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.6px', textTransform: 'uppercase' }}>{fc.label}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: fc.color, letterSpacing: '-0.3px', textAlign: 'center', lineHeight: 1.2 }}>{fc.value}</div>
+                <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.24)', textAlign: 'center' }}>{fc.sub}</div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* 3 metric pills */}
         <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
-          <MetricPill label="Health"  value={`${healthNum}`}                     color={healthColor} />
-          <MetricPill label="Savings" value={`${savingsRate}%`}                  color={savColor}    />
-          <MetricPill label="Pace"    value={onTrack ? 'On Track' : 'Off Track'} color={onTrack ? GREEN : RED} />
+          <MetricPill
+            label="Vela Score"
+            value={`${velaScore}`}
+            color={velaScoreColor}
+            badge={scoreDelta !== 0 ? `${scoreDelta > 0 ? '↑' : '↓'}${Math.abs(scoreDelta)}` : null}
+            badgeColor={scoreDelta >= 0 ? GREEN : RED}
+          />
+          <MetricPill label="Savings" value={`${savingsRate}%`} color={savColor} />
+          <MetricPill label="Pace" value={onTrack ? 'On Track' : 'Off Track'} color={onTrack ? GREEN : RED} />
         </div>
 
         {/* Talk to Vela button */}
@@ -854,6 +1009,15 @@ Step 5: Save for specific goals using named pots
               max="31"
               style={{ width: '100%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.11)', borderRadius: 12, padding: '11px 14px', color: '#fff', fontSize: 16, outline: 'none', fontFamily: 'inherit', marginBottom: 20, boxSizing: 'border-box' }}
             />
+            <Label>Savings balance (£)</Label>
+            <input
+              type="number"
+              value={settingSavings}
+              onChange={e => setSettingSavings(e.target.value)}
+              placeholder="e.g. 2500"
+              min="0"
+              style={{ width: '100%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.11)', borderRadius: 12, padding: '11px 14px', color: '#fff', fontSize: 16, outline: 'none', fontFamily: 'inherit', marginBottom: 20, boxSizing: 'border-box' }}
+            />
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 26 }}>
               <div>
                 <div style={{ fontSize: 14, color: '#fff', marginBottom: 2 }}>Voice responses</div>
@@ -1069,7 +1233,7 @@ function SmallOrb({ alert }) {
   );
 }
 
-function MetricPill({ label, value, color }) {
+function MetricPill({ label, value, color, badge, badgeColor }) {
   const isLong = value.length > 5;
   return (
     <div style={{
@@ -1077,11 +1241,16 @@ function MetricPill({ label, value, color }) {
       gap: 6, padding: '14px 6px',
       background: 'rgba(255,255,255,0.04)',
       border: '1px solid rgba(255,255,255,0.06)',
-      borderRadius: 16,
+      borderRadius: 16, position: 'relative',
     }}>
       <div style={{ width: 6, height: 6, borderRadius: '50%', background: color, flexShrink: 0 }} />
       <div style={{ fontSize: isLong ? 13 : 20, fontWeight: 700, color, lineHeight: 1, textAlign: 'center' }}>{value}</div>
       <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.6px', textTransform: 'uppercase' }}>{label}</div>
+      {badge && (
+        <div style={{ position: 'absolute', top: 6, right: 7, fontSize: 9, fontWeight: 700, color: badgeColor, letterSpacing: '0.2px' }}>
+          {badge}
+        </div>
+      )}
     </div>
   );
 }
