@@ -122,7 +122,8 @@ export default function VelaCore({ onReset }) {
   function speak(text) {
     if (!voiceOnRef.current || !window.speechSynthesis) return;
     window.speechSynthesis.cancel();
-    const sentences = splitSentences(text);
+    const clean = text.replace(/[\u{1F000}-\u{1FFFF}|\u{2600}-\u{27FF}|\u{2300}-\u{23FF}|\u{2B00}-\u{2BFF}|\u{1F300}-\u{1F9FF}|\u{FE00}-\u{FE0F}]/gu, '').trim();
+    const sentences = splitSentences(clean);
     const fire = () => {
       const voices   = window.speechSynthesis.getVoices();
       const PRIORITY = ['Samantha', 'Karen', 'Moira', 'Victoria', 'Tessa'];
