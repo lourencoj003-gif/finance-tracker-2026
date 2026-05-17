@@ -3,6 +3,9 @@ import { getData, getInsights, clearAll } from '../storage';
 
 const PURPLE = '#7F77DD';
 const BLUE   = '#378ADD';
+const GREEN  = '#4eca8b';
+const AMBER  = '#f5a623';
+const RED    = '#ff6b6b';
 const BG     = '#0a0a0f';
 
 const KEYFRAMES = `
@@ -74,19 +77,27 @@ function splitSentences(text) {
   return (text.match(/[^.!?]+[.!?]*/g) || [text]).map(s => s.trim()).filter(Boolean);
 }
 
+function getGreeting() {
+  const h    = new Date().getHours();
+  const name = localStorage.getItem('vela_name') || '';
+  const base = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  return name ? `${base}, ${name}` : base;
+}
+
 export default function VelaCore({ onReset }) {
   const data     = getData() || {};
   const insights = getInsights() || [];
   const { income = 0, expenses = 0, debt = 0, goal = '' } = data;
 
-  const [orbState, _setOrbState]        = useState('idle');
-  const [cards, setCards]               = useState([]);
-  const [input, setInput]               = useState('');
-  const [isListening, setIsListening]   = useState(false);
-  const [transcript, setTranscript]     = useState('');
-  const [showSettings, setShowSettings] = useState(false);
-  const [voiceOn, setVoiceOn]           = useState(true);
-  const [settingName, setSettingName]   = useState(() => localStorage.getItem('vela_name') || '');
+  const [chatOpen, setChatOpen]           = useState(false);
+  const [orbState, _setOrbState]          = useState('idle');
+  const [cards, setCards]                 = useState([]);
+  const [input, setInput]                 = useState('');
+  const [isListening, setIsListening]     = useState(false);
+  const [transcript, setTranscript]       = useState('');
+  const [showSettings, setShowSettings]   = useState(false);
+  const [voiceOn, setVoiceOn]             = useState(true);
+  const [settingName, setSettingName]     = useState(() => localStorage.getItem('vela_name') || '');
 
   const orbRef         = useRef('idle');
   const voiceOnRef     = useRef(true);
@@ -110,14 +121,15 @@ export default function VelaCore({ onReset }) {
     };
   }, []);
 
+  // Greeting fires the first time chat is opened
   useEffect(() => {
-    if (greetedRef.current) return;
+    if (!chatOpen || greetedRef.current) return;
     greetedRef.current = true;
     const name = localStorage.getItem('vela_name') || '';
     const msg  = `Hi${name ? `, ${name}` : ''}. I'm Vela, your personal financial navigator. How can I help you today?`;
-    const tid  = setTimeout(() => { pushCard('vela', msg); speak(msg); }, 900);
+    const tid  = setTimeout(() => { pushCard('vela', msg); speak(msg); }, 700);
     return () => clearTimeout(tid);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [chatOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function speak(text) {
     if (!voiceOnRef.current || !window.speechSynthesis) return;
@@ -244,6 +256,23 @@ RULES:
     setShowSettings(false);
   }
 
+  // ── Dashboard calculations ───────────────────────────────────────
+  const surplus     = income - expenses;
+  const netAnnual   = surplus * 12;
+  const isPositive  = surplus >= 0;
+  const displayNum  = isPositive
+    ? `£${Math.abs(netAnnual).toLocaleString('en-GB')}`
+    : `£${Math.abs(surplus).toLocaleString('en-GB')}`;
+  const displaySub  = isPositive ? 'Year surplus' : 'Monthly shortfall';
+  const numColor    = isPositive ? GREEN : RED;
+
+  const savingsRate  = income > 0 ? Math.round((surplus / income) * 100) : 0;
+  const healthNum    = Math.max(0, Math.min(100, Math.round(((income > 0 ? surplus / income : 0) + 0.5) * 100)));
+  const onTrack      = surplus >= 0;
+  const healthColor  = healthNum >= 70 ? GREEN : healthNum >= 50 ? AMBER : RED;
+  const savColor     = savingsRate > 10 ? GREEN : savingsRate >= 0 ? AMBER : RED;
+
+  // ── Chat overlay state ───────────────────────────────────────────
   const cfg          = ORB_CFG[orbState] || ORB_CFG.idle;
   const visibleCards = cards.slice(-3);
   const opacityMap   = { 0: [1], 1: [1], 2: [0.55, 1], 3: [0.32, 0.65, 1] };
@@ -252,112 +281,185 @@ RULES:
   return (
     <div style={{ position: 'relative', height: '100vh', background: BG, overflow: 'hidden', fontFamily: 'inherit' }}>
 
-      {/* Gear */}
-      <button
-        onClick={() => setShowSettings(true)}
-        style={{ position: 'absolute', top: 20, right: 20, zIndex: 10, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.28)', fontSize: 20, padding: 8, lineHeight: 1 }}
-        aria-label="Settings"
-      >⚙</button>
-
-      {/* ── Orb section ── */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '52%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 18 }}>
-
-        {/* Orb + ripple rings — tappable */}
-        <div
-          onClick={() => isListening ? stopListening() : startListening()}
-          style={{ position: 'relative', width: 140, height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-        >
-          {orbState === 'speaking' && [0, 1, 2].map(i => (
-            <div key={i} style={{
-              position: 'absolute', width: '100%', height: '100%', borderRadius: '50%',
-              border: '1.5px solid rgba(127,119,221,0.48)',
-              animation: `ripple 1.9s ease-out ${i * 0.63}s infinite`,
-              pointerEvents: 'none',
-            }} />
-          ))}
-          <div style={{
-            width: 140, height: 140, borderRadius: '50%',
-            background: cfg.bg,
-            boxShadow: cfg.glow,
-            animation: cfg.anim,
-            transition: 'background 0.7s ease, box-shadow 0.7s ease',
-          }} />
-        </div>
-
-        {/* Status */}
-        <div style={{ minHeight: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {isListening && transcript ? (
-            <div style={{ color: 'rgba(255,255,255,0.72)', fontSize: 14, maxWidth: 260, textAlign: 'center', fontStyle: 'italic', padding: '0 20px' }}>
-              "{transcript}"
-            </div>
-          ) : isListening ? (
-            <WaveBars color={BLUE} />
-          ) : orbState === 'speaking' ? (
-            <WaveBars color={PURPLE} />
-          ) : orbState === 'thinking' ? (
-            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, letterSpacing: '0.5px', animation: 'blink 1.6s ease-in-out infinite' }}>
-              Thinking…
-            </div>
-          ) : (
-            <div style={{ color: 'rgba(255,255,255,0.18)', fontSize: 13, letterSpacing: '0.4px' }}>
-              Tap orb or mic to speak
-            </div>
-          )}
-        </div>
-
-        {/* Mic button — below status */}
-        <MicBtn
-          listening={isListening}
-          supported={speechSupported}
-          onPress={isListening ? stopListening : startListening}
-        />
-      </div>
-
-      {/* ── Cards area — max 3 visible, stacked at bottom, opacity fade ── */}
+      {/* ══════════════════════════════════════════
+          DASHBOARD
+      ══════════════════════════════════════════ */}
       <div style={{
-        position: 'absolute', top: '52%', bottom: 72, left: 0, right: 0,
-        display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
-        padding: '0 16px 8px',
-        overflowY: 'hidden',
+        position: 'absolute', inset: 0,
+        display: 'flex', flexDirection: 'column',
+        paddingTop: 'max(env(safe-area-inset-top), 24px)',
+        paddingBottom: 'max(env(safe-area-inset-bottom), 28px)',
+        paddingLeft: 20, paddingRight: 20,
+        boxSizing: 'border-box',
       }}>
-        {visibleCards.map((c, idx) => (
-          <GlassCard key={c.id} card={c} opacity={cardOpacities[idx] ?? 1} />
-        ))}
-      </div>
 
-      {/* ── Bottom input bar ── */}
-      <div style={{
-        position: 'absolute', bottom: 0, left: 0, right: 0, height: 72,
-        display: 'flex', alignItems: 'center', gap: 10,
-        padding: '0 16px', paddingBottom: 'max(0px, env(safe-area-inset-bottom))',
-        background: `linear-gradient(to top, ${BG} 60%, transparent)`,
-        borderTop: '1px solid rgba(255,255,255,0.04)',
-      }}>
-        <input
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && input.trim() && handleMessage(input)}
-          placeholder="Ask Vela…"
-          style={{
-            flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: 22, padding: '10px 16px', color: '#fff', fontSize: 16,
-            outline: 'none', fontFamily: 'inherit',
-          }}
-        />
+        {/* Gear — top right */}
         <button
-          onClick={() => input.trim() && handleMessage(input)}
+          onClick={() => setShowSettings(true)}
+          style={{ position: 'absolute', top: 'max(env(safe-area-inset-top), 20px)', right: 20, zIndex: 5, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.26)', fontSize: 20, padding: 8, lineHeight: 1 }}
+          aria-label="Settings"
+        >⚙</button>
+
+        {/* ── Top section ── */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
+
+          {/* Greeting */}
+          <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.36)', letterSpacing: '0.2px' }}>
+            {getGreeting()}
+          </div>
+
+          {/* 60px pulsing orb */}
+          <SmallOrb />
+
+          {/* Net annual / monthly position */}
+          <div style={{ fontSize: 54, fontWeight: 800, color: numColor, letterSpacing: '-2px', lineHeight: 1, textAlign: 'center' }}>
+            {displayNum}
+          </div>
+
+          {/* Subtitle */}
+          <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.36)', letterSpacing: '0.2px' }}>
+            {displaySub}
+          </div>
+        </div>
+
+        {/* ── 3 metric pills ── */}
+        <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+          <MetricPill label="Health"  value={`${healthNum}`}              color={healthColor} />
+          <MetricPill label="Savings" value={`${savingsRate}%`}           color={savColor}    />
+          <MetricPill label="Pace"    value={onTrack ? 'On Track' : 'Off Track'} color={onTrack ? GREEN : RED} />
+        </div>
+
+        {/* ── Talk to Vela button ── */}
+        <button
+          onClick={() => setChatOpen(true)}
           style={{
-            width: 42, height: 42, borderRadius: '50%', border: 'none', flexShrink: 0,
-            background: input.trim() ? 'rgba(127,119,221,0.22)' : 'rgba(255,255,255,0.05)',
-            color: input.trim() ? PURPLE : 'rgba(255,255,255,0.18)',
-            fontSize: 22, cursor: input.trim() ? 'pointer' : 'default',
-            transition: 'all 0.15s',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: '100%', height: 58, background: PURPLE, border: 'none', borderRadius: 18,
+            color: '#fff', fontSize: 17, fontWeight: 600, cursor: 'pointer',
+            letterSpacing: '0.2px', boxShadow: '0 0 24px 4px rgba(127,119,221,0.22)',
           }}
-        >›</button>
+        >
+          Talk to Vela
+        </button>
       </div>
 
-      {/* ── Settings overlay ── */}
+      {/* ══════════════════════════════════════════
+          CHAT OVERLAY — slides up from bottom
+      ══════════════════════════════════════════ */}
+      <div style={{
+        position: 'absolute', inset: 0, zIndex: 20, background: BG,
+        transform: chatOpen ? 'translateY(0)' : 'translateY(100%)',
+        transition: 'transform 0.42s cubic-bezier(0.32, 0.72, 0, 1)',
+      }}>
+
+        {/* Back arrow */}
+        <button
+          onClick={() => setChatOpen(false)}
+          style={{ position: 'absolute', top: 20, left: 18, zIndex: 30, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.36)', fontSize: 22, padding: 8, lineHeight: 1 }}
+          aria-label="Close chat"
+        >↓</button>
+
+        {/* Gear */}
+        <button
+          onClick={() => setShowSettings(true)}
+          style={{ position: 'absolute', top: 20, right: 18, zIndex: 30, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.26)', fontSize: 20, padding: 8, lineHeight: 1 }}
+          aria-label="Settings"
+        >⚙</button>
+
+        {/* Orb section */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '52%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 18 }}>
+
+          <div
+            onClick={() => isListening ? stopListening() : startListening()}
+            style={{ position: 'relative', width: 140, height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+          >
+            {orbState === 'speaking' && [0, 1, 2].map(i => (
+              <div key={i} style={{
+                position: 'absolute', width: '100%', height: '100%', borderRadius: '50%',
+                border: '1.5px solid rgba(127,119,221,0.48)',
+                animation: `ripple 1.9s ease-out ${i * 0.63}s infinite`,
+                pointerEvents: 'none',
+              }} />
+            ))}
+            <div style={{
+              width: 140, height: 140, borderRadius: '50%',
+              background: cfg.bg, boxShadow: cfg.glow, animation: cfg.anim,
+              transition: 'background 0.7s ease, box-shadow 0.7s ease',
+            }} />
+          </div>
+
+          <div style={{ minHeight: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {isListening && transcript ? (
+              <div style={{ color: 'rgba(255,255,255,0.72)', fontSize: 14, maxWidth: 260, textAlign: 'center', fontStyle: 'italic', padding: '0 20px' }}>
+                "{transcript}"
+              </div>
+            ) : isListening ? (
+              <WaveBars color={BLUE} />
+            ) : orbState === 'speaking' ? (
+              <WaveBars color={PURPLE} />
+            ) : orbState === 'thinking' ? (
+              <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, letterSpacing: '0.5px', animation: 'blink 1.6s ease-in-out infinite' }}>
+                Thinking…
+              </div>
+            ) : (
+              <div style={{ color: 'rgba(255,255,255,0.18)', fontSize: 13, letterSpacing: '0.4px' }}>
+                Tap orb or mic to speak
+              </div>
+            )}
+          </div>
+
+          <MicBtn
+            listening={isListening}
+            supported={speechSupported}
+            onPress={isListening ? stopListening : startListening}
+          />
+        </div>
+
+        {/* Cards */}
+        <div style={{
+          position: 'absolute', top: '52%', bottom: 72, left: 0, right: 0,
+          display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+          padding: '0 16px 8px', overflowY: 'hidden',
+        }}>
+          {visibleCards.map((c, idx) => (
+            <GlassCard key={c.id} card={c} opacity={cardOpacities[idx] ?? 1} />
+          ))}
+        </div>
+
+        {/* Input bar */}
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0, height: 72,
+          display: 'flex', alignItems: 'center', gap: 10,
+          padding: '0 16px', paddingBottom: 'max(0px, env(safe-area-inset-bottom))',
+          background: `linear-gradient(to top, ${BG} 60%, transparent)`,
+          borderTop: '1px solid rgba(255,255,255,0.04)',
+        }}>
+          <input
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && input.trim() && handleMessage(input)}
+            placeholder="Ask Vela…"
+            style={{
+              flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 22, padding: '10px 16px', color: '#fff', fontSize: 16,
+              outline: 'none', fontFamily: 'inherit',
+            }}
+          />
+          <button
+            onClick={() => input.trim() && handleMessage(input)}
+            style={{
+              width: 42, height: 42, borderRadius: '50%', border: 'none', flexShrink: 0,
+              background: input.trim() ? 'rgba(127,119,221,0.22)' : 'rgba(255,255,255,0.05)',
+              color: input.trim() ? PURPLE : 'rgba(255,255,255,0.18)',
+              fontSize: 22, cursor: input.trim() ? 'pointer' : 'default',
+              transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >›</button>
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════════
+          SETTINGS OVERLAY
+      ══════════════════════════════════════════ */}
       {showSettings && (
         <div
           onClick={e => e.target === e.currentTarget && setShowSettings(false)}
@@ -405,20 +507,49 @@ RULES:
   );
 }
 
+// ── Sub-components ──────────────────────────────────────────────────
+
+function SmallOrb() {
+  return (
+    <div style={{
+      width: 60, height: 60, borderRadius: '50%',
+      background: `radial-gradient(circle at 35% 35%, #b0acee, ${PURPLE} 55%, #3a369e)`,
+      boxShadow: '0 0 18px 6px rgba(127,119,221,0.32)',
+      animation: 'orbIdle 3s ease-in-out infinite',
+    }} />
+  );
+}
+
+function MetricPill({ label, value, color }) {
+  const isLong = value.length > 5;
+  return (
+    <div style={{
+      flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      gap: 6, padding: '14px 6px',
+      background: 'rgba(255,255,255,0.04)',
+      border: '1px solid rgba(255,255,255,0.06)',
+      borderRadius: 16,
+    }}>
+      <div style={{ width: 6, height: 6, borderRadius: '50%', background: color, flexShrink: 0 }} />
+      <div style={{ fontSize: isLong ? 13 : 20, fontWeight: 700, color, lineHeight: 1, textAlign: 'center' }}>
+        {value}
+      </div>
+      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.6px', textTransform: 'uppercase' }}>
+        {label}
+      </div>
+    </div>
+  );
+}
+
 function GlassCard({ card, opacity = 1 }) {
   const isUser = card.type === 'user';
   return (
     <div style={{
       background: isUser ? 'rgba(127,119,221,0.08)' : 'rgba(255,255,255,0.05)',
       border: `1px solid ${isUser ? 'rgba(127,119,221,0.26)' : 'rgba(255,255,255,0.1)'}`,
-      borderRadius: 20,
-      padding: '12px 16px',
-      marginBottom: 10,
-      backdropFilter: 'blur(20px)',
-      WebkitBackdropFilter: 'blur(20px)',
-      animation: 'cardIn 0.35s ease-out',
-      opacity,
-      transition: 'opacity 0.5s ease',
+      borderRadius: 20, padding: '12px 16px', marginBottom: 10,
+      backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+      animation: 'cardIn 0.35s ease-out', opacity, transition: 'opacity 0.5s ease',
     }}>
       <div style={{ fontSize: 10, color: isUser ? 'rgba(127,119,221,0.65)' : 'rgba(255,255,255,0.28)', marginBottom: 5, letterSpacing: '0.8px', textTransform: 'uppercase', fontWeight: 600 }}>
         {isUser ? 'You' : 'Vela'}
@@ -458,8 +589,7 @@ function MicBtn({ listening, supported, onPress }) {
         fontSize: 20, cursor: supported ? 'pointer' : 'not-allowed',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         animation: listening ? 'micPulse 1s ease-in-out infinite' : 'none',
-        transition: 'background 0.2s',
-        opacity: supported ? 1 : 0.4,
+        transition: 'background 0.2s', opacity: supported ? 1 : 0.4,
       }}
     >🎤</button>
   );
