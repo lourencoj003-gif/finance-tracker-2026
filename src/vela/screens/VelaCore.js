@@ -48,6 +48,10 @@ const KEYFRAMES = `
     0%,100% { box-shadow: 0 0 0 0 rgba(55,138,221,0.4); }
     50%     { box-shadow: 0 0 0 12px rgba(55,138,221,0); }
   }
+  @keyframes swipeHint {
+    0%,100% { opacity: 0.55; transform: translateY(0); }
+    50%     { opacity: 1;    transform: translateY(-4px); }
+  }
 `;
 
 const ORB_CFG = {
@@ -73,6 +77,8 @@ const ORB_CFG = {
   },
 };
 
+const SLIDE = 'transform 0.42s cubic-bezier(0.32, 0.72, 0, 1)';
+
 function splitSentences(text) {
   return (text.match(/[^.!?]+[.!?]*/g) || [text]).map(s => s.trim()).filter(Boolean);
 }
@@ -90,6 +96,7 @@ export default function VelaCore({ onReset }) {
   const { income = 0, expenses = 0, debt = 0, goal = '' } = data;
 
   const [chatOpen, setChatOpen]           = useState(false);
+  const [detailOpen, setDetailOpen]       = useState(false);
   const [orbState, _setOrbState]          = useState('idle');
   const [cards, setCards]                 = useState([]);
   const [input, setInput]                 = useState('');
@@ -103,6 +110,8 @@ export default function VelaCore({ onReset }) {
   const voiceOnRef     = useRef(true);
   const recognitionRef = useRef(null);
   const greetedRef     = useRef(false);
+  const touchStartY    = useRef(null);
+  const touchStartX    = useRef(null);
 
   function setOrbState(s) { orbRef.current = s; _setOrbState(s); }
 
@@ -121,7 +130,6 @@ export default function VelaCore({ onReset }) {
     };
   }, []);
 
-  // Greeting fires the first time chat is opened
   useEffect(() => {
     if (!chatOpen || greetedRef.current) return;
     greetedRef.current = true;
@@ -131,6 +139,24 @@ export default function VelaCore({ onReset }) {
     return () => clearTimeout(tid);
   }, [chatOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Swipe handlers ───────────────────────────────────────────────
+  function onTouchStart(e) {
+    touchStartY.current = e.touches[0].clientY;
+    touchStartX.current = e.touches[0].clientX;
+  }
+
+  function onSwipeEnd(e, isDetail) {
+    if (touchStartY.current === null) return;
+    const dy = touchStartY.current - e.changedTouches[0].clientY;
+    const dx = Math.abs(touchStartX.current - e.changedTouches[0].clientX);
+    touchStartY.current = null;
+    touchStartX.current = null;
+    if (dx > Math.abs(dy) * 0.9) return; // horizontal swipe — ignore
+    if (!isDetail && dy > 55 && !chatOpen) setDetailOpen(true);
+    if (isDetail  && dy < -55)             setDetailOpen(false);
+  }
+
+  // ── Speech synthesis ─────────────────────────────────────────────
   function speak(text) {
     if (!voiceOnRef.current || !window.speechSynthesis) return;
     window.speechSynthesis.cancel();
@@ -163,6 +189,7 @@ export default function VelaCore({ onReset }) {
       : (window.speechSynthesis.onvoiceschanged = () => { fire(); window.speechSynthesis.onvoiceschanged = null; });
   }
 
+  // ── Speech recognition ───────────────────────────────────────────
   const speechSupported = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 
   function startListening() {
@@ -196,6 +223,7 @@ export default function VelaCore({ onReset }) {
     setTranscript('');
   }
 
+  // ── Chat message handler ─────────────────────────────────────────
   async function handleMessage(text) {
     const clean = text.trim();
     if (!clean) return;
@@ -257,15 +285,14 @@ RULES:
   }
 
   // ── Dashboard calculations ───────────────────────────────────────
-  const surplus     = income - expenses;
-  const netAnnual   = surplus * 12;
-  const isPositive  = surplus >= 0;
-  const displayNum  = isPositive
+  const surplus      = income - expenses;
+  const netAnnual    = surplus * 12;
+  const isPositive   = surplus >= 0;
+  const displayNum   = isPositive
     ? `£${Math.abs(netAnnual).toLocaleString('en-GB')}`
     : `£${Math.abs(surplus).toLocaleString('en-GB')}`;
-  const displaySub  = isPositive ? 'Year surplus' : 'Monthly shortfall';
-  const numColor    = isPositive ? GREEN : RED;
-
+  const displaySub   = isPositive ? 'Year surplus' : 'Monthly shortfall';
+  const numColor     = isPositive ? GREEN : RED;
   const savingsRate  = income > 0 ? Math.round((surplus / income) * 100) : 0;
   const healthNum    = Math.max(0, Math.min(100, Math.round(((income > 0 ? surplus / income : 0) + 0.5) * 100)));
   const onTrack      = surplus >= 0;
@@ -282,54 +309,45 @@ RULES:
     <div style={{ position: 'relative', height: '100vh', background: BG, overflow: 'hidden', fontFamily: 'inherit' }}>
 
       {/* ══════════════════════════════════════════
-          DASHBOARD
+          DASHBOARD — swipe up to reveal detail
       ══════════════════════════════════════════ */}
-      <div style={{
-        position: 'absolute', inset: 0,
-        display: 'flex', flexDirection: 'column',
-        paddingTop: 'max(env(safe-area-inset-top), 24px)',
-        paddingBottom: 'max(env(safe-area-inset-bottom), 28px)',
-        paddingLeft: 20, paddingRight: 20,
-        boxSizing: 'border-box',
-      }}>
-
-        {/* Gear — top right */}
+      <div
+        onTouchStart={onTouchStart}
+        onTouchEnd={e => onSwipeEnd(e, false)}
+        style={{
+          position: 'absolute', inset: 0,
+          display: 'flex', flexDirection: 'column',
+          paddingTop: 'max(env(safe-area-inset-top), 24px)',
+          paddingBottom: 'max(env(safe-area-inset-bottom), 16px)',
+          paddingLeft: 20, paddingRight: 20,
+          boxSizing: 'border-box',
+          transform: detailOpen ? 'translateY(-100%)' : 'translateY(0)',
+          transition: SLIDE,
+        }}
+      >
+        {/* Gear */}
         <button
           onClick={() => setShowSettings(true)}
           style={{ position: 'absolute', top: 'max(env(safe-area-inset-top), 20px)', right: 20, zIndex: 5, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.26)', fontSize: 20, padding: 8, lineHeight: 1 }}
           aria-label="Settings"
         >⚙</button>
 
-        {/* ── Top section ── */}
+        {/* Top section */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
-
-          {/* Greeting */}
-          <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.36)', letterSpacing: '0.2px' }}>
-            {getGreeting()}
-          </div>
-
-          {/* 60px pulsing orb */}
+          <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.36)', letterSpacing: '0.2px' }}>{getGreeting()}</div>
           <SmallOrb />
-
-          {/* Net annual / monthly position */}
-          <div style={{ fontSize: 54, fontWeight: 800, color: numColor, letterSpacing: '-2px', lineHeight: 1, textAlign: 'center' }}>
-            {displayNum}
-          </div>
-
-          {/* Subtitle */}
-          <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.36)', letterSpacing: '0.2px' }}>
-            {displaySub}
-          </div>
+          <div style={{ fontSize: 54, fontWeight: 800, color: numColor, letterSpacing: '-2px', lineHeight: 1, textAlign: 'center' }}>{displayNum}</div>
+          <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.36)', letterSpacing: '0.2px' }}>{displaySub}</div>
         </div>
 
-        {/* ── 3 metric pills ── */}
+        {/* 3 metric pills */}
         <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
-          <MetricPill label="Health"  value={`${healthNum}`}              color={healthColor} />
-          <MetricPill label="Savings" value={`${savingsRate}%`}           color={savColor}    />
+          <MetricPill label="Health"  value={`${healthNum}`}                     color={healthColor} />
+          <MetricPill label="Savings" value={`${savingsRate}%`}                  color={savColor}    />
           <MetricPill label="Pace"    value={onTrack ? 'On Track' : 'Off Track'} color={onTrack ? GREEN : RED} />
         </div>
 
-        {/* ── Talk to Vela button ── */}
+        {/* Talk to Vela button */}
         <button
           onClick={() => setChatOpen(true)}
           style={{
@@ -337,9 +355,34 @@ RULES:
             color: '#fff', fontSize: 17, fontWeight: 600, cursor: 'pointer',
             letterSpacing: '0.2px', boxShadow: '0 0 24px 4px rgba(127,119,221,0.22)',
           }}
-        >
-          Talk to Vela
-        </button>
+        >Talk to Vela</button>
+
+        {/* Swipe-up hint */}
+        <div style={{ textAlign: 'center', marginTop: 10, animation: 'swipeHint 2.6s ease-in-out infinite' }}>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.22)', letterSpacing: '0.5px' }}>↑  details</div>
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════════
+          DETAIL VIEW — slides up, swipe down to dismiss
+      ══════════════════════════════════════════ */}
+      <div
+        onTouchStart={onTouchStart}
+        onTouchEnd={e => onSwipeEnd(e, true)}
+        style={{
+          position: 'absolute', inset: 0, zIndex: 10, background: BG,
+          transform: detailOpen ? 'translateY(0)' : 'translateY(100%)',
+          transition: SLIDE,
+        }}
+      >
+        <DetailView
+          income={income}
+          expenses={expenses}
+          debt={debt}
+          goal={goal}
+          insights={insights}
+          surplus={surplus}
+        />
       </div>
 
       {/* ══════════════════════════════════════════
@@ -348,17 +391,15 @@ RULES:
       <div style={{
         position: 'absolute', inset: 0, zIndex: 20, background: BG,
         transform: chatOpen ? 'translateY(0)' : 'translateY(100%)',
-        transition: 'transform 0.42s cubic-bezier(0.32, 0.72, 0, 1)',
+        transition: SLIDE,
       }}>
 
-        {/* Back arrow */}
         <button
           onClick={() => setChatOpen(false)}
           style={{ position: 'absolute', top: 20, left: 18, zIndex: 30, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.36)', fontSize: 22, padding: 8, lineHeight: 1 }}
           aria-label="Close chat"
         >↓</button>
 
-        {/* Gear */}
         <button
           onClick={() => setShowSettings(true)}
           style={{ position: 'absolute', top: 20, right: 18, zIndex: 30, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.26)', fontSize: 20, padding: 8, lineHeight: 1 }}
@@ -367,7 +408,6 @@ RULES:
 
         {/* Orb section */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '52%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 18 }}>
-
           <div
             onClick={() => isListening ? stopListening() : startListening()}
             style={{ position: 'relative', width: 140, height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
@@ -472,7 +512,6 @@ RULES:
             animation: 'cardIn 0.28s ease-out',
           }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 22 }}>Settings</div>
-
             <Label>Your name</Label>
             <input
               value={settingName}
@@ -480,7 +519,6 @@ RULES:
               placeholder="So Vela can address you"
               style={{ width: '100%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.11)', borderRadius: 12, padding: '11px 14px', color: '#fff', fontSize: 16, outline: 'none', fontFamily: 'inherit', marginBottom: 20, boxSizing: 'border-box' }}
             />
-
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 26 }}>
               <div>
                 <div style={{ fontSize: 14, color: '#fff', marginBottom: 2 }}>Voice responses</div>
@@ -488,7 +526,6 @@ RULES:
               </div>
               <Toggle on={voiceOn} onToggle={() => setVoiceOn(v => !v)} />
             </div>
-
             <SettingsBtn onClick={saveSettings} color={PURPLE} text="Save" />
             <SettingsBtn
               onClick={() => { clearAll(); onReset(); }}
@@ -507,7 +544,135 @@ RULES:
   );
 }
 
-// ── Sub-components ──────────────────────────────────────────────────
+// ── Detail View ─────────────────────────────────────────────────────
+
+function DetailView({ income, expenses, debt, goal, insights, surplus }) {
+  const max = Math.max(income, expenses, 1);
+
+  let goalMonths = null;
+  if (goal && surplus > 0) {
+    const m = goal.match(/[\d,]+/);
+    if (m) {
+      const amt = parseInt(m[0].replace(/,/g, ''), 10);
+      if (amt > 0) goalMonths = Math.ceil(amt / surplus);
+    }
+  }
+
+  const annualSurplus = surplus * 12;
+
+  return (
+    <div style={{
+      height: '100%', display: 'flex', flexDirection: 'column',
+      paddingTop: 'max(env(safe-area-inset-top), 16px)',
+      paddingBottom: 'max(env(safe-area-inset-bottom), 20px)',
+      paddingLeft: 24, paddingRight: 24,
+      boxSizing: 'border-box', overflow: 'hidden',
+    }}>
+
+      {/* Drag handle */}
+      <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 8, marginBottom: 20 }}>
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.18)' }} />
+      </div>
+
+      {/* Section: Income vs Expenses */}
+      <DetailLabel>Income vs Expenses</DetailLabel>
+      <BarRow label="Income"   amount={income}   pct={Math.round((income   / max) * 100)} color={GREEN} />
+      <BarRow label="Expenses" amount={expenses} pct={Math.round((expenses / max) * 100)} color={AMBER} />
+
+      <HSep />
+
+      {/* Section: Key Figures */}
+      <DetailLabel>Monthly</DetailLabel>
+      <NumberRow
+        label="Surplus"
+        value={surplus >= 0 ? `+£${surplus.toLocaleString('en-GB')}` : `−£${Math.abs(surplus).toLocaleString('en-GB')}`}
+        color={surplus >= 0 ? GREEN : RED}
+      />
+      <NumberRow
+        label="Annual trajectory"
+        value={annualSurplus >= 0 ? `+£${Math.abs(annualSurplus).toLocaleString('en-GB')}` : `−£${Math.abs(annualSurplus).toLocaleString('en-GB')}`}
+        color={annualSurplus >= 0 ? GREEN : RED}
+      />
+      <NumberRow
+        label="Total debt"
+        value={debt > 0 ? `£${debt.toLocaleString('en-GB')}` : 'None'}
+        color={debt > 0 ? AMBER : GREEN}
+      />
+
+      {/* Section: Goal */}
+      {goal ? (
+        <>
+          <HSep />
+          <DetailLabel>Goal</DetailLabel>
+          <div style={{ fontSize: 14, color: '#fff', lineHeight: 1.45, marginBottom: 5 }}>{goal}</div>
+          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.42)' }}>
+            {goalMonths
+              ? `~${goalMonths} month${goalMonths !== 1 ? 's' : ''} at current rate`
+              : surplus <= 0 ? 'Resolve monthly shortfall first' : 'Add a target amount to see timeline'}
+          </div>
+        </>
+      ) : null}
+
+      {/* Section: Insights */}
+      {insights.length > 0 && (
+        <>
+          <HSep />
+          <DetailLabel>Vela's Insights</DetailLabel>
+          {insights.slice(0, 3).map((ins, i) => (
+            <div key={i} style={{
+              fontSize: 12, color: 'rgba(255,255,255,0.52)', lineHeight: 1.55,
+              marginBottom: 10, paddingLeft: 10,
+              borderLeft: `2px solid rgba(127,119,221,0.35)`,
+            }}>
+              {ins}
+            </div>
+          ))}
+        </>
+      )}
+    </div>
+  );
+}
+
+function BarRow({ label, amount, pct, color }) {
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 }}>
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.42)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>{label}</div>
+        <div style={{ fontSize: 13, color: '#fff', fontWeight: 600 }}>£{amount.toLocaleString('en-GB')}</div>
+      </div>
+      <div style={{ height: 5, background: 'rgba(255,255,255,0.07)', borderRadius: 3 }}>
+        <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 3, transition: 'width 0.7s ease' }} />
+      </div>
+    </div>
+  );
+}
+
+function NumberRow({ label, value, color }) {
+  return (
+    <div style={{
+      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      paddingTop: 11, paddingBottom: 11,
+      borderBottom: '1px solid rgba(255,255,255,0.05)',
+    }}>
+      <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)' }}>{label}</div>
+      <div style={{ fontSize: 14, fontWeight: 600, color }}>{value}</div>
+    </div>
+  );
+}
+
+function HSep() {
+  return <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '18px 0 14px' }} />;
+}
+
+function DetailLabel({ children }) {
+  return (
+    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.32)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 12 }}>
+      {children}
+    </div>
+  );
+}
+
+// ── Shared sub-components ───────────────────────────────────────────
 
 function SmallOrb() {
   return (
@@ -531,12 +696,8 @@ function MetricPill({ label, value, color }) {
       borderRadius: 16,
     }}>
       <div style={{ width: 6, height: 6, borderRadius: '50%', background: color, flexShrink: 0 }} />
-      <div style={{ fontSize: isLong ? 13 : 20, fontWeight: 700, color, lineHeight: 1, textAlign: 'center' }}>
-        {value}
-      </div>
-      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.6px', textTransform: 'uppercase' }}>
-        {label}
-      </div>
+      <div style={{ fontSize: isLong ? 13 : 20, fontWeight: 700, color, lineHeight: 1, textAlign: 'center' }}>{value}</div>
+      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.6px', textTransform: 'uppercase' }}>{label}</div>
     </div>
   );
 }
@@ -554,9 +715,7 @@ function GlassCard({ card, opacity = 1 }) {
       <div style={{ fontSize: 10, color: isUser ? 'rgba(127,119,221,0.65)' : 'rgba(255,255,255,0.28)', marginBottom: 5, letterSpacing: '0.8px', textTransform: 'uppercase', fontWeight: 600 }}>
         {isUser ? 'You' : 'Vela'}
       </div>
-      <div style={{ fontSize: 14, color: '#eeeeff', lineHeight: 1.62, whiteSpace: 'pre-wrap' }}>
-        {card.text}
-      </div>
+      <div style={{ fontSize: 14, color: '#eeeeff', lineHeight: 1.62, whiteSpace: 'pre-wrap' }}>{card.text}</div>
     </div>
   );
 }
