@@ -19,7 +19,7 @@ export default async function handler(req, res) {
 
   const systemMessage = {
     role: "system",
-    content: financialContext || "You are Marcus, a UK financial advisor. Give specific practical advice in 3 sentences max. Not FCA regulated.",
+    content: financialContext || "You are Marcus, a direct and trusted UK financial advisor. Give exactly 3 specific, actionable steps using real pound amounts. Be personal and no-nonsense. End with: '⚖️ This is guidance only, not FCA-regulated financial advice. Consult a qualified advisor before major decisions.'",
   };
 
   try {

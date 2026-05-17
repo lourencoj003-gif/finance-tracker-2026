@@ -85,14 +85,46 @@ export default function AIAdvisor({ data }) {
     setLoading(true);
 
     try {
+      const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
       const inc = sectionTotal(data.income);
       const exp = sectionTotal(data.expenses);
+      const inv = sectionTotal(data.investments);
       const net = monthlyNet(data);
-      const annualIncome   = inc.reduce((a, v) => a + v, 0).toFixed(2);
-      const annualExpenses = exp.reduce((a, v) => a + v, 0).toFixed(2);
-      const annualNet      = net.reduce((a, v) => a + v, 0).toFixed(2);
 
-      const financialContext = 'You are Marcus, a UK financial advisor. Data: Annual income £' + annualIncome + ', expenses £' + annualExpenses + ', net £' + annualNet + '. Give specific practical advice in 3 sentences max. Not FCA regulated.';
+      const annualIncome   = inc.reduce((a, v) => a + v, 0);
+      const annualExpenses = exp.reduce((a, v) => a + v, 0);
+      const annualInv      = inv.reduce((a, v) => a + v, 0);
+      const annualNet      = net.reduce((a, v) => a + v, 0);
+      const savingsRate    = annualIncome > 0 ? ((annualNet + annualInv) / annualIncome) * 100 : 0;
+
+      const monthlyIncomeStr = MONTHS.map((m, i) => `${m}: £${inc[i].toFixed(2)}`).join(', ');
+      const monthlyNetStr    = MONTHS.map((m, i) => `${m}: £${net[i].toFixed(2)}`).join(', ');
+
+      const expenseStr = Object.entries(data.expenses)
+        .map(([cat, vals]) => { const t = vals.reduce((a, v) => a + (parseFloat(v) || 0), 0); return t > 0 ? `${cat}: £${t.toFixed(2)}` : null; })
+        .filter(Boolean).join(', ') || 'None recorded';
+
+      const investStr = Object.entries(data.investments)
+        .map(([cat, vals]) => { const t = vals.reduce((a, v) => a + (parseFloat(v) || 0), 0); return t > 0 ? `${cat}: £${t.toFixed(2)}` : null; })
+        .filter(Boolean).join(', ') || 'None — not investing yet';
+
+      const financialContext = `You are Marcus, a trusted financial advisor and straight-talking friend. You are direct, warm, and no-nonsense — the kind of expert mate who tells you exactly what you need to hear, not what you want to hear. You know your client's numbers cold and you use them.
+
+YOUR CLIENT'S FULL 2026 FINANCIAL PICTURE:
+• Annual income: £${annualIncome.toFixed(2)}
+• Monthly income: ${monthlyIncomeStr}
+• Annual expenses: £${annualExpenses.toFixed(2)} | Breakdown: ${expenseStr}
+• Annual investments: £${annualInv.toFixed(2)} | Breakdown: ${investStr}
+• Annual net surplus (after expenses & investments): £${annualNet.toFixed(2)}
+• Monthly net surplus: ${monthlyNetStr}
+• Savings rate (net surplus + investments ÷ income): ${savingsRate.toFixed(1)}%
+
+YOUR RULES — follow these every single response:
+1. Always give exactly 3 specific, numbered, actionable steps. No generic advice. No "consider saving more." Tell them exactly what to do.
+2. Always name specific pound amounts from the data above — never use vague percentages. Say "your £${annualExpenses.toFixed(2)} in expenses" not "your expenses".
+3. Be direct and personal. Call out what's going well, name what needs fixing, and say the concrete next step.
+4. Keep it conversational — you're a friend, not a formal report.
+5. End every response with this exact line on its own: "⚖️ This is guidance only, not FCA-regulated financial advice. Consult a qualified advisor before major decisions."`;
 
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -204,7 +236,7 @@ export default function AIAdvisor({ data }) {
               border: "1px solid #d0d8e0",
               borderRadius: 6,
               padding: "8px 10px",
-              fontSize: 13,
+              fontSize: 16,
               resize: "none",
               outline: "none",
               fontFamily: "inherit",
