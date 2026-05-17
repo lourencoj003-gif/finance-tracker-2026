@@ -13,6 +13,8 @@ const K = {
   TIP_IDX:      'vela_tip_idx',
   LAST_OPEN:    'vela_last_open',
   CEREMONY_YM:  'vela_ceremony_ym',
+  DEBTS:        'vela_debts',
+  CHALLENGE:    'vela_challenge',
 };
 
 export const getPin            = ()    => localStorage.getItem(K.PIN);
@@ -62,5 +64,10 @@ export const setLastCeremonyYM = () => {
   const n = new Date();
   localStorage.setItem(K.CEREMONY_YM, `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}`);
 };
+
+export const getDebts      = ()    => { const r = localStorage.getItem(K.DEBTS);     return r ? JSON.parse(r) : []; };
+export const saveDebts     = (d)   => localStorage.setItem(K.DEBTS, JSON.stringify(d));
+export const getChallenge  = ()    => { const r = localStorage.getItem(K.CHALLENGE); return r ? JSON.parse(r) : null; };
+export const saveChallenge = (c)   => localStorage.setItem(K.CHALLENGE, JSON.stringify(c));
 
 export const clearAll  = ()    => Object.values(K).forEach(k => localStorage.removeItem(k));

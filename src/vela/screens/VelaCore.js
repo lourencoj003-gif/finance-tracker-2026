@@ -1,13 +1,24 @@
 import { useState, useEffect, useRef } from 'react';
-import { getData, saveData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin, getGoals, saveGoals, getLastOpen, setLastOpen, getLastCeremonyYM, setLastCeremonyYM } from '../storage';
+import { getData, saveData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin, getGoals, saveGoals, getLastOpen, setLastOpen, getLastCeremonyYM, setLastCeremonyYM, getDebts, saveDebts, getChallenge, saveChallenge } from '../storage';
 import PaydayCeremony from './PaydayCeremony';
 
-const PURPLE = '#7F77DD';
-const BLUE   = '#378ADD';
-const GREEN  = '#4eca8b';
-const AMBER  = '#f5a623';
-const RED    = '#ff6b6b';
-const BG     = '#0a0a0f';
+const PURPLE    = '#7F77DD';
+const BLUE      = '#378ADD';
+const GREEN     = '#4eca8b';
+const AMBER     = '#f5a623';
+const RED       = '#ff6b6b';
+const DEBT_RED  = '#E24B4A';
+const BG        = '#0a0a0f';
+
+const CHALLENGES = [
+  { id: 'noSpendWeekend', name: 'No-Spend Weekend',       desc: 'Zero discretionary spend Sat & Sun',   saving: 80,  icon: '🚫' },
+  { id: 'cookHome',       name: 'Cook at Home – 5 Days',  desc: 'Skip takeaways and restaurants',        saving: 60,  icon: '🍳' },
+  { id: 'cancelSub',      name: 'Cancel a Subscription',  desc: 'Cut one dormant or unused service',     saving: 120, icon: '✂️' },
+  { id: 'coffeeBreak',    name: 'Skip the Coffee Shop',   desc: 'Brew at home all week',                 saving: 28,  icon: '☕' },
+  { id: 'walkDontDrive',  name: 'Walk or Cycle – 3 Days', desc: 'Skip Uber or fuel costs',               saving: 35,  icon: '🚶' },
+  { id: 'mealPrep',       name: 'Meal Prep Sunday',       desc: 'Plan the week, cut food waste',         saving: 45,  icon: '🥗' },
+  { id: 'noOnline',       name: 'No Online Shopping',     desc: 'Pause impulse buys for 7 days',         saving: 50,  icon: '📦' },
+];
 
 const KEYFRAMES = `
   @keyframes orbIdle {
@@ -157,6 +168,32 @@ function splitSentences(text) {
   return (text.match(/[^.!?]+[.!?]*/g) || [text]).map(s => s.trim()).filter(Boolean);
 }
 
+function parseDebtFromText(text) {
+  if (!/\b(debt|owe|loan|card|credit|overdraft|finance|borrowed)\b/i.test(text)) return null;
+  const amtM = text.match(/£\s*([\d,]+(?:\.\d{1,2})?)/);
+  if (!amtM) return null;
+  const amount = parseFloat(amtM[1].replace(/,/g, ''));
+  if (amount < 10 || amount > 999999) return null;
+  const rateM = text.match(/(\d+(?:\.\d+)?)\s*%/);
+  const rate  = rateM ? parseFloat(rateM[1]) : 0;
+  const nameM = text.match(/\b(credit card|personal loan|overdraft|car finance|student loan|store card|[a-z]+ loan|[a-z]+ card)\b/i);
+  return { id: Date.now(), name: nameM ? nameM[1] : 'Debt', amount, rate, addedAt: new Date().toISOString().slice(0, 10) };
+}
+
+function getISOWeek() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+  const yr = d.getFullYear();
+  const wk = Math.ceil((((d - new Date(yr, 0, 1)) / 86400000) + 1) / 7);
+  return `${yr}-W${String(wk).padStart(2, '0')}`;
+}
+
+function daysLeftInWeek() {
+  const day = new Date().getDay();
+  return day === 0 ? 0 : 7 - day;
+}
+
 function getGreeting() {
   const h    = new Date().getHours();
   const name = localStorage.getItem('vela_name') || '';
@@ -203,6 +240,15 @@ export default function VelaCore({ onReset }) {
   const [scoreDelta, setScoreDelta]       = useState(0);
   const [freedomDays, setFreedomDays]     = useState(0);
   const [settingSavings, setSettingSavings] = useState(() => String((getData() || {}).savings || ''));
+  const [debts, setDebts]                   = useState(() => getDebts());
+  const [challengeData, setChallengeData]   = useState(() => {
+    const stored = getChallenge();
+    const weekId = getISOWeek();
+    if (stored && stored.weekId === weekId) return stored;
+    const wkNum = parseInt(weekId.split('-W')[1], 10);
+    const ch    = CHALLENGES[(wkNum - 1) % CHALLENGES.length];
+    return { weekId, id: ch.id, accepted: false, completed: false };
+  });
 
   const orbRef           = useRef('idle');
   const voiceOnRef       = useRef(true);
@@ -310,6 +356,10 @@ export default function VelaCore({ onReset }) {
       alertFiredRef.current = true;
       const pct = Math.round((expenses / income) * 100);
       msg = `Heads up${hi} — your expenses are at ${pct}% of your income, leaving only £${(income - expenses).toFixed(0)} breathing room. What's driving the spend this month?`;
+    } else if (getDebts().length > 0) {
+      const totalD = getDebts().reduce((s, d) => s + d.amount, 0);
+      const highRate = getDebts().reduce((mx, d) => d.rate > mx ? d.rate : mx, 0);
+      msg = `Debt Destruction Mode is active${hi} — £${totalD.toLocaleString('en-GB')} total, highest rate at ${highRate}%. Every extra pound you throw at it today costs the lender money, not you. What shall we attack first?`;
     } else {
       msg = `Hi${hi}. I'm Vela, your personal financial navigator. How can I help you today?`;
     }
@@ -434,6 +484,27 @@ export default function VelaCore({ onReset }) {
       setGoals(updated);
     }
 
+    // Detect new debt ("I have a debt of £3000 at 22%")
+    const newDebt = parseDebtFromText(clean);
+    if (newDebt) {
+      const updated = [...getDebts(), newDebt];
+      saveDebts(updated);
+      setDebts(updated);
+    }
+
+    // Detect challenge completion
+    if (/\b(done|completed?|finished|nailed|did)\b.*(challenge|week|task)/i.test(clean) && challengeData.accepted && !challengeData.completed) {
+      const updated = { ...challengeData, completed: true };
+      saveChallenge(updated);
+      setChallengeData(updated);
+      const ch = CHALLENGES.find(c => c.id === challengeData.id);
+      if (ch) {
+        setCelebrateMsg(`Challenge complete! You saved £${ch.saving} this week.`);
+        setCelebrate(true);
+        setTimeout(() => setCelebrate(false), 2500);
+      }
+    }
+
     pushCard('user', clean);
     setInput('');
     setOrbState('thinking');
@@ -529,7 +600,7 @@ VOCABULARY: "Well done", "On it", "Here's the situation", "Good news", "One thin
 • Monthly income:    £${income.toFixed(0)} / annual £${(income * 12).toLocaleString('en-GB')}
 • Monthly expenses:  £${expenses.toFixed(0)} / annual £${(expenses * 12).toLocaleString('en-GB')}
 • Monthly surplus:   £${surplus.toFixed(0)}${surplus < 0 ? ' ⚠ DEFICIT' : ` / annual £${(surplus * 12).toLocaleString('en-GB')}`}
-• Total debt:        ${debt > 0 ? `£${debt.toLocaleString('en-GB')}` : 'none'}
+• Total debt:        ${debt > 0 ? `£${debt.toLocaleString('en-GB')}` : 'none'}${debts.length > 0 ? `\n• Debt breakdown:    ${debts.map(d => `${d.name} £${d.amount.toLocaleString('en-GB')}${d.rate > 0 ? ` @ ${d.rate}%` : ''}`).join(', ')}` : ''}
 • Payday:            ${ord(payday)} of month (${paydayStatus})
 • Goal:              ${goal || 'not set'}
 ${goals.length > 0 ? `• Savings goals:     ${goals.map(g => `${g.name} £${g.target.toLocaleString('en-GB')}`).join(', ')}` : ''}
@@ -590,6 +661,18 @@ Step 5: Save for specific goals using named pots
   const savingsRate  = income > 0 ? Math.round((surplus / income) * 100) : 0;
   const onTrack      = surplus >= 0;
   const savColor     = savingsRate > 10 ? GREEN : savingsRate >= 0 ? AMBER : RED;
+
+  // Debt Destruction Mode
+  const totalDebt        = debts.length > 0 ? debts.reduce((s, d) => s + d.amount, 0) : debt;
+  const debtMode         = totalDebt > 0;
+  const avgDebtRate      = debts.length > 0
+    ? debts.reduce((s, d) => s + d.rate * d.amount, 0) / Math.max(1, totalDebt)
+    : 0;
+  const dailyInterestCost   = avgDebtRate > 0 ? totalDebt * avgDebtRate / 100 / 365 : 0;
+  const interestDaysCovered = dailyInterestCost > 0 && savings > 0 ? Math.floor(savings / (dailyInterestCost * 365)) : 0;
+
+  // Current week challenge
+  const currentChallengeDef = CHALLENGES.find(c => c.id === challengeData.id) || CHALLENGES[0];
 
   // Vela Score
   const velaScore      = calcVelaScore({ income, expenses, debt, streak });
@@ -714,8 +797,22 @@ Step 5: Save for specific goals using named pots
         {/* Top section */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
           <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.36)', letterSpacing: '0.2px' }}>{getGreeting()}</div>
-          <SmallOrb alert={spendAlert} />
-          {freedomDaysTarget > 0 ? (
+          <SmallOrb alert={spendAlert} debtMode={debtMode} />
+          {debtMode ? (
+            <>
+              <div style={{ fontSize: 11, color: 'rgba(226,75,74,0.7)', letterSpacing: '1.5px', textTransform: 'uppercase', fontWeight: 700 }}>Debt Destruction Mode</div>
+              <div style={{ fontSize: 58, fontWeight: 800, color: DEBT_RED, letterSpacing: '-3px', lineHeight: 1, textAlign: 'center' }}>
+                £{totalDebt.toLocaleString('en-GB')}
+              </div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.32)', letterSpacing: '0.3px' }}>Destroying debt</div>
+              {dailyInterestCost > 0 && (
+                <div style={{ fontSize: 11, color: 'rgba(226,75,74,0.55)', textAlign: 'center' }}>
+                  Costing £{dailyInterestCost.toFixed(2)}/day in interest
+                  {interestDaysCovered > 0 ? ` · savings cover ${interestDaysCovered}yr` : ''}
+                </div>
+              )}
+            </>
+          ) : freedomDaysTarget > 0 ? (
             <>
               <div style={{ fontSize: 68, fontWeight: 800, color: GREEN, letterSpacing: '-4px', lineHeight: 1, textAlign: 'center' }}>{freedomDays}</div>
               <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.32)', letterSpacing: '0.3px' }}>days of freedom</div>
@@ -767,6 +864,51 @@ Step 5: Save for specific goals using named pots
           <MetricPill label="Pace" value={onTrack ? 'On Track' : 'Off Track'} color={onTrack ? GREEN : RED} />
         </div>
 
+        {/* Weekly Challenge card */}
+        {!challengeData.completed && (
+          <div style={{
+            marginBottom: 10, background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.09)', borderRadius: 16,
+            padding: '12px 14px', animation: 'cardIn 0.5s ease-out',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                <span style={{ fontSize: 16 }}>{currentChallengeDef.icon}</span>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>{currentChallengeDef.name}</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.38)', marginTop: 1 }}>{currentChallengeDef.desc}</div>
+                </div>
+              </div>
+              <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 8 }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: GREEN }}>+£{currentChallengeDef.saving}</div>
+                <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)' }}>{daysLeftInWeek()}d left</div>
+              </div>
+            </div>
+            {challengeData.accepted ? (
+              <button
+                onClick={() => {
+                  const updated = { ...challengeData, completed: true };
+                  saveChallenge(updated);
+                  setChallengeData(updated);
+                  setCelebrateMsg(`Challenge complete! You saved £${currentChallengeDef.saving} this week.`);
+                  setCelebrate(true);
+                  setTimeout(() => setCelebrate(false), 2500);
+                }}
+                style={{ width: '100%', padding: '7px 0', background: 'rgba(78,202,139,0.14)', border: '1px solid rgba(78,202,139,0.28)', borderRadius: 10, color: GREEN, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+              >Mark complete ✓</button>
+            ) : (
+              <button
+                onClick={() => {
+                  const updated = { ...challengeData, accepted: true, acceptedAt: Date.now() };
+                  saveChallenge(updated);
+                  setChallengeData(updated);
+                }}
+                style={{ width: '100%', padding: '7px 0', background: 'rgba(127,119,221,0.14)', border: '1px solid rgba(127,119,221,0.28)', borderRadius: 10, color: PURPLE, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+              >Accept challenge</button>
+            )}
+          </div>
+        )}
+
         {/* Talk to Vela button */}
         <button
           onClick={() => { unlockAudio(); setChatOpen(true); }}
@@ -813,6 +955,8 @@ Step 5: Save for specific goals using named pots
           insights={insights}
           surplus={surplus}
           goals={goals}
+          savings={savings}
+          debts={debts}
           onClose={() => setDetailOpen(false)}
         />
       </div>
@@ -1045,8 +1189,9 @@ Step 5: Save for specific goals using named pots
 
 // ── Detail View ─────────────────────────────────────────────────────
 
-function DetailView({ income, expenses, debt, goal, insights, surplus, goals, onClose }) {
+function DetailView({ income, expenses, debt, goal, insights, surplus, goals, savings, debts, onClose }) {
   const annualSurplus = surplus * 12;
+  const totalDebt     = debts && debts.length > 0 ? debts.reduce((s, d) => s + d.amount, 0) : debt;
 
   // Estimated spending breakdown (typical UK splits)
   const categories = expenses > 0 ? [
@@ -1115,7 +1260,15 @@ function DetailView({ income, expenses, debt, goal, insights, surplus, goals, on
           value={annualSurplus >= 0 ? `+£${Math.abs(annualSurplus).toLocaleString('en-GB')}` : `−£${Math.abs(annualSurplus).toLocaleString('en-GB')}`}
           color={annualSurplus >= 0 ? GREEN : RED}
         />
-        {debt > 0 && <NumberRow label="Total debt" value={`£${debt.toLocaleString('en-GB')}`} color={AMBER} />}
+        {totalDebt > 0 && <NumberRow label="Total debt" value={`£${totalDebt.toLocaleString('en-GB')}`} color={AMBER} />}
+        {debts && debts.length > 0 && debts.map(d => (
+          <NumberRow
+            key={d.id}
+            label={`${d.name}${d.rate > 0 ? ` (${d.rate}%)` : ''}`}
+            value={`£${d.amount.toLocaleString('en-GB')}`}
+            color={d.rate >= 20 ? RED : AMBER}
+          />
+        ))}
 
         {/* Structured savings goals */}
         {goals.length > 0 && (
@@ -1178,11 +1331,81 @@ function DetailView({ income, expenses, debt, goal, insights, surplus, goals, on
             ))}
           </>
         )}
+
+        {/* Wealth Timeline */}
+        {income > 0 && (
+          <>
+            <HSep />
+            <WealthTimeline income={income} surplus={surplus} savings={savings || 0} totalDebt={totalDebt} />
+          </>
+        )}
       </div>
     </div>
   );
 }
 
+
+function WealthTimeline({ income, surplus, savings, totalDebt }) {
+  const netWorth = savings - totalDebt;
+  const annual   = surplus * 12;
+
+  function project(pv, pmt, years) {
+    if (years === 0) return pv;
+    const r = 0.07;
+    return pv * Math.pow(1 + r, years) + (pmt * (Math.pow(1 + r, years) - 1)) / r;
+  }
+
+  const milestones = [
+    { label: 'Now',      years: 0,  value: netWorth },
+    { label: '1 Year',   years: 1,  value: project(netWorth, annual, 1) },
+    { label: '5 Years',  years: 5,  value: project(netWorth, annual, 5) },
+    { label: '10 Years', years: 10, value: project(netWorth, annual, 10) },
+  ];
+
+  const fmt = (n) => {
+    const abs = Math.abs(Math.round(n));
+    if (abs >= 1000000) return `${n < 0 ? '−' : ''}£${(abs / 1000000).toFixed(1)}m`;
+    if (abs >= 1000)    return `${n < 0 ? '−' : ''}£${(abs / 1000).toFixed(0)}k`;
+    return `${n < 0 ? '−' : ''}£${abs.toLocaleString('en-GB')}`;
+  };
+
+  return (
+    <>
+      <DetailLabel>Wealth Timeline</DetailLabel>
+      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.26)', marginBottom: 16, marginTop: -8 }}>
+        Based on current rate + 7% growth
+      </div>
+      <div style={{ position: 'relative', paddingLeft: 28 }}>
+        {/* Vertical connecting line */}
+        <div style={{
+          position: 'absolute', left: 9, top: 10, bottom: 10,
+          width: 2, background: 'linear-gradient(to bottom, rgba(78,202,139,0.5), rgba(78,202,139,0.1))',
+          borderRadius: 1,
+        }} />
+        {milestones.map((m, i) => {
+          const isPositive = m.value >= 0;
+          const color      = i === 0 ? 'rgba(255,255,255,0.55)' : isPositive ? GREEN : RED;
+          return (
+            <div key={m.label} style={{ display: 'flex', alignItems: 'center', marginBottom: i < milestones.length - 1 ? 22 : 0 }}>
+              <div style={{
+                position: 'absolute', left: 5,
+                width: 10, height: 10, borderRadius: '50%',
+                background: color,
+                boxShadow: i > 0 && isPositive ? `0 0 8px 2px rgba(78,202,139,0.4)` : 'none',
+                border: `2px solid ${BG}`,
+                flexShrink: 0,
+              }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', width: '100%' }}>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>{m.label}</div>
+                <div style={{ fontSize: 16, fontWeight: 800, color, letterSpacing: '-0.5px' }}>{fmt(m.value)}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
+}
 
 function NumberRow({ label, value, color }) {
   return (
@@ -1211,16 +1434,22 @@ function DetailLabel({ children }) {
 
 // ── Shared sub-components ───────────────────────────────────────────
 
-function SmallOrb({ alert }) {
+function SmallOrb({ alert, debtMode }) {
+  const bg  = debtMode
+    ? `radial-gradient(circle at 35% 35%, #f08080, ${DEBT_RED} 55%, #7a1010)`
+    : `radial-gradient(circle at 35% 35%, #b0acee, ${PURPLE} 55%, #3a369e)`;
+  const glow = debtMode
+    ? '0 0 18px 6px rgba(226,75,74,0.42)'
+    : '0 0 18px 6px rgba(127,119,221,0.32)';
   return (
     <div style={{ position: 'relative', flexShrink: 0 }}>
       <div style={{
         width: 60, height: 60, borderRadius: '50%',
-        background: `radial-gradient(circle at 35% 35%, #b0acee, ${PURPLE} 55%, #3a369e)`,
-        boxShadow: '0 0 18px 6px rgba(127,119,221,0.32)',
+        background: bg, boxShadow: glow,
         animation: 'orbIdle 3s ease-in-out infinite',
+        transition: 'background 0.8s ease, box-shadow 0.8s ease',
       }} />
-      {alert && (
+      {alert && !debtMode && (
         <div style={{
           position: 'absolute', top: 1, right: 1,
           width: 12, height: 12, borderRadius: '50%',
