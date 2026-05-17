@@ -55,7 +55,7 @@ export default function Pin({ onSuccess, onForgot }) {
   const subs   = { login: 'Enter your 4-digit PIN', create: 'Choose a 4-digit PIN to protect your data', confirm: 'Enter your PIN one more time' };
 
   return (
-    <div style={{ minHeight: '100vh', background: t.bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
+    <div style={{ height: '100vh', background: t.bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', boxSizing: 'border-box' }}>
       <div style={{ fontSize: 32, fontWeight: 800, color: t.accent, marginBottom: 28 }}>Vela</div>
       <div style={{ fontSize: 24, fontWeight: 700, color: t.text, marginBottom: 6, textAlign: 'center' }}>{titles[phase]}</div>
       <div style={{ fontSize: 14, color: t.muted, marginBottom: 40, textAlign: 'center' }}>{subs[phase]}</div>
@@ -111,7 +111,7 @@ function PadBtn({ label, onPress, dim }) {
       style={{
         width: 70, height: 70, borderRadius: '50%', border: 'none', cursor: 'pointer',
         background: dim ? 'transparent' : active ? t.accent : 'rgba(255,255,255,0.09)',
-        color: dim ? t.muted : active ? '#0d1b2a' : t.text,
+        color: dim ? t.muted : active ? '#0a0a0f' : t.text,
         fontSize: dim ? 22 : 24, fontWeight: 500,
         transform: active ? 'scale(0.90)' : 'scale(1)',
         transition: 'all 0.1s',

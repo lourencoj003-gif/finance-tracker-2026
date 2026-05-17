@@ -17,12 +17,16 @@ export default function App() {
 
   return (
     <div style={{
+      position: 'fixed',
+      top: 0,
+      left: '50%',
+      transform: 'translateX(-50%)',
+      width: '100%',
       maxWidth: 430,
-      margin: '0 auto',
-      minHeight: '100vh',
+      height: '100%',
+      overflow: 'hidden',
       background: '#0a0a0f',
       fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif',
-      position: 'relative',
     }}>
       {screen === S.SPLASH  && <Splash     onDone={afterSplash} />}
       {screen === S.PIN     && <Pin        onSuccess={afterPin} onForgot={goReset} />}
