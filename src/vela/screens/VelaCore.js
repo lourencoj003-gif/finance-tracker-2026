@@ -70,6 +70,10 @@ const ORB_CFG = {
   },
 };
 
+function splitSentences(text) {
+  return (text.match(/[^.!?]+[.!?]*/g) || [text]).map(s => s.trim()).filter(Boolean);
+}
+
 export default function VelaCore({ onReset }) {
   const data     = getData() || {};
   const insights = getInsights() || [];
@@ -118,22 +122,28 @@ export default function VelaCore({ onReset }) {
   function speak(text) {
     if (!voiceOnRef.current || !window.speechSynthesis) return;
     window.speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.rate  = 0.93;
-    utter.pitch = 1.05;
+    const sentences = splitSentences(text);
     const fire = () => {
       const voices   = window.speechSynthesis.getVoices();
-      const priority = ['Samantha', 'Victoria', 'Karen', 'Moira', 'Tessa', 'Fiona',
-                        'Google UK English Female', 'Microsoft Zira'];
-      const voice    = voices.find(v => priority.some(p => v.name.includes(p)))
-                    || voices.find(v => /female/i.test(v.name))
+      const PRIORITY = ['Samantha', 'Karen', 'Moira', 'Victoria', 'Tessa'];
+      const voice    = PRIORITY.reduce((found, name) => found || voices.find(v => v.name.includes(name)), null)
                     || voices.find(v => v.lang === 'en-GB')
-                    || voices.find(v => v.lang.startsWith('en'));
-      if (voice) utter.voice = voice;
-      utter.onstart = () => setOrbState('speaking');
-      utter.onend   = () => setOrbState('idle');
-      utter.onerror = () => setOrbState('idle');
-      window.speechSynthesis.speak(utter);
+                    || voices.find(v => v.lang.startsWith('en'))
+                    || null;
+      setOrbState('speaking');
+      let i = 0;
+      const next = () => {
+        if (i >= sentences.length) { setOrbState('idle'); return; }
+        const u = new SpeechSynthesisUtterance(sentences[i++]);
+        u.rate   = 0.92;
+        u.pitch  = 1.05;
+        u.volume = 1;
+        if (voice) u.voice = voice;
+        u.onend   = () => setTimeout(next, i < sentences.length ? 150 : 0);
+        u.onerror = () => setOrbState('idle');
+        window.speechSynthesis.speak(u);
+      };
+      setTimeout(next, 300);
     };
     window.speechSynthesis.getVoices().length > 0
       ? fire()
