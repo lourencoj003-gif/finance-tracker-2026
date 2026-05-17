@@ -1,10 +1,13 @@
 const K = {
-  PIN:         'vela_pin',
-  READY:       'vela_ready',
-  DATA:        'vela_data',
-  INSIGHTS:    'vela_insights',
-  BIO_ENABLED: 'vela_biometric_enabled',
-  BIO_CRED:    'vela_biometric_cred',
+  PIN:          'vela_pin',
+  READY:        'vela_ready',
+  DATA:         'vela_data',
+  INSIGHTS:     'vela_insights',
+  BIO_ENABLED:  'vela_biometric_enabled',
+  BIO_CRED:     'vela_biometric_cred',
+  STREAK_DATE:  'vela_streak_date',
+  STREAK_COUNT: 'vela_streak_count',
+  CHECKIN_DATE: 'vela_checkin_date',
 };
 
 export const getPin            = ()    => localStorage.getItem(K.PIN);
@@ -20,4 +23,27 @@ export const setBiometricEnabled = ()  => localStorage.setItem(K.BIO_ENABLED, 't
 export const getBiometricCred  = ()    => localStorage.getItem(K.BIO_CRED);
 export const setBiometricCred  = (c)   => localStorage.setItem(K.BIO_CRED, c);
 export const clearBiometric    = ()    => { localStorage.removeItem(K.BIO_ENABLED); localStorage.removeItem(K.BIO_CRED); };
+
+// Returns today's ISO date string, e.g. '2026-05-17'
+const today = () => new Date().toISOString().slice(0, 10);
+
+export const tickStreak = () => {
+  const t     = today();
+  const stored = localStorage.getItem(K.STREAK_DATE);
+  const count  = parseInt(localStorage.getItem(K.STREAK_COUNT) || '0', 10);
+  if (stored === t) return count || 1;
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const next = stored === yesterday ? count + 1 : 1;
+  localStorage.setItem(K.STREAK_DATE, t);
+  localStorage.setItem(K.STREAK_COUNT, String(next));
+  return next;
+};
+export const getStreak = () => parseInt(localStorage.getItem(K.STREAK_COUNT) || '0', 10);
+
+export const shouldShowCheckin = () => {
+  if (new Date().getDay() !== 1) return false; // 1 = Monday
+  return localStorage.getItem(K.CHECKIN_DATE) !== today();
+};
+export const markCheckin = () => localStorage.setItem(K.CHECKIN_DATE, today());
+
 export const clearAll          = ()    => Object.values(K).forEach(k => localStorage.removeItem(k));

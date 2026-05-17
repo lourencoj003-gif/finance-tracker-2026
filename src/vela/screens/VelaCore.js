@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getData, getInsights, clearAll } from '../storage';
+import { getData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin } from '../storage';
 
 const PURPLE = '#7F77DD';
 const BLUE   = '#378ADD';
@@ -51,6 +51,10 @@ const KEYFRAMES = `
   @keyframes swipeHint {
     0%,100% { opacity: 0.55; transform: translateY(0); }
     50%     { opacity: 1;    transform: translateY(-4px); }
+  }
+  @keyframes alertPulse {
+    0%,100% { transform: scale(1);    opacity: 1; }
+    50%     { transform: scale(1.45); opacity: 0.55; }
   }
 `;
 
@@ -105,11 +109,14 @@ export default function VelaCore({ onReset }) {
   const [showSettings, setShowSettings]   = useState(false);
   const [voiceOn, setVoiceOn]             = useState(true);
   const [settingName, setSettingName]     = useState(() => localStorage.getItem('vela_name') || '');
+  const [streak, setStreak]               = useState(0);
+  const [spendAlert, setSpendAlert]       = useState(false);
 
-  const orbRef         = useRef('idle');
-  const voiceOnRef     = useRef(true);
-  const recognitionRef = useRef(null);
-  const greetedRef     = useRef(false);
+  const orbRef           = useRef('idle');
+  const voiceOnRef       = useRef(true);
+  const recognitionRef   = useRef(null);
+  const greetedRef       = useRef(false);
+  const alertFiredRef    = useRef(false);
   const touchStartY      = useRef(null);
   const touchStartX      = useRef(null);
   const audioUnlockedRef = useRef(false);
@@ -131,12 +138,37 @@ export default function VelaCore({ onReset }) {
     };
   }, []);
 
+  // ── On mount: streak + spending alert ────────────────────────────
+  useEffect(() => {
+    setStreak(tickStreak());
+    if (income > 0 && expenses / income >= 0.9) setSpendAlert(true);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Chat greeting: check-in → alert → normal ──────────────────────
   useEffect(() => {
     if (!chatOpen || greetedRef.current) return;
     greetedRef.current = true;
     const name = localStorage.getItem('vela_name') || '';
-    const msg  = `Hi${name ? `, ${name}` : ''}. I'm Vela, your personal financial navigator. How can I help you today?`;
-    const tid  = setTimeout(() => { pushCard('vela', msg); speak(msg); }, 700);
+    const hi   = name ? `, ${name}` : '';
+    const surplus = income - expenses;
+
+    let msg;
+    if (shouldShowCheckin()) {
+      markCheckin();
+      const weeklySpend = (expenses / 4.33).toFixed(0);
+      const onTrackLine = surplus >= 0
+        ? `You're keeping £${surplus.toFixed(0)}/month — solid position.`
+        : `You're running a £${Math.abs(surplus).toFixed(0)}/month deficit — let's fix that this week.`;
+      msg = `Monday check-in${hi}. You're on pace to spend £${expenses.toFixed(0)} this month — roughly £${weeklySpend} last week. ${onTrackLine} What's the focus this week?`;
+    } else if (spendAlert && !alertFiredRef.current) {
+      alertFiredRef.current = true;
+      const pct = Math.round((expenses / income) * 100);
+      msg = `Heads up${hi} — your expenses are at ${pct}% of your income, leaving only £${(income - expenses).toFixed(0)} breathing room. What's driving the spend this month?`;
+    } else {
+      msg = `Hi${hi}. I'm Vela, your personal financial navigator. How can I help you today?`;
+    }
+
+    const tid = setTimeout(() => { pushCard('vela', msg); speak(msg); }, 700);
     return () => clearTimeout(tid);
   }, [chatOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -337,7 +369,15 @@ RULES:
           transition: SLIDE,
         }}
       >
-        {/* Gear */}
+        {/* Streak — top left */}
+        {streak > 0 && (
+          <div style={{ position: 'absolute', top: 'max(env(safe-area-inset-top), 20px)', left: 20, zIndex: 5, display: 'flex', alignItems: 'center', gap: 4, padding: 8 }}>
+            <span style={{ fontSize: 16, lineHeight: 1 }}>🔥</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: AMBER, lineHeight: 1 }}>{streak}</span>
+          </div>
+        )}
+
+        {/* Gear — top right */}
         <button
           onClick={() => setShowSettings(true)}
           style={{ position: 'absolute', top: 'max(env(safe-area-inset-top), 20px)', right: 20, zIndex: 5, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.26)', fontSize: 20, padding: 8, lineHeight: 1 }}
@@ -347,7 +387,7 @@ RULES:
         {/* Top section */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
           <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.36)', letterSpacing: '0.2px' }}>{getGreeting()}</div>
-          <SmallOrb />
+          <SmallOrb alert={spendAlert} />
           <div style={{ fontSize: 54, fontWeight: 800, color: numColor, letterSpacing: '-2px', lineHeight: 1, textAlign: 'center' }}>{displayNum}</div>
           <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.36)', letterSpacing: '0.2px' }}>{displaySub}</div>
         </div>
@@ -437,6 +477,15 @@ RULES:
               background: cfg.bg, boxShadow: cfg.glow, animation: cfg.anim,
               transition: 'background 0.7s ease, box-shadow 0.7s ease',
             }} />
+            {spendAlert && orbState === 'idle' && (
+              <div style={{
+                position: 'absolute', top: 8, right: 8, width: 14, height: 14,
+                borderRadius: '50%', background: RED, border: `2px solid ${BG}`,
+                boxShadow: '0 0 8px 3px rgba(255,107,107,0.55)',
+                animation: 'alertPulse 1.4s ease-in-out infinite',
+                pointerEvents: 'none',
+              }} />
+            )}
           </div>
 
           <div style={{ minHeight: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -689,14 +738,25 @@ function DetailLabel({ children }) {
 
 // ── Shared sub-components ───────────────────────────────────────────
 
-function SmallOrb() {
+function SmallOrb({ alert }) {
   return (
-    <div style={{
-      width: 60, height: 60, borderRadius: '50%',
-      background: `radial-gradient(circle at 35% 35%, #b0acee, ${PURPLE} 55%, #3a369e)`,
-      boxShadow: '0 0 18px 6px rgba(127,119,221,0.32)',
-      animation: 'orbIdle 3s ease-in-out infinite',
-    }} />
+    <div style={{ position: 'relative', flexShrink: 0 }}>
+      <div style={{
+        width: 60, height: 60, borderRadius: '50%',
+        background: `radial-gradient(circle at 35% 35%, #b0acee, ${PURPLE} 55%, #3a369e)`,
+        boxShadow: '0 0 18px 6px rgba(127,119,221,0.32)',
+        animation: 'orbIdle 3s ease-in-out infinite',
+      }} />
+      {alert && (
+        <div style={{
+          position: 'absolute', top: 1, right: 1,
+          width: 12, height: 12, borderRadius: '50%',
+          background: RED, border: `2px solid ${BG}`,
+          boxShadow: '0 0 6px 2px rgba(255,107,107,0.6)',
+          animation: 'alertPulse 1.4s ease-in-out infinite',
+        }} />
+      )}
+    </div>
   );
 }
 
