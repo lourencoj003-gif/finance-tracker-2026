@@ -1,8 +1,61 @@
 import { useState, useEffect, useRef } from 'react';
 import { parseAmount, parseDebt } from '../scoring';
 import { saveData, saveInsights, markReady } from '../storage';
-import { t } from '../theme';
-import Orb from '../Orb';
+
+const PURPLE = '#7F77DD';
+const BG     = '#0a0a0f';
+
+const KEYFRAMES = `
+  @keyframes orbIdle {
+    0%,100% { transform: scale(1);    filter: brightness(1); }
+    50%     { transform: scale(1.06); filter: brightness(1.14); }
+  }
+  @keyframes orbThinking {
+    0%,100% { transform: scale(1);    filter: brightness(0.85); }
+    50%     { transform: scale(1.04); filter: brightness(1.05); }
+  }
+  @keyframes orbSpeaking {
+    0%,100% { transform: scale(1); }
+    20%     { transform: scale(1.10); }
+    40%     { transform: scale(1.04); }
+    60%     { transform: scale(1.12); }
+    80%     { transform: scale(1.05); }
+  }
+  @keyframes ripple {
+    0%   { transform: scale(1);   opacity: 0.55; }
+    100% { transform: scale(2.6); opacity: 0; }
+  }
+  @keyframes waveBar {
+    0%,100% { transform: scaleY(0.22); }
+    50%     { transform: scaleY(1); }
+  }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes blink {
+    0%,100% { opacity: 0.3; }
+    50%     { opacity: 1; }
+  }
+`;
+
+const ORB_CFG = {
+  idle: {
+    bg:   `radial-gradient(circle at 35% 35%, #b0acee, ${PURPLE} 55%, #3a369e)`,
+    glow: `0 0 40px 12px rgba(127,119,221,0.42), 0 0 90px 35px rgba(127,119,221,0.14)`,
+    anim: 'orbIdle 3s ease-in-out infinite',
+  },
+  thinking: {
+    bg:   `radial-gradient(circle at 35% 35%, #8a86d5, ${PURPLE} 55%, #27246a)`,
+    glow: `0 0 28px 8px rgba(127,119,221,0.28), 0 0 60px 20px rgba(127,119,221,0.08)`,
+    anim: 'orbThinking 2.2s ease-in-out infinite',
+  },
+  speaking: {
+    bg:   `radial-gradient(circle at 35% 35%, #cac7f8, ${PURPLE} 55%, #5250c0)`,
+    glow: `0 0 72px 28px rgba(127,119,221,0.82), 0 0 150px 65px rgba(127,119,221,0.32)`,
+    anim: 'orbSpeaking 0.42s ease-in-out infinite',
+  },
+};
 
 const Q = [
   {
@@ -46,31 +99,66 @@ function fallbackInsights({ income, expenses, debt }) {
 }
 
 export default function Onboarding({ onDone }) {
-  const [msgs, setMsgs]         = useState([]);
-  const [step, setStep]         = useState(0);
-  const [input, setInput]       = useState('');
-  const [data, setData]         = useState({ income: 0, expenses: 0, debt: 0, goal: '' });
-  const [building, setBuilding] = useState(false);
-  const bottomRef               = useRef(null);
+  const [step, setStep]           = useState(0);
+  const [input, setInput]         = useState('');
+  const [data, setData]           = useState({ income: 0, expenses: 0, debt: 0, goal: '' });
+  const [building, setBuilding]   = useState(false);
+  const [orbState, setOrbState]   = useState('idle');
+  const [currentQ, setCurrentQ]   = useState('');
+  const [cardKey, setCardKey]     = useState(0);
+
+  const buildingRef = useRef(false);
+  const hasInit     = useRef(false);
+
+  useEffect(() => { buildingRef.current = building; }, [building]);
 
   useEffect(() => {
-    const tid = setTimeout(() => push('vela', Q[0].ask({})), 600);
-    return () => clearTimeout(tid);
+    if (!document.getElementById('vela-kf')) {
+      const el = document.createElement('style');
+      el.id = 'vela-kf';
+      el.textContent = KEYFRAMES;
+      document.head.appendChild(el);
+    }
+    return () => { window.speechSynthesis?.cancel(); };
   }, []);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [msgs, building]);
+    if (hasInit.current) return;
+    hasInit.current = true;
+    const q   = Q[0].ask({});
+    const tid = setTimeout(() => { setCurrentQ(q); speak(q); }, 700);
+    return () => clearTimeout(tid);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  function push(role, text) {
-    setMsgs(m => [...m, { role, text }]);
+  function speak(text) {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.rate  = 0.93;
+    utter.pitch = 1.05;
+    const fire = () => {
+      const voices   = window.speechSynthesis.getVoices();
+      const priority = ['Samantha', 'Victoria', 'Karen', 'Moira', 'Tessa', 'Fiona',
+                        'Google UK English Female', 'Microsoft Zira'];
+      const voice    = voices.find(v => priority.some(p => v.name.includes(p)))
+                    || voices.find(v => /female/i.test(v.name))
+                    || voices.find(v => v.lang === 'en-GB')
+                    || voices.find(v => v.lang.startsWith('en'));
+      if (voice) utter.voice = voice;
+      utter.onstart = () => setOrbState('speaking');
+      utter.onend   = () => setOrbState(buildingRef.current ? 'thinking' : 'idle');
+      utter.onerror = () => setOrbState(buildingRef.current ? 'thinking' : 'idle');
+      window.speechSynthesis.speak(utter);
+    };
+    window.speechSynthesis.getVoices().length > 0
+      ? fire()
+      : (window.speechSynthesis.onvoiceschanged = () => { fire(); window.speechSynthesis.onvoiceschanged = null; });
   }
 
   function send() {
     const val = input.trim();
     if (!val || building || step >= Q.length) return;
     setInput('');
-    push('user', val);
 
     const nd = { ...data };
     if (step === 0)      nd.income   = parseAmount(val);
@@ -81,22 +169,32 @@ export default function Onboarding({ onDone }) {
 
     const next = step + 1;
     setStep(next);
+    setOrbState('thinking');
 
     if (next < Q.length) {
-      setTimeout(() => push('vela', Q[next].ask(nd)), 700);
-    } else {
       setTimeout(() => {
-        push('vela', 'Perfect. Give me a moment to build your financial picture ✨');
+        const q = Q[next].ask(nd);
+        setCurrentQ(q);
+        setCardKey(k => k + 1);
+        speak(q);
+      }, 650);
+    } else {
+      const finalMsg = 'Perfect. Give me a moment to build your financial picture ✨';
+      setTimeout(() => {
+        setCurrentQ(finalMsg);
+        setCardKey(k => k + 1);
         setBuilding(true);
+        buildingRef.current = true;
+        speak(finalMsg);
         buildPlan(nd);
-      }, 700);
+      }, 650);
     }
   }
 
   async function buildPlan(d) {
     const { income, expenses, debt, goal } = d;
-    const surplus   = income - expenses;
-    const started   = Date.now();
+    const surplus = income - expenses;
+    const started = Date.now();
 
     const sysPrompt = `You are Vela, a personal finance coach. Respond with exactly 3 short financial insights as a JSON array. Each must be under 28 words, start with an action verb, and reference a specific £ amount. Format: ["insight1","insight2","insight3"] — nothing else.`;
     const userMsg   = `Monthly income: £${income}. Monthly expenses: £${expenses}. Surplus: £${surplus.toFixed(0)}. Total debt: £${debt}. Goal: ${goal}.`;
@@ -133,70 +231,122 @@ export default function Onboarding({ onDone }) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
   }
 
+  const cfg = ORB_CFG[orbState] || ORB_CFG.idle;
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: t.bg }}>
-      {/* Header */}
-      <div style={{ padding: '16px 20px 12px', borderBottom: `1px solid ${t.border}`, flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Orb size={34} />
-          <div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: t.text }}>Vela</div>
-            <div style={{ fontSize: 11, color: t.accent }}>Setting up your plan</div>
-          </div>
-          <div style={{ marginLeft: 'auto', fontSize: 12, color: t.muted }}>{Math.min(step, Q.length)}/{Q.length}</div>
-        </div>
-        <div style={{ marginTop: 10, height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 2 }}>
+    <div style={{ position: 'relative', height: '100vh', background: BG, overflow: 'hidden', fontFamily: 'inherit' }}>
+
+      {/* Progress dots */}
+      <div style={{ position: 'absolute', top: 32, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 8, zIndex: 5 }}>
+        {[0, 1, 2, 3].map(i => (
+          <div key={i} style={{
+            width: i < step ? 22 : 7, height: 7, borderRadius: 4,
+            background: i < step ? PURPLE : 'rgba(255,255,255,0.15)',
+            transition: 'all 0.4s ease',
+          }} />
+        ))}
+      </div>
+
+      {/* ── Orb section ── */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '48%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20 }}>
+
+        {/* Orb */}
+        <div style={{ position: 'relative', width: 140, height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {orbState === 'speaking' && [0, 1, 2].map(i => (
+            <div key={i} style={{
+              position: 'absolute', width: '100%', height: '100%', borderRadius: '50%',
+              border: '1.5px solid rgba(127,119,221,0.48)',
+              animation: `ripple 1.9s ease-out ${i * 0.63}s infinite`,
+              pointerEvents: 'none',
+            }} />
+          ))}
           <div style={{
-            height: '100%', background: t.accent, borderRadius: 2,
-            width: `${(Math.min(step, Q.length) / Q.length) * 100}%`,
-            transition: 'width 0.4s ease',
+            width: 140, height: 140, borderRadius: '50%',
+            background: cfg.bg,
+            boxShadow: cfg.glow,
+            animation: cfg.anim,
+            transition: 'background 0.7s ease, box-shadow 0.7s ease',
           }} />
         </div>
+
+        {/* Orb status */}
+        <div style={{ minHeight: 30, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {orbState === 'speaking' ? (
+            <WaveBars />
+          ) : orbState === 'thinking' ? (
+            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, letterSpacing: '0.5px', animation: 'blink 1.6s ease-in-out infinite' }}>
+              {building ? 'Building your picture…' : 'Processing…'}
+            </div>
+          ) : (
+            <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: 12, letterSpacing: '0.3px' }}>
+              {!building && step < Q.length ? `Question ${step + 1} of ${Q.length}` : ''}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Messages */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-        {msgs.map((m, i) => (
-          <div key={i} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start', gap: 8, alignItems: 'flex-end' }}>
-            {m.role === 'vela' && <Orb size={26} />}
-            <div style={{
-              maxWidth: '78%', padding: '10px 14px',
-              fontSize: 15, lineHeight: 1.55, whiteSpace: 'pre-wrap',
-              fontWeight: m.role === 'user' ? 500 : 400,
-              background: m.role === 'user' ? t.accent : t.card,
-              color:      m.role === 'user' ? '#0d1b2a' : t.text,
-              borderRadius: m.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-            }}>{m.text}</div>
+      {/* ── Question card ── */}
+      {currentQ && (
+        <div style={{
+          position: 'absolute',
+          top: '48%',
+          left: 0,
+          right: 0,
+          bottom: (!building && step < Q.length) ? 86 : 0,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          padding: '0 20px',
+        }}>
+          <div
+            key={cardKey}
+            style={{
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 24,
+              padding: '22px 24px',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              animation: 'cardIn 0.4s ease-out',
+              boxShadow: '0 8px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06)',
+            }}
+          >
+            <div style={{ fontSize: 10, color: 'rgba(127,119,221,0.7)', marginBottom: 12, letterSpacing: '0.9px', textTransform: 'uppercase', fontWeight: 600 }}>
+              Vela
+            </div>
+            <div style={{ fontSize: 16, color: '#eeeeff', lineHeight: 1.68, whiteSpace: 'pre-wrap', fontWeight: 400 }}>
+              {currentQ}
+            </div>
           </div>
-        ))}
-        {building && (
-          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-            <Orb size={26} />
-            <TypingDots />
-          </div>
-        )}
-        <div ref={bottomRef} />
-      </div>
+        </div>
+      )}
 
-      {/* Input */}
+      {/* ── Input bar ── */}
       {!building && step < Q.length && (
-        <div style={{ padding: '12px 16px', paddingBottom: 'max(12px, env(safe-area-inset-bottom))', borderTop: `1px solid ${t.border}`, display: 'flex', gap: 10, flexShrink: 0 }}>
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0, height: 86,
+          display: 'flex', alignItems: 'center', gap: 10,
+          padding: '0 16px', paddingBottom: 'max(0px, env(safe-area-inset-bottom))',
+          background: `linear-gradient(to top, ${BG} 65%, transparent)`,
+          borderTop: '1px solid rgba(255,255,255,0.04)',
+        }}>
           <input
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={onKey}
             placeholder={Q[step]?.ph || ''}
             style={{
-              flex: 1, background: t.card, border: `1px solid ${t.border}`,
-              borderRadius: 24, padding: '12px 16px', color: t.text,
-              fontSize: 16, outline: 'none', fontFamily: 'inherit',
+              flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 22, padding: '11px 16px', color: '#fff', fontSize: 16,
+              outline: 'none', fontFamily: 'inherit',
             }}
           />
           <button onClick={send} style={{
-            width: 46, height: 46, borderRadius: '50%', border: 'none', flexShrink: 0,
-            background: input.trim() ? t.accent : 'rgba(255,255,255,0.1)',
-            color: input.trim() ? '#0d1b2a' : t.muted,
-            fontSize: 22, cursor: 'pointer', transition: 'all 0.15s',
+            width: 44, height: 44, borderRadius: '50%', border: 'none', flexShrink: 0,
+            background: input.trim() ? 'rgba(127,119,221,0.22)' : 'rgba(255,255,255,0.05)',
+            color: input.trim() ? PURPLE : 'rgba(255,255,255,0.18)',
+            fontSize: 22, cursor: input.trim() ? 'pointer' : 'default',
+            transition: 'all 0.15s',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>›</button>
         </div>
@@ -205,16 +355,18 @@ export default function Onboarding({ onDone }) {
   );
 }
 
-function TypingDots() {
+function WaveBars() {
+  const delays = [0, 0.12, 0.24, 0.1, 0.2, 0.08, 0.16];
   return (
-    <div style={{ display: 'flex', gap: 5, padding: '11px 14px', background: t.card, borderRadius: '16px 16px 16px 4px' }}>
-      {[0, 1, 2].map(i => (
+    <div style={{ display: 'flex', gap: 3.5, alignItems: 'center', height: 28 }}>
+      {delays.map((d, i) => (
         <div key={i} style={{
-          width: 7, height: 7, borderRadius: '50%', background: t.muted,
-          animation: `vDot 1.3s ease-in-out ${i * 0.2}s infinite`,
+          width: 3, height: 28, background: PURPLE, borderRadius: 2,
+          transformOrigin: 'center',
+          animation: `waveBar 0.55s ease-in-out ${d}s infinite`,
+          opacity: 0.75,
         }} />
       ))}
-      <style>{`@keyframes vDot { 0%,80%,100%{opacity:.3;transform:translateY(0)} 40%{opacity:1;transform:translateY(-4px)} }`}</style>
     </div>
   );
 }

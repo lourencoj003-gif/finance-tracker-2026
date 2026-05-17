@@ -34,7 +34,7 @@ const KEYFRAMES = `
     50%     { transform: scaleY(1); }
   }
   @keyframes cardIn {
-    from { opacity: 0; transform: translateY(16px); }
+    from { opacity: 0; transform: translateY(18px); }
     to   { opacity: 1; transform: translateY(0); }
   }
   @keyframes blink {
@@ -43,11 +43,10 @@ const KEYFRAMES = `
   }
   @keyframes micPulse {
     0%,100% { box-shadow: 0 0 0 0 rgba(55,138,221,0.4); }
-    50%     { box-shadow: 0 0 0 10px rgba(55,138,221,0); }
+    50%     { box-shadow: 0 0 0 12px rgba(55,138,221,0); }
   }
 `;
 
-// --- Orb visual config per state ---
 const ORB_CFG = {
   idle: {
     bg:   `radial-gradient(circle at 35% 35%, #b0acee, ${PURPLE} 55%, #3a369e)`,
@@ -76,27 +75,24 @@ export default function VelaCore({ onReset }) {
   const insights = getInsights() || [];
   const { income = 0, expenses = 0, debt = 0, goal = '' } = data;
 
-  const [orbState, _setOrbState]      = useState('idle');
-  const [cards, setCards]             = useState([]);
-  const [input, setInput]             = useState('');
-  const [isListening, setIsListening] = useState(false);
-  const [transcript, setTranscript]   = useState('');
+  const [orbState, _setOrbState]        = useState('idle');
+  const [cards, setCards]               = useState([]);
+  const [input, setInput]               = useState('');
+  const [isListening, setIsListening]   = useState(false);
+  const [transcript, setTranscript]     = useState('');
   const [showSettings, setShowSettings] = useState(false);
-  const [voiceOn, setVoiceOn]         = useState(true);
-  const [settingName, setSettingName] = useState(() => localStorage.getItem('vela_name') || '');
+  const [voiceOn, setVoiceOn]           = useState(true);
+  const [settingName, setSettingName]   = useState(() => localStorage.getItem('vela_name') || '');
 
-  const orbRef        = useRef('idle');
-  const voiceOnRef    = useRef(true);
+  const orbRef         = useRef('idle');
+  const voiceOnRef     = useRef(true);
   const recognitionRef = useRef(null);
-  const cardsEndRef   = useRef(null);
-  const greetedRef    = useRef(false);
+  const greetedRef     = useRef(false);
 
   function setOrbState(s) { orbRef.current = s; _setOrbState(s); }
 
-  // Keep voice ref in sync
   useEffect(() => { voiceOnRef.current = voiceOn; }, [voiceOn]);
 
-  // Inject CSS once
   useEffect(() => {
     if (!document.getElementById('vela-kf')) {
       const el = document.createElement('style');
@@ -110,12 +106,6 @@ export default function VelaCore({ onReset }) {
     };
   }, []);
 
-  // Auto-scroll
-  useEffect(() => {
-    cardsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [cards]);
-
-  // Greeting
   useEffect(() => {
     if (greetedRef.current) return;
     greetedRef.current = true;
@@ -125,15 +115,12 @@ export default function VelaCore({ onReset }) {
     return () => clearTimeout(tid);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Speech synthesis ──────────────────────────────────────────────
   function speak(text) {
     if (!voiceOnRef.current || !window.speechSynthesis) return;
     window.speechSynthesis.cancel();
-
     const utter = new SpeechSynthesisUtterance(text);
     utter.rate  = 0.93;
     utter.pitch = 1.05;
-
     const fire = () => {
       const voices   = window.speechSynthesis.getVoices();
       const priority = ['Samantha', 'Victoria', 'Karen', 'Moira', 'Tessa', 'Fiona',
@@ -148,13 +135,11 @@ export default function VelaCore({ onReset }) {
       utter.onerror = () => setOrbState('idle');
       window.speechSynthesis.speak(utter);
     };
-
     window.speechSynthesis.getVoices().length > 0
       ? fire()
       : (window.speechSynthesis.onvoiceschanged = () => { fire(); window.speechSynthesis.onvoiceschanged = null; });
   }
 
-  // ── Speech recognition ───────────────────────────────────────────
   const speechSupported = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 
   function startListening() {
@@ -166,7 +151,6 @@ export default function VelaCore({ onReset }) {
     rec.continuous     = false;
     rec.interimResults = true;
     rec.lang           = 'en-GB';
-
     rec.onstart  = () => { setIsListening(true); setOrbState('listening'); };
     rec.onresult = (e) => {
       const t = Array.from(e.results).map(r => r[0].transcript).join('');
@@ -178,10 +162,7 @@ export default function VelaCore({ onReset }) {
       }
     };
     rec.onerror = () => { setIsListening(false); setOrbState('idle'); setTranscript(''); };
-    rec.onend   = () => {
-      setIsListening(false);
-      if (orbRef.current === 'listening') setOrbState('idle');
-    };
+    rec.onend   = () => { setIsListening(false); if (orbRef.current === 'listening') setOrbState('idle'); };
     rec.start();
   }
 
@@ -192,25 +173,18 @@ export default function VelaCore({ onReset }) {
     setTranscript('');
   }
 
-  // ── Core message handler ─────────────────────────────────────────
   async function handleMessage(text) {
     const clean = text.trim();
     if (!clean) return;
-
     if (/\bsettings\b/i.test(clean)) { setShowSettings(true); return; }
-
     pushCard('user', clean);
     setInput('');
     setOrbState('thinking');
-
     try {
       const res  = await fetch('/api/chat', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          financialContext: buildPrompt(),
-          messages: [{ role: 'user', content: clean }],
-        }),
+        body: JSON.stringify({ financialContext: buildPrompt(), messages: [{ role: 'user', content: clean }] }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
@@ -256,7 +230,10 @@ RESPONSE RULES:
     setShowSettings(false);
   }
 
-  const cfg = ORB_CFG[orbState] || ORB_CFG.idle;
+  const cfg          = ORB_CFG[orbState] || ORB_CFG.idle;
+  const visibleCards = cards.slice(-3);
+  const opacityMap   = { 0: [1], 1: [1], 2: [0.55, 1], 3: [0.32, 0.65, 1] };
+  const cardOpacities = opacityMap[Math.min(visibleCards.length, 3)] || [0.32, 0.65, 1];
 
   return (
     <div style={{ position: 'relative', height: '100vh', background: BG, overflow: 'hidden', fontFamily: 'inherit' }}>
@@ -268,24 +245,24 @@ RESPONSE RULES:
         aria-label="Settings"
       >⚙</button>
 
-      {/* ── Orb section (top 52%) ── */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '52%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 28 }}>
+      {/* ── Orb section ── */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '52%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 18 }}>
 
-        {/* Orb + ripple rings */}
+        {/* Orb + ripple rings — tappable */}
         <div
           onClick={() => isListening ? stopListening() : startListening()}
-          style={{ position: 'relative', width: 160, height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+          style={{ position: 'relative', width: 140, height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
         >
           {orbState === 'speaking' && [0, 1, 2].map(i => (
             <div key={i} style={{
               position: 'absolute', width: '100%', height: '100%', borderRadius: '50%',
-              border: `1.5px solid rgba(127,119,221,0.48)`,
+              border: '1.5px solid rgba(127,119,221,0.48)',
               animation: `ripple 1.9s ease-out ${i * 0.63}s infinite`,
               pointerEvents: 'none',
             }} />
           ))}
           <div style={{
-            width: 160, height: 160, borderRadius: '50%',
+            width: 140, height: 140, borderRadius: '50%',
             background: cfg.bg,
             boxShadow: cfg.glow,
             animation: cfg.anim,
@@ -293,8 +270,8 @@ RESPONSE RULES:
           }} />
         </div>
 
-        {/* Status row */}
-        <div style={{ minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {/* Status */}
+        <div style={{ minHeight: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {isListening && transcript ? (
             <div style={{ color: 'rgba(255,255,255,0.72)', fontSize: 14, maxWidth: 260, textAlign: 'center', fontStyle: 'italic', padding: '0 20px' }}>
               "{transcript}"
@@ -313,27 +290,35 @@ RESPONSE RULES:
             </div>
           )}
         </div>
-      </div>
 
-      {/* ── Cards area ── */}
-      <div style={{ position: 'absolute', top: '52%', bottom: 78, left: 0, right: 0, overflowY: 'auto', padding: '4px 16px 4px', WebkitOverflowScrolling: 'touch' }}>
-        {cards.map(c => <GlassCard key={c.id} card={c} />)}
-        <div ref={cardsEndRef} />
-      </div>
-
-      {/* ── Bottom bar ── */}
-      <div style={{
-        position: 'absolute', bottom: 0, left: 0, right: 0, height: 78,
-        display: 'flex', alignItems: 'center', gap: 10,
-        padding: '0 14px', paddingBottom: 'max(0px, env(safe-area-inset-bottom))',
-        background: `linear-gradient(to top, ${BG} 60%, transparent)`,
-        borderTop: '1px solid rgba(255,255,255,0.04)',
-      }}>
+        {/* Mic button — below status */}
         <MicBtn
           listening={isListening}
           supported={speechSupported}
           onPress={isListening ? stopListening : startListening}
         />
+      </div>
+
+      {/* ── Cards area — max 3 visible, stacked at bottom, opacity fade ── */}
+      <div style={{
+        position: 'absolute', top: '52%', bottom: 72, left: 0, right: 0,
+        display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+        padding: '0 16px 8px',
+        overflowY: 'hidden',
+      }}>
+        {visibleCards.map((c, idx) => (
+          <GlassCard key={c.id} card={c} opacity={cardOpacities[idx] ?? 1} />
+        ))}
+      </div>
+
+      {/* ── Bottom input bar ── */}
+      <div style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0, height: 72,
+        display: 'flex', alignItems: 'center', gap: 10,
+        padding: '0 16px', paddingBottom: 'max(0px, env(safe-area-inset-bottom))',
+        background: `linear-gradient(to top, ${BG} 60%, transparent)`,
+        borderTop: '1px solid rgba(255,255,255,0.04)',
+      }}>
         <input
           value={input}
           onChange={e => setInput(e.target.value)}
@@ -349,7 +334,7 @@ RESPONSE RULES:
           onClick={() => input.trim() && handleMessage(input)}
           style={{
             width: 42, height: 42, borderRadius: '50%', border: 'none', flexShrink: 0,
-            background: input.trim() ? `rgba(127,119,221,0.22)` : 'rgba(255,255,255,0.05)',
+            background: input.trim() ? 'rgba(127,119,221,0.22)' : 'rgba(255,255,255,0.05)',
             color: input.trim() ? PURPLE : 'rgba(255,255,255,0.18)',
             fontSize: 22, cursor: input.trim() ? 'pointer' : 'default',
             transition: 'all 0.15s',
@@ -406,9 +391,7 @@ RESPONSE RULES:
   );
 }
 
-// ── Sub-components ───────────────────────────────────────────────────
-
-function GlassCard({ card }) {
+function GlassCard({ card, opacity = 1 }) {
   const isUser = card.type === 'user';
   return (
     <div style={{
@@ -419,7 +402,9 @@ function GlassCard({ card }) {
       marginBottom: 10,
       backdropFilter: 'blur(20px)',
       WebkitBackdropFilter: 'blur(20px)',
-      animation: 'cardIn 0.32s ease-out',
+      animation: 'cardIn 0.35s ease-out',
+      opacity,
+      transition: 'opacity 0.5s ease',
     }}>
       <div style={{ fontSize: 10, color: isUser ? 'rgba(127,119,221,0.65)' : 'rgba(255,255,255,0.28)', marginBottom: 5, letterSpacing: '0.8px', textTransform: 'uppercase', fontWeight: 600 }}>
         {isUser ? 'You' : 'Vela'}
@@ -453,10 +438,10 @@ function MicBtn({ listening, supported, onPress }) {
       onPointerDown={onPress}
       disabled={!supported}
       style={{
-        width: 44, height: 44, borderRadius: '50%', border: 'none', flexShrink: 0,
+        width: 52, height: 52, borderRadius: '50%', border: 'none', flexShrink: 0,
         background: listening ? 'rgba(55,138,221,0.22)' : 'rgba(127,119,221,0.14)',
         color: listening ? BLUE : PURPLE,
-        fontSize: 17, cursor: supported ? 'pointer' : 'not-allowed',
+        fontSize: 20, cursor: supported ? 'pointer' : 'not-allowed',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         animation: listening ? 'micPulse 1s ease-in-out infinite' : 'none',
         transition: 'background 0.2s',
