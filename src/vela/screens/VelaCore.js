@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin } from '../storage';
+import { getData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin, getGoals, saveGoals } from '../storage';
 
 const PURPLE = '#7F77DD';
 const BLUE   = '#378ADD';
@@ -83,6 +83,58 @@ const ORB_CFG = {
 
 const SLIDE = 'transform 0.42s cubic-bezier(0.32, 0.72, 0, 1)';
 
+const TIPS = [
+  'Pay yourself first — automate a transfer to savings the moment your pay lands.',
+  'The 50/30/20 rule: 50% needs, 30% wants, 20% savings. A simple starting point.',
+  'High-interest debt costs more than savings earns. Clear it first, always.',
+  'An emergency fund of 3 months expenses protects everything else you build.',
+  'Investing £100/month from 25 beats £200/month from 35 — by thousands.',
+  'Review your subscriptions quarterly — dormant ones are silent money leaks.',
+  'A Stocks & Shares ISA shelters up to £20,000/year from tax on growth.',
+  'Grocery shopping with a list saves around 20% vs shopping without one.',
+  'Your pension employer match is free money — always contribute enough to get it.',
+  'Automate savings. Willpower runs out; a standing order does not.',
+  'Avoid lifestyle inflation on a pay rise — bank the difference instead.',
+  'Negotiate broadband, insurance, and energy once a year — saves hundreds.',
+  'Small daily spends compound: a £4 coffee every day is £1,460 a year.',
+  'Zero-based budgeting: assign every pound a job before the month starts.',
+  'Balance transfers can cut credit card interest to 0% — always have a payoff plan.',
+  'Track net worth monthly: assets minus liabilities is the number that matters.',
+  'Buying used cars saves 30–40% — depreciation hits hardest in year one.',
+  'Low-cost index funds beat most managed funds over any 10-year window.',
+  'Round-up savings apps invest spare change — tiny amounts compound big.',
+  'Overpaying your mortgage by £100/month can cut years off the term.',
+];
+
+function getDailyTip() {
+  const today = new Date().toISOString().slice(0, 10);
+  let idx = parseInt(localStorage.getItem('vela_tip_idx') || '0', 10);
+  if (localStorage.getItem('vela_tip_date') !== today) {
+    idx = (idx + 1) % TIPS.length;
+    localStorage.setItem('vela_tip_date', today);
+    localStorage.setItem('vela_tip_idx', String(idx));
+  }
+  return TIPS[idx];
+}
+
+function parseGoalFromText(text) {
+  if (!/\b(save|saving)\b/i.test(text)) return null;
+  const amtM = text.match(/£\s*([\d,]+(?:\.\d{1,2})?)/);
+  if (!amtM) return null;
+  const amount = parseFloat(amtM[1].replace(/,/g, ''));
+  if (amount < 10 || amount > 999999) return null;
+  const forM = text.match(/for\s+(?:a\s+|an\s+|my\s+)?([a-zA-Z][^,.\n!?]{1,40})/i);
+  const byM  = text.match(/by\s+([A-Za-z]+(?:\s+\d{4})?|\d{4})/i);
+  return {
+    id:         Date.now(),
+    name:       forM ? forM[1].trim() : 'Savings goal',
+    target:     amount,
+    saved:      0,
+    createdAt:  new Date().toISOString().slice(0, 10),
+    targetDate: byM ? byM[1].trim() : null,
+  };
+}
+
 function splitSentences(text) {
   return (text.match(/[^.!?]+[.!?]*/g) || [text]).map(s => s.trim()).filter(Boolean);
 }
@@ -111,6 +163,7 @@ export default function VelaCore({ onReset }) {
   const [settingName, setSettingName]     = useState(() => localStorage.getItem('vela_name') || '');
   const [streak, setStreak]               = useState(0);
   const [spendAlert, setSpendAlert]       = useState(false);
+  const [goals, setGoals]                 = useState(() => getGoals());
 
   const orbRef           = useRef('idle');
   const voiceOnRef       = useRef(true);
@@ -272,6 +325,15 @@ export default function VelaCore({ onReset }) {
     if (!clean) return;
     unlockAudio();
     if (/\bsettings\b/i.test(clean)) { setShowSettings(true); return; }
+
+    // Detect savings goals ("save £X for Y by Z")
+    const newGoal = parseGoalFromText(clean);
+    if (newGoal) {
+      const updated = [...getGoals(), newGoal];
+      saveGoals(updated);
+      setGoals(updated);
+    }
+
     pushCard('user', clean);
     setInput('');
     setOrbState('thinking');
@@ -310,6 +372,7 @@ FINANCIAL SNAPSHOT:
 • Monthly surplus:  £${surplus.toFixed(0)}${surplus < 0 ? ' ⚠ deficit' : ''}
 • Total debt:       ${debt > 0 ? `£${debt.toFixed(0)}` : 'none'}
 • Goal:             ${goal || 'not set'}
+${goals.length > 0 ? `• Savings goals:    ${goals.map(g => `${g.name} (£${g.target})`).join(', ')}` : ''}
 ${insights.length > 0 ? `• Prior insights:   ${insights.slice(0, 3).join(' | ')}` : ''}
 
 RULES:
@@ -409,8 +472,18 @@ RULES:
           }}
         >Talk to Vela</button>
 
+        {/* Daily tip */}
+        <div style={{
+          display: 'flex', alignItems: 'flex-start', gap: 8, marginTop: 10,
+          background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)',
+          borderRadius: 12, padding: '9px 12px',
+        }}>
+          <span style={{ fontSize: 13, flexShrink: 0, lineHeight: '1.5' }}>💡</span>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.34)', lineHeight: 1.5 }}>{getDailyTip()}</div>
+        </div>
+
         {/* Swipe-up hint */}
-        <div style={{ textAlign: 'center', marginTop: 10, animation: 'swipeHint 2.6s ease-in-out infinite' }}>
+        <div style={{ textAlign: 'center', marginTop: 8, animation: 'swipeHint 2.6s ease-in-out infinite' }}>
           <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.22)', letterSpacing: '0.5px' }}>↑  details</div>
         </div>
       </div>
@@ -434,6 +507,8 @@ RULES:
           goal={goal}
           insights={insights}
           surplus={surplus}
+          goals={goals}
+          onClose={() => setDetailOpen(false)}
         />
       </div>
 
@@ -610,106 +685,144 @@ RULES:
 
 // ── Detail View ─────────────────────────────────────────────────────
 
-function DetailView({ income, expenses, debt, goal, insights, surplus }) {
-  const max = Math.max(income, expenses, 1);
-
-  let goalMonths = null;
-  if (goal && surplus > 0) {
-    const m = goal.match(/[\d,]+/);
-    if (m) {
-      const amt = parseInt(m[0].replace(/,/g, ''), 10);
-      if (amt > 0) goalMonths = Math.ceil(amt / surplus);
-    }
-  }
-
+function DetailView({ income, expenses, debt, goal, insights, surplus, goals, onClose }) {
   const annualSurplus = surplus * 12;
+
+  // Estimated spending breakdown (typical UK splits)
+  const categories = expenses > 0 ? [
+    { name: 'Housing & Bills', amount: Math.round(expenses * 0.35), color: PURPLE },
+    { name: 'Food & Groceries', amount: Math.round(expenses * 0.22), color: GREEN },
+    { name: 'Transport',        amount: Math.round(expenses * 0.14), color: BLUE },
+  ] : [];
 
   return (
     <div style={{
       height: '100%', display: 'flex', flexDirection: 'column',
       paddingTop: 'max(env(safe-area-inset-top), 16px)',
       paddingBottom: 'max(env(safe-area-inset-bottom), 20px)',
-      paddingLeft: 24, paddingRight: 24,
       boxSizing: 'border-box', overflow: 'hidden',
     }}>
 
-      {/* Drag handle */}
-      <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 8, marginBottom: 20 }}>
+      {/* Fixed header: drag handle + close */}
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', paddingLeft: 24, paddingRight: 16, paddingTop: 8, marginBottom: 18, position: 'relative', flexShrink: 0 }}>
         <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.18)' }} />
+        <button onClick={onClose} style={{ position: 'absolute', right: 16, top: 0, background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', fontSize: 24, cursor: 'pointer', padding: 6, lineHeight: 1 }}>×</button>
       </div>
 
-      {/* Section: Income vs Expenses */}
-      <DetailLabel>Income vs Expenses</DetailLabel>
-      <BarRow label="Income"   amount={income}   pct={Math.round((income   / max) * 100)} color={GREEN} />
-      <BarRow label="Expenses" amount={expenses} pct={Math.round((expenses / max) * 100)} color={AMBER} />
+      {/* Scrollable content */}
+      <div style={{ flex: 1, overflowY: 'auto', paddingLeft: 24, paddingRight: 24, paddingBottom: 8 }}>
 
-      <HSep />
-
-      {/* Section: Key Figures */}
-      <DetailLabel>Monthly</DetailLabel>
-      <NumberRow
-        label="Surplus"
-        value={surplus >= 0 ? `+£${surplus.toLocaleString('en-GB')}` : `−£${Math.abs(surplus).toLocaleString('en-GB')}`}
-        color={surplus >= 0 ? GREEN : RED}
-      />
-      <NumberRow
-        label="Annual trajectory"
-        value={annualSurplus >= 0 ? `+£${Math.abs(annualSurplus).toLocaleString('en-GB')}` : `−£${Math.abs(annualSurplus).toLocaleString('en-GB')}`}
-        color={annualSurplus >= 0 ? GREEN : RED}
-      />
-      <NumberRow
-        label="Total debt"
-        value={debt > 0 ? `£${debt.toLocaleString('en-GB')}` : 'None'}
-        color={debt > 0 ? AMBER : GREEN}
-      />
-
-      {/* Section: Goal */}
-      {goal ? (
-        <>
-          <HSep />
-          <DetailLabel>Goal</DetailLabel>
-          <div style={{ fontSize: 14, color: '#fff', lineHeight: 1.45, marginBottom: 5 }}>{goal}</div>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.42)' }}>
-            {goalMonths
-              ? `~${goalMonths} month${goalMonths !== 1 ? 's' : ''} at current rate`
-              : surplus <= 0 ? 'Resolve monthly shortfall first' : 'Add a target amount to see timeline'}
+        {/* Large income / expenses numbers */}
+        <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
+          <div style={{ flex: 1, background: 'rgba(78,202,139,0.07)', border: '1px solid rgba(78,202,139,0.16)', borderRadius: 16, padding: '14px 14px' }}>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.32)', letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: 6 }}>Income</div>
+            <div style={{ fontSize: 26, fontWeight: 800, color: GREEN, letterSpacing: '-0.5px' }}>£{income.toLocaleString('en-GB')}</div>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.26)', marginTop: 3 }}>per month</div>
           </div>
-        </>
-      ) : null}
+          <div style={{ flex: 1, background: 'rgba(245,166,35,0.07)', border: '1px solid rgba(245,166,35,0.16)', borderRadius: 16, padding: '14px 14px' }}>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.32)', letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: 6 }}>Expenses</div>
+            <div style={{ fontSize: 26, fontWeight: 800, color: AMBER, letterSpacing: '-0.5px' }}>£{expenses.toLocaleString('en-GB')}</div>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.26)', marginTop: 3 }}>per month</div>
+          </div>
+        </div>
 
-      {/* Section: Insights */}
-      {insights.length > 0 && (
-        <>
-          <HSep />
-          <DetailLabel>Vela's Insights</DetailLabel>
-          {insights.slice(0, 3).map((ins, i) => (
-            <div key={i} style={{
-              fontSize: 12, color: 'rgba(255,255,255,0.52)', lineHeight: 1.55,
-              marginBottom: 10, paddingLeft: 10,
-              borderLeft: `2px solid rgba(127,119,221,0.35)`,
-            }}>
-              {ins}
-            </div>
-          ))}
-        </>
-      )}
+        {/* Estimated spending breakdown */}
+        {categories.length > 0 && (
+          <>
+            <DetailLabel>Estimated Breakdown</DetailLabel>
+            {categories.map(c => (
+              <div key={c.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 10, paddingBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: c.color, flexShrink: 0 }} />
+                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.68)' }}>{c.name}</div>
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>~£{c.amount.toLocaleString('en-GB')}</div>
+              </div>
+            ))}
+            <HSep />
+          </>
+        )}
+
+        {/* Monthly position */}
+        <DetailLabel>Monthly Position</DetailLabel>
+        <NumberRow
+          label="Surplus"
+          value={surplus >= 0 ? `+£${surplus.toLocaleString('en-GB')}` : `−£${Math.abs(surplus).toLocaleString('en-GB')}`}
+          color={surplus >= 0 ? GREEN : RED}
+        />
+        <NumberRow
+          label="Annual trajectory"
+          value={annualSurplus >= 0 ? `+£${Math.abs(annualSurplus).toLocaleString('en-GB')}` : `−£${Math.abs(annualSurplus).toLocaleString('en-GB')}`}
+          color={annualSurplus >= 0 ? GREEN : RED}
+        />
+        {debt > 0 && <NumberRow label="Total debt" value={`£${debt.toLocaleString('en-GB')}`} color={AMBER} />}
+
+        {/* Structured savings goals */}
+        {goals.length > 0 && (
+          <>
+            <HSep />
+            <DetailLabel>Savings Goals</DetailLabel>
+            {goals.map(g => {
+              const saved        = g.saved || 0;
+              const pct          = g.target > 0 ? Math.min(100, Math.round((saved / g.target) * 100)) : 0;
+              const monthsNeeded = surplus > 0 ? Math.ceil((g.target - saved) / surplus) : null;
+              return (
+                <div key={g.id} style={{ marginBottom: 18 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 7 }}>
+                    <div style={{ fontSize: 13, color: '#fff', fontWeight: 500 }}>{g.name}</div>
+                    <div style={{ fontSize: 13, color: PURPLE, fontWeight: 700 }}>£{g.target.toLocaleString('en-GB')}</div>
+                  </div>
+                  <div style={{ height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 2, marginBottom: 6 }}>
+                    <div style={{ height: '100%', width: `${pct}%`, background: PURPLE, borderRadius: 2, transition: 'width 0.7s ease', minWidth: pct > 0 ? 4 : 0 }} />
+                  </div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.34)' }}>
+                    {monthsNeeded
+                      ? `~${monthsNeeded} month${monthsNeeded !== 1 ? 's' : ''} at £${surplus.toFixed(0)}/month surplus`
+                      : surplus <= 0 ? 'Resolve deficit to start saving' : 'Tracking not yet started'}
+                    {g.targetDate ? ` · target: ${g.targetDate}` : ''}
+                  </div>
+                </div>
+              );
+            })}
+          </>
+        )}
+
+        {/* Legacy goal string (shown only when no structured goals) */}
+        {goal && goals.length === 0 && (() => {
+          let months = null;
+          if (surplus > 0) {
+            const m = goal.match(/[\d,]+/);
+            if (m) { const a = parseInt(m[0].replace(/,/g, ''), 10); if (a > 0) months = Math.ceil(a / surplus); }
+          }
+          return (
+            <>
+              <HSep />
+              <DetailLabel>Goal</DetailLabel>
+              <div style={{ fontSize: 14, color: '#fff', lineHeight: 1.45, marginBottom: 5 }}>{goal}</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.42)' }}>
+                {months ? `~${months} month${months !== 1 ? 's' : ''} at current rate` : surplus <= 0 ? 'Resolve shortfall first' : 'Add a £ amount to see timeline'}
+              </div>
+            </>
+          );
+        })()}
+
+        {/* Vela's Insights */}
+        {insights.length > 0 && (
+          <>
+            <HSep />
+            <DetailLabel>Vela's Insights</DetailLabel>
+            {insights.slice(0, 3).map((ins, i) => (
+              <div key={i} style={{ fontSize: 12, color: 'rgba(255,255,255,0.52)', lineHeight: 1.55, marginBottom: 10, paddingLeft: 10, borderLeft: '2px solid rgba(127,119,221,0.35)' }}>
+                {ins}
+              </div>
+            ))}
+          </>
+        )}
+      </div>
     </div>
   );
 }
 
-function BarRow({ label, amount, pct, color }) {
-  return (
-    <div style={{ marginBottom: 14 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 }}>
-        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.42)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>{label}</div>
-        <div style={{ fontSize: 13, color: '#fff', fontWeight: 600 }}>£{amount.toLocaleString('en-GB')}</div>
-      </div>
-      <div style={{ height: 5, background: 'rgba(255,255,255,0.07)', borderRadius: 3 }}>
-        <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 3, transition: 'width 0.7s ease' }} />
-      </div>
-    </div>
-  );
-}
 
 function NumberRow({ label, value, color }) {
   return (

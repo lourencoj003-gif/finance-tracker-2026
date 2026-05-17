@@ -8,6 +8,9 @@ const K = {
   STREAK_DATE:  'vela_streak_date',
   STREAK_COUNT: 'vela_streak_count',
   CHECKIN_DATE: 'vela_checkin_date',
+  GOALS:        'vela_goals',
+  TIP_DATE:     'vela_tip_date',
+  TIP_IDX:      'vela_tip_idx',
 };
 
 export const getPin            = ()    => localStorage.getItem(K.PIN);
@@ -46,4 +49,7 @@ export const shouldShowCheckin = () => {
 };
 export const markCheckin = () => localStorage.setItem(K.CHECKIN_DATE, today());
 
-export const clearAll          = ()    => Object.values(K).forEach(k => localStorage.removeItem(k));
+export const getGoals  = ()    => { const r = localStorage.getItem(K.GOALS); return r ? JSON.parse(r) : []; };
+export const saveGoals = (g)   => localStorage.setItem(K.GOALS, JSON.stringify(g));
+
+export const clearAll  = ()    => Object.values(K).forEach(k => localStorage.removeItem(k));
