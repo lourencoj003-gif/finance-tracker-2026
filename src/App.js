@@ -29,7 +29,7 @@ export default function App() {
       position: 'relative',
     }}>
       {screen === S.SPLASH  && <Splash     onDone={afterSplash} />}
-      {screen === S.PIN     && <Pin        onSuccess={afterPin} />}
+      {screen === S.PIN     && <Pin        onSuccess={afterPin} onForgot={goReset} />}
       {screen === S.ONBOARD && <Onboarding onDone={afterOnboarding} />}
       {screen === S.HOME    && <Home       onChat={goChat} onReset={goReset} />}
       {screen === S.CHAT    && <Chat       onBack={goHome} />}

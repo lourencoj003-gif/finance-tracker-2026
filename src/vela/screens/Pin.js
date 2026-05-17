@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { getPin, setPin } from '../storage';
+import { getPin, setPin, clearAll } from '../storage';
 import { t } from '../theme';
 
-export default function Pin({ onSuccess }) {
+const PIN_LENGTH = 4;
+
+export default function Pin({ onSuccess, onForgot }) {
   const existing              = getPin();
   const [phase, setPhase]     = useState(existing ? 'login' : 'create');
   const [digits, setDigits]   = useState([]);
@@ -17,10 +19,10 @@ export default function Pin({ onSuccess }) {
   }
 
   function press(d) {
-    if (digits.length >= 6) return;
+    if (digits.length >= PIN_LENGTH) return;
     const next = [...digits, d];
     setDigits(next);
-    if (next.length < 6) return;
+    if (next.length < PIN_LENGTH) return;
     const pin = next.join('');
     setTimeout(() => attempt(pin), 120);
   }
@@ -50,7 +52,7 @@ export default function Pin({ onSuccess }) {
   }
 
   const titles = { login: 'Welcome back', create: 'Create your PIN', confirm: 'Confirm your PIN' };
-  const subs   = { login: 'Enter your 6-digit PIN', create: 'Choose a PIN to protect your data', confirm: 'Enter your PIN one more time' };
+  const subs   = { login: 'Enter your 4-digit PIN', create: 'Choose a 4-digit PIN to protect your data', confirm: 'Enter your PIN one more time' };
 
   return (
     <div style={{ minHeight: '100vh', background: t.bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
@@ -58,8 +60,8 @@ export default function Pin({ onSuccess }) {
       <div style={{ fontSize: 24, fontWeight: 700, color: t.text, marginBottom: 6, textAlign: 'center' }}>{titles[phase]}</div>
       <div style={{ fontSize: 14, color: t.muted, marginBottom: 40, textAlign: 'center' }}>{subs[phase]}</div>
 
-      <div style={{ display: 'flex', gap: 14, marginBottom: 10, animation: shake ? 'pinShake 0.45s' : 'none' }}>
-        {Array(6).fill(0).map((_, i) => (
+      <div style={{ display: 'flex', gap: 18, marginBottom: 10, animation: shake ? 'pinShake 0.45s' : 'none' }}>
+        {Array(PIN_LENGTH).fill(0).map((_, i) => (
           <div key={i} style={{
             width: 13, height: 13, borderRadius: '50%',
             background: i < digits.length ? t.accent : 'rgba(255,255,255,0.15)',
@@ -70,7 +72,7 @@ export default function Pin({ onSuccess }) {
 
       <div style={{ minHeight: 32, marginBottom: 20, fontSize: 13, color: t.danger, textAlign: 'center' }}>{error}</div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 72px)', gap: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 70px)', gap: 14 }}>
         {[1,2,3,4,5,6,7,8,9].map(n => (
           <PadBtn key={n} label={String(n)} onPress={() => press(String(n))} />
         ))}
@@ -78,6 +80,15 @@ export default function Pin({ onSuccess }) {
         <PadBtn label="0" onPress={() => press('0')} />
         <PadBtn label="⌫" onPress={() => { setDigits(d => d.slice(0, -1)); setError(''); }} dim />
       </div>
+
+      {phase === 'login' && (
+        <button
+          onClick={() => { clearAll(); onForgot(); }}
+          style={{ marginTop: 36, background: 'none', border: 'none', color: t.muted, fontSize: 13, cursor: 'pointer', textDecoration: 'underline' }}
+        >
+          Forgot PIN? Reset Vela
+        </button>
+      )}
 
       <style>{`
         @keyframes pinShake {
@@ -98,7 +109,7 @@ function PadBtn({ label, onPress, dim }) {
       onPointerUp={() => setActive(false)}
       onPointerLeave={() => setActive(false)}
       style={{
-        width: 72, height: 72, borderRadius: '50%', border: 'none', cursor: 'pointer',
+        width: 70, height: 70, borderRadius: '50%', border: 'none', cursor: 'pointer',
         background: dim ? 'transparent' : active ? t.accent : 'rgba(255,255,255,0.09)',
         color: dim ? t.muted : active ? '#0d1b2a' : t.text,
         fontSize: dim ? 22 : 24, fontWeight: 500,

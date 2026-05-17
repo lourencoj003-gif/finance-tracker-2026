@@ -24,7 +24,7 @@ export default function Splash({ onDone }) {
         Vela
       </div>
       <div style={{ fontSize: 16, color: t.muted, marginTop: 10, letterSpacing: '0.3px' }}>
-        Meet Vela
+        Your financial navigator
       </div>
       <style>{`
         @keyframes orbPulse {
