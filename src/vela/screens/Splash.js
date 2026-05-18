@@ -4,7 +4,7 @@ import { t } from '../theme';
 const INTRO_KEY = 'vela_intro_seen';
 
 const SENTENCES = [
-  { text: 'Hey. I am Vela.',                              delay: 2000 },
+  { text: 'Hey. I am Marcus.',                            delay: 2000 },
   { text: 'I know exactly what to do with your money.',   delay: 2500 },
   { text: 'Most people never figure this out.',           delay: 2500 },
   { text: 'You are about to.',                            delay: 2000 },

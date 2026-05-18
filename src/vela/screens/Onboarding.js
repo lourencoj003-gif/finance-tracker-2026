@@ -59,7 +59,7 @@ const ORB_CFG = {
 
 const Q = [
   {
-    ask: ()           => "Hi, I'm Vela 👋 I'm your personal finance coach — think of me as the friend who actually knows money.\n\nLet's build your picture. First: what's your monthly take-home pay?",
+    ask: ()           => "Hi, I'm Marcus 👋 I'm your personal finance coach — think of me as the friend who actually knows money.\n\nLet's build your picture. First: what's your monthly take-home pay?",
     ph:  'e.g. £2,500',
   },
   {
@@ -229,7 +229,7 @@ export default function Onboarding({ onDone }) {
     const surplus = income - expenses;
     const started = Date.now();
 
-    const sysPrompt = `You are Vela, a personal finance coach. Respond with exactly 3 short financial insights as a JSON array. Each must be under 28 words, start with an action verb, and reference a specific £ amount. Format: ["insight1","insight2","insight3"] — nothing else.`;
+    const sysPrompt = `You are Marcus, a personal finance coach. Respond with exactly 3 short financial insights as a JSON array. Each must be under 28 words, start with an action verb, and reference a specific £ amount. Format: ["insight1","insight2","insight3"] — nothing else.`;
     const userMsg   = `Monthly income: £${income}. Monthly expenses: £${expenses}. Surplus: £${surplus.toFixed(0)}. Total debt: £${debt}. Goal: ${goal}.`;
 
     let insights;
@@ -350,7 +350,7 @@ export default function Onboarding({ onDone }) {
               style={{ position: 'absolute', top: 12, right: 16, background: 'none', border: 'none', color: 'rgba(255,255,255,0.28)', fontSize: 13, cursor: 'pointer', padding: 4, lineHeight: 1 }}
             >🔊</button>
             <div style={{ fontSize: 10, color: 'rgba(127,119,221,0.7)', marginBottom: 12, letterSpacing: '0.9px', textTransform: 'uppercase', fontWeight: 600 }}>
-              Vela
+              Marcus
             </div>
             <div style={{ fontSize: 16, color: '#eeeeff', lineHeight: 1.68, whiteSpace: 'pre-wrap', fontWeight: 400, paddingRight: 22 }}>
               {currentQ}

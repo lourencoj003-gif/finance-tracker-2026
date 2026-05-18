@@ -365,7 +365,7 @@ export default function VelaCore({ onReset }) {
       const highRate = getDebts().reduce((mx, d) => d.rate > mx ? d.rate : mx, 0);
       msg = `Debt Destruction Mode is active${hi} — £${totalD.toLocaleString('en-GB')} total, highest rate at ${highRate}%. Every extra pound you throw at it today costs the lender money, not you. What shall we attack first?`;
     } else {
-      msg = `Hi${hi}. I'm Vela, your personal financial navigator. How can I help you today?`;
+      msg = `Hi${hi}. I'm Marcus, your personal financial navigator. How can I help you today?`;
     }
 
     const tid = setTimeout(() => { pushCard('vela', msg); speak(msg); }, 700);
@@ -617,7 +617,7 @@ export default function VelaCore({ onReset }) {
     };
     const ord = n => n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : `${n}th`;
 
-    return `You are Vela — Cleo's warmth meets JARVIS's precision. You are a sharp, witty, PROACTIVE personal finance coach who celebrates wins and faces problems head-on — never robotic, never vague.
+    return `You are Marcus — Cleo's warmth meets JARVIS's precision. You are a sharp, witty, PROACTIVE personal finance coach who celebrates wins and faces problems head-on — never robotic, never vague.
 ${name ? `\nYou are speaking with ${name}. Use their name occasionally — never robotically.` : ''}
 
 VOCABULARY: "Well done", "On it", "Here's the situation", "Good news", "One thing to watch". Rotate naturally — never all in one message.
@@ -681,7 +681,7 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
 4. When user asks what they can afford or spend, answer with the In My Pocket figure: £${inMyPocket}/day.
 5. Reference the user's Baby Step (Step ${babyStep}) when giving savings, debt, or investment advice.
 6. Never repeat what the user just said. Celebrate wins warmly; tackle problems directly.
-7. You are Vela — never say "As an AI" or "As a language model".
+7. You are Marcus — never say "As an AI" or "As a language model".
 8. Always end with a specific action or a sharp question that moves them forward.
 9. End any financial advice with: ⚖️ Guidance only — not FCA-regulated advice.`;
   }
@@ -982,7 +982,7 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
           </div>
         )}
 
-        {/* Talk to Vela button */}
+        {/* Talk to Marcus button */}
         <button
           onClick={() => { unlockAudio(); setChatOpen(true); }}
           style={{
@@ -990,7 +990,7 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
             color: '#fff', fontSize: 17, fontWeight: 600, cursor: 'pointer',
             letterSpacing: '0.2px', boxShadow: '0 0 24px 4px rgba(127,119,221,0.22)',
           }}
-        >Talk to Vela</button>
+        >Talk to Marcus</button>
 
         {/* Daily tip */}
         <div style={{
@@ -1125,7 +1125,7 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && input.trim() && handleMessage(input)}
-            placeholder="Ask Vela…"
+            placeholder="Ask Marcus…"
             style={{
               flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
               borderRadius: 22, padding: '10px 16px', color: '#fff', fontSize: 16,
@@ -1270,7 +1270,7 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 26 }}>
               <div>
                 <div style={{ fontSize: 14, color: '#fff', marginBottom: 2 }}>Voice responses</div>
-                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.38)' }}>Vela speaks aloud</div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.38)' }}>Marcus speaks aloud</div>
               </div>
               <Toggle on={voiceOn} onToggle={() => setVoiceOn(v => !v)} />
             </div>
@@ -1424,11 +1424,11 @@ function DetailView({ income, expenses, debt, goal, insights, surplus, goals, sa
           );
         })()}
 
-        {/* Vela's Insights */}
+        {/* Marcus's Insights */}
         {insights.length > 0 && (
           <>
             <HSep />
-            <DetailLabel>Vela's Insights</DetailLabel>
+            <DetailLabel>Marcus's Insights</DetailLabel>
             {insights.slice(0, 3).map((ins, i) => (
               <div key={i} style={{ fontSize: 12, color: 'rgba(255,255,255,0.52)', lineHeight: 1.55, marginBottom: 10, paddingLeft: 10, borderLeft: '2px solid rgba(127,119,221,0.35)' }}>
                 {ins}
@@ -1616,7 +1616,7 @@ function GlassCard({ card, opacity = 1, onSpeak }) {
         >🔊</button>
       )}
       <div style={{ fontSize: 10, color: isUser ? 'rgba(127,119,221,0.65)' : 'rgba(255,255,255,0.28)', marginBottom: 5, letterSpacing: '0.8px', textTransform: 'uppercase', fontWeight: 600 }}>
-        {isUser ? 'You' : 'Vela'}
+        {isUser ? 'You' : 'Marcus'}
       </div>
       <div style={{ fontSize: 14, color: '#eeeeff', lineHeight: 1.62, whiteSpace: 'pre-wrap', paddingRight: onSpeak ? 22 : 0 }}>{card.text}</div>
     </div>

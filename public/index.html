@@ -30,20 +30,16 @@
     -->
     <title>Vela</title>
     <style>
-      html {
-        height: 100%;
-        overflow: hidden;
+      html, body {
         position: fixed;
         width: 100%;
-      }
-      body {
         height: 100%;
         overflow: hidden;
-        position: fixed;
-        width: 100%;
+        overscroll-behavior: none;
+        -webkit-overflow-scrolling: none;
+        touch-action: none;
         margin: 0;
         padding: 0;
-        overscroll-behavior: none;
         -webkit-text-size-adjust: none;
         text-size-adjust: none;
       }
@@ -54,11 +50,14 @@
       }
       * {
         -webkit-tap-highlight-color: transparent;
-        touch-action: manipulation;
         box-sizing: border-box;
       }
       input, textarea, select {
         font-size: 16px !important;
+        touch-action: manipulation;
+      }
+      button, a, [role="button"] {
+        touch-action: manipulation;
       }
     </style>
   </head>
