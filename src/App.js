@@ -40,7 +40,7 @@ export default function App() {
       height: containerHeight,
       overflow: 'hidden',
       touchAction: 'none',
-      background: '#0a0a0f',
+      background: '#111318',
       fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif',
       paddingTop: 'env(safe-area-inset-top)',
       paddingBottom: 'env(safe-area-inset-bottom)',

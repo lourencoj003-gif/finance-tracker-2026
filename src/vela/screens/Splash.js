@@ -22,8 +22,8 @@ function trySpeak(text) {
                   || voices.find(v => v.lang.startsWith('en'))
                   || null;
     const u = new SpeechSynthesisUtterance(text);
-    u.rate   = 0.86;
-    u.pitch  = 1.05;
+    u.rate   = 0.78;
+    u.pitch  = 0.95;
     u.volume = 1;
     if (voice) u.voice = voice;
     window.speechSynthesis.speak(u);

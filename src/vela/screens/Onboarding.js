@@ -37,6 +37,11 @@ const KEYFRAMES = `
     0%,100% { opacity: 0.3; }
     50%     { opacity: 1; }
   }
+  @keyframes sentenceIn {
+    from { opacity: 0; transform: translateY(3px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  input::placeholder, textarea::placeholder { color: #A89880; opacity: 1; }
 `;
 
 const ORB_CFG = {
@@ -114,6 +119,9 @@ export default function Onboarding({ onDone }) {
   const [orbState, setOrbState]   = useState('idle');
   const [currentQ, setCurrentQ]   = useState('');
   const [cardKey, setCardKey]     = useState(0);
+  const [vpH, setVpH]             = useState(
+    window.visualViewport ? Math.round(window.visualViewport.height) : null
+  );
 
   const buildingRef      = useRef(false);
   const hasInit          = useRef(false);
@@ -129,6 +137,15 @@ export default function Onboarding({ onDone }) {
       document.head.appendChild(el);
     }
     return () => { window.speechSynthesis?.cancel(); };
+  }, []);
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => { window.scrollTo(0, 0); setVpH(Math.round(vv.height)); };
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    return () => { vv.removeEventListener('resize', update); vv.removeEventListener('scroll', update); };
   }, []);
 
   useEffect(() => {
@@ -164,15 +181,15 @@ export default function Onboarding({ onDone }) {
       const next = () => {
         if (i >= sentences.length) { setOrbState(buildingRef.current ? 'thinking' : 'idle'); return; }
         const u = new SpeechSynthesisUtterance(sentences[i++]);
-        u.rate   = 0.92;
-        u.pitch  = 1.05;
+        u.rate   = 0.78;
+        u.pitch  = 0.95;
         u.volume = 1;
         if (voice) u.voice = voice;
-        u.onend   = () => setTimeout(next, i < sentences.length ? 150 : 0);
+        u.onend   = () => setTimeout(next, i < sentences.length ? 200 : 0);
         u.onerror = () => setOrbState(buildingRef.current ? 'thinking' : 'idle');
         window.speechSynthesis.speak(u);
       };
-      setTimeout(next, 300);
+      setTimeout(next, 500);
     };
     window.speechSynthesis.getVoices().length > 0
       ? fire()
@@ -265,9 +282,10 @@ export default function Onboarding({ onDone }) {
   }
 
   const cfg = ORB_CFG[orbState] || ORB_CFG.idle;
+  const containerH = vpH ? `${vpH}px` : '100dvh';
 
   return (
-    <div style={{ position: 'relative', height: '100dvh', background: BG, overflow: 'hidden', fontFamily: 'inherit' }}>
+    <div style={{ position: 'relative', height: containerH, background: BG, overflow: 'hidden', fontFamily: 'inherit' }}>
 
       {/* Progress dots */}
       <div style={{ position: 'absolute', top: 32, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 8, zIndex: 5 }}>
@@ -349,11 +367,11 @@ export default function Onboarding({ onDone }) {
               onClick={() => { unlockAudio(); speak(currentQ); }}
               style={{ position: 'absolute', top: 12, right: 16, background: 'none', border: 'none', color: 'rgba(232,221,208,0.28)', fontSize: 13, cursor: 'pointer', padding: 4, lineHeight: 1 }}
             >🔊</button>
-            <div style={{ fontSize: 10, color: 'rgba(200,184,154,0.7)', marginBottom: 12, letterSpacing: '0.9px', textTransform: 'uppercase', fontWeight: 600 }}>
+            <div style={{ fontSize: 10, color: '#A89880', marginBottom: 12, letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: 500 }}>
               Noa
             </div>
-            <div style={{ fontSize: 16, color: '#E8DDD0', lineHeight: 1.68, whiteSpace: 'pre-wrap', fontWeight: 400, paddingRight: 22 }}>
-              {currentQ}
+            <div style={{ fontSize: 17, color: '#E8DDD0', lineHeight: 1.7, whiteSpace: 'pre-wrap', fontWeight: 300, letterSpacing: '0.01em', paddingRight: 22 }}>
+              <AnimatedText key={cardKey} text={currentQ} />
             </div>
           </div>
         </div>
@@ -365,8 +383,8 @@ export default function Onboarding({ onDone }) {
           position: 'absolute', bottom: 0, left: 0, right: 0, height: 86,
           display: 'flex', alignItems: 'center', gap: 10,
           padding: '0 16px', paddingBottom: 'max(0px, env(safe-area-inset-bottom))',
-          background: `linear-gradient(to top, ${BG} 65%, transparent)`,
-          borderTop: '1px solid rgba(232,221,208,0.04)',
+          background: BG,
+          borderTop: '1px solid rgba(232,221,208,0.06)',
         }}>
           <input
             value={input}
@@ -374,9 +392,18 @@ export default function Onboarding({ onDone }) {
             onKeyDown={onKey}
             placeholder={Q[step]?.ph || ''}
             style={{
-              flex: 1, background: 'rgba(232,221,208,0.05)', border: '1px solid rgba(232,221,208,0.08)',
-              borderRadius: 22, padding: '11px 16px', color: '#E8DDD0', fontSize: 16,
-              outline: 'none', fontFamily: 'inherit',
+              flex: 1,
+              background: 'rgba(255,255,255,0.05)',
+              border: '0.5px solid rgba(232,221,208,0.2)',
+              borderRadius: 24,
+              padding: '14px 20px',
+              color: '#E8DDD0',
+              WebkitTextFillColor: '#E8DDD0',
+              fontSize: 16,
+              fontWeight: 300,
+              outline: 'none',
+              fontFamily: 'inherit',
+              WebkitAppearance: 'none',
             }}
           />
           <button onClick={send} style={{
@@ -406,5 +433,28 @@ function WaveBars() {
         }} />
       ))}
     </div>
+  );
+}
+
+function AnimatedText({ text }) {
+  const [visibleCount, setVisibleCount] = useState(1);
+  useEffect(() => {
+    const sentences = splitSentences(text);
+    setVisibleCount(1);
+    if (sentences.length <= 1) return;
+    let count = 1;
+    const id = setInterval(() => {
+      count++;
+      setVisibleCount(count);
+      if (count >= sentences.length) clearInterval(id);
+    }, 400);
+    return () => clearInterval(id);
+  }, [text]); // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <>
+      {splitSentences(text).slice(0, visibleCount).map((s, i) => (
+        <span key={i} style={{ animation: 'sentenceIn 0.6s ease-out', display: 'inline' }}>{s} </span>
+      ))}
+    </>
   );
 }

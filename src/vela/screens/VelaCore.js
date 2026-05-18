@@ -73,6 +73,11 @@ const KEYFRAMES = `
     0%   { transform: translate(0, 0) scale(1);                           opacity: 1; }
     100% { transform: translate(var(--dx), var(--dy)) scale(0.35);        opacity: 0; }
   }
+  @keyframes sentenceIn {
+    from { opacity: 0; transform: translateY(3px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  input::placeholder, textarea::placeholder { color: #A89880; opacity: 1; }
 `;
 
 
@@ -244,6 +249,9 @@ export default function VelaCore({ onReset }) {
     const ch    = CHALLENGES[(wkNum - 1) % CHALLENGES.length];
     return { weekId, id: ch.id, accepted: false, completed: false };
   });
+  const [vpH, setVpH] = useState(
+    window.visualViewport ? Math.round(window.visualViewport.height) : null
+  );
 
   const orbRef           = useRef('idle');
   const voiceOnRef       = useRef(true);
@@ -279,6 +287,15 @@ export default function VelaCore({ onReset }) {
       window.speechSynthesis?.cancel();
       recognitionRef.current?.abort();
     };
+  }, []);
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => { window.scrollTo(0, 0); setVpH(Math.round(vv.height)); };
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    return () => { vv.removeEventListener('resize', update); vv.removeEventListener('scroll', update); };
   }, []);
 
   // ── On mount: last-open tracking, streak, spending alert ─────────
@@ -416,15 +433,15 @@ export default function VelaCore({ onReset }) {
       const next = () => {
         if (i >= sentences.length) { setOrbState('idle'); return; }
         const u = new SpeechSynthesisUtterance(sentences[i++]);
-        u.rate   = 0.92;
-        u.pitch  = 1.05;
+        u.rate   = 0.78;
+        u.pitch  = 0.95;
         u.volume = 1;
         if (voice) u.voice = voice;
-        u.onend   = () => setTimeout(next, i < sentences.length ? 150 : 0);
+        u.onend   = () => setTimeout(next, i < sentences.length ? 200 : 0);
         u.onerror = () => setOrbState('idle');
         window.speechSynthesis.speak(u);
       };
-      setTimeout(next, 300);
+      setTimeout(next, 500);
     };
     window.speechSynthesis.getVoices().length > 0
       ? fire()
@@ -746,6 +763,7 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
   // Vela Score
   const velaScore      = calcVelaScore({ income, expenses, debt, streak });
   const velaScoreColor = velaScore >= 70 ? GREEN : velaScore >= 50 ? AMBER : RED;
+  const containerH     = vpH ? `${vpH}px` : '100dvh';
 
   // Days of Financial Freedom (target for display; freedomDays state animates to it)
   const dailyExpenses      = expenses > 0 ? expenses / 30 : 1;
@@ -813,7 +831,7 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
   const cardOpacities = opacityMap[Math.min(visibleCards.length, 3)] || [0.32, 0.65, 1];
 
   return (
-    <div style={{ position: 'relative', height: '100dvh', background: BG, overflow: 'hidden', fontFamily: 'inherit' }}>
+    <div style={{ position: 'relative', height: containerH, background: BG, overflow: 'hidden', fontFamily: 'inherit' }}>
 
       {/* ══════════════════════════════════════════
           DASHBOARD — swipe up to reveal detail
@@ -1121,8 +1139,8 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
           position: 'absolute', bottom: 0, left: 0, right: 0, height: 72,
           display: 'flex', alignItems: 'center', gap: 10,
           padding: '0 16px', paddingBottom: 'max(0px, env(safe-area-inset-bottom))',
-          background: `linear-gradient(to top, ${BG} 60%, transparent)`,
-          borderTop: '1px solid rgba(232,221,208,0.04)',
+          background: BG,
+          borderTop: '1px solid rgba(232,221,208,0.06)',
         }}>
           <input
             value={input}
@@ -1130,9 +1148,18 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
             onKeyDown={e => e.key === 'Enter' && input.trim() && handleMessage(input)}
             placeholder="Ask Noa…"
             style={{
-              flex: 1, background: 'rgba(232,221,208,0.05)', border: '1px solid rgba(232,221,208,0.08)',
-              borderRadius: 22, padding: '10px 16px', color: '#E8DDD0', fontSize: 16,
-              outline: 'none', fontFamily: 'inherit',
+              flex: 1,
+              background: 'rgba(255,255,255,0.05)',
+              border: '0.5px solid rgba(232,221,208,0.2)',
+              borderRadius: 24,
+              padding: '14px 20px',
+              color: '#E8DDD0',
+              WebkitTextFillColor: '#E8DDD0',
+              fontSize: 16,
+              fontWeight: 300,
+              outline: 'none',
+              fontFamily: 'inherit',
+              WebkitAppearance: 'none',
             }}
           />
           <button
@@ -1603,12 +1630,26 @@ function MetricPill({ label, value, color, badge, badgeColor }) {
 
 function GlassCard({ card, opacity = 1, onSpeak }) {
   const isUser = card.type === 'user';
+  const sentences = splitSentences(card.text);
+  const [visibleCount, setVisibleCount] = useState(isUser ? sentences.length : 1);
+
+  useEffect(() => {
+    if (isUser || sentences.length <= 1) return;
+    let count = 1;
+    const id = setInterval(() => {
+      count++;
+      setVisibleCount(count);
+      if (count >= sentences.length) clearInterval(id);
+    }, 400);
+    return () => clearInterval(id);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <div style={{
       position: 'relative',
       background: isUser ? 'rgba(200,184,154,0.08)' : 'rgba(232,221,208,0.05)',
       border: `1px solid ${isUser ? 'rgba(200,184,154,0.26)' : 'rgba(232,221,208,0.1)'}`,
-      borderRadius: 20, padding: '12px 16px', marginBottom: 10,
+      borderRadius: 20, padding: '14px 18px', marginBottom: 10,
       backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
       animation: 'cardIn 0.35s ease-out', opacity, transition: 'opacity 0.5s ease',
     }}>
@@ -1618,10 +1659,20 @@ function GlassCard({ card, opacity = 1, onSpeak }) {
           style={{ position: 'absolute', top: 8, right: 10, background: 'none', border: 'none', color: 'rgba(232,221,208,0.28)', fontSize: 13, cursor: 'pointer', padding: 4, lineHeight: 1 }}
         >🔊</button>
       )}
-      <div style={{ fontSize: 10, color: isUser ? 'rgba(200,184,154,0.65)' : 'rgba(232,221,208,0.28)', marginBottom: 5, letterSpacing: '0.8px', textTransform: 'uppercase', fontWeight: 600 }}>
+      <div style={{ fontSize: 10, color: isUser ? 'rgba(200,184,154,0.65)' : '#A89880', marginBottom: 6, letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: 500 }}>
         {isUser ? 'You' : 'Noa'}
       </div>
-      <div style={{ fontSize: 14, color: '#E8DDD0', lineHeight: 1.62, whiteSpace: 'pre-wrap', paddingRight: onSpeak ? 22 : 0 }}>{card.text}</div>
+      {isUser ? (
+        <div style={{ fontSize: 17, fontWeight: 300, color: '#E8DDD0', lineHeight: 1.7, letterSpacing: '0.01em', whiteSpace: 'pre-wrap' }}>
+          {card.text}
+        </div>
+      ) : (
+        <div style={{ fontSize: 17, fontWeight: 300, color: '#E8DDD0', lineHeight: 1.7, letterSpacing: '0.01em', whiteSpace: 'pre-wrap', paddingRight: onSpeak ? 22 : 0 }}>
+          {sentences.slice(0, visibleCount).map((s, i) => (
+            <span key={i} style={{ animation: 'sentenceIn 0.6s ease-out', display: 'inline' }}>{s} </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
