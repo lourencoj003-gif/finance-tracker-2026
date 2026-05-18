@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { getData, saveData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin, getGoals, saveGoals, getLastOpen, setLastOpen, getLastCeremonyYM, setLastCeremonyYM, getDebts, saveDebts, getChallenge, saveChallenge, getExpenseLog, saveExpenseLog, getEveningDate, setEveningDate, appendEveningLog } from '../storage';
 import PaydayCeremony from './PaydayCeremony';
+import Orb from '../Orb';
 
 const PURPLE    = '#7F77DD';
 const BLUE      = '#378ADD';
@@ -74,28 +75,6 @@ const KEYFRAMES = `
   }
 `;
 
-const ORB_CFG = {
-  idle: {
-    bg:   `radial-gradient(circle at 35% 35%, #b0acee, ${PURPLE} 55%, #3a369e)`,
-    glow: `0 0 40px 12px rgba(127,119,221,0.42), 0 0 90px 35px rgba(127,119,221,0.14)`,
-    anim: 'orbIdle 3s ease-in-out infinite',
-  },
-  listening: {
-    bg:   `radial-gradient(circle at 35% 35%, #8ec8f8, ${BLUE} 55%, #1a4d9a)`,
-    glow: `0 0 60px 22px rgba(55,138,221,0.68), 0 0 130px 55px rgba(55,138,221,0.22)`,
-    anim: 'orbListening 0.75s ease-in-out infinite',
-  },
-  thinking: {
-    bg:   `radial-gradient(circle at 35% 35%, #8a86d5, ${PURPLE} 55%, #27246a)`,
-    glow: `0 0 28px 8px rgba(127,119,221,0.28), 0 0 60px 20px rgba(127,119,221,0.08)`,
-    anim: 'orbThinking 2.2s ease-in-out infinite',
-  },
-  speaking: {
-    bg:   `radial-gradient(circle at 35% 35%, #cac7f8, ${PURPLE} 55%, #5250c0)`,
-    glow: `0 0 72px 28px rgba(127,119,221,0.82), 0 0 150px 65px rgba(127,119,221,0.32)`,
-    anim: 'orbSpeaking 0.42s ease-in-out infinite',
-  },
-};
 
 const SLIDE = 'transform 0.42s cubic-bezier(0.32, 0.72, 0, 1)';
 
@@ -256,6 +235,7 @@ export default function VelaCore({ onReset }) {
   const [eveningAnswered, setEveningAnswered]   = useState(() => getEveningDate() === new Date().toISOString().slice(0, 10));
   const [eveningPhase, setEveningPhase]         = useState('ask');
   const [eveningNote, setEveningNote]           = useState('');
+  const [tapHintVisible, setTapHintVisible] = useState(() => !localStorage.getItem('vela_tap_hint_seen'));
   const [challengeData, setChallengeData]   = useState(() => {
     const stored = getChallenge();
     const weekId = getISOWeek();
@@ -278,6 +258,15 @@ export default function VelaCore({ onReset }) {
   function setOrbState(s) { orbRef.current = s; _setOrbState(s); }
 
   useEffect(() => { voiceOnRef.current = voiceOn; }, [voiceOn]);
+
+  useEffect(() => {
+    if (!tapHintVisible) return;
+    const tid = setTimeout(() => {
+      setTapHintVisible(false);
+      localStorage.setItem('vela_tap_hint_seen', '1');
+    }, 3000);
+    return () => clearTimeout(tid);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!document.getElementById('vela-kf')) {
@@ -819,13 +808,12 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
   ];
 
   // ── Chat overlay state ───────────────────────────────────────────
-  const cfg          = ORB_CFG[orbState] || ORB_CFG.idle;
   const visibleCards = cards.slice(-3);
   const opacityMap   = { 0: [1], 1: [1], 2: [0.55, 1], 3: [0.32, 0.65, 1] };
   const cardOpacities = opacityMap[Math.min(visibleCards.length, 3)] || [0.32, 0.65, 1];
 
   return (
-    <div style={{ position: 'relative', height: '100vh', background: BG, overflow: 'hidden', fontFamily: 'inherit' }}>
+    <div style={{ position: 'relative', height: '100dvh', background: BG, overflow: 'hidden', fontFamily: 'inherit' }}>
 
       {/* ══════════════════════════════════════════
           DASHBOARD — swipe up to reveal detail
@@ -886,7 +874,7 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
           {debtMode ? (
             <>
               <div style={{ fontSize: 11, color: 'rgba(226,75,74,0.7)', letterSpacing: '1.5px', textTransform: 'uppercase', fontWeight: 700 }}>Debt Destruction Mode</div>
-              <div style={{ fontSize: 58, fontWeight: 800, color: DEBT_RED, letterSpacing: '-3px', lineHeight: 1, textAlign: 'center' }}>
+              <div style={{ fontSize: 'clamp(38px, 14vw, 62px)', fontWeight: 800, color: DEBT_RED, letterSpacing: '-3px', lineHeight: 1, textAlign: 'center' }}>
                 £{totalDebt.toLocaleString('en-GB')}
               </div>
               <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.32)', letterSpacing: '0.3px' }}>Destroying debt</div>
@@ -899,7 +887,7 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
             </>
           ) : freedomDaysTarget > 0 ? (
             <>
-              <div style={{ fontSize: 68, fontWeight: 800, color: GREEN, letterSpacing: '-4px', lineHeight: 1, textAlign: 'center' }}>{freedomDays}</div>
+              <div style={{ fontSize: 'clamp(48px, 16vw, 72px)', fontWeight: 800, color: GREEN, letterSpacing: '-4px', lineHeight: 1, textAlign: 'center' }}>{freedomDays}</div>
               <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.32)', letterSpacing: '0.3px' }}>days of freedom</div>
               <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', textAlign: 'center', maxWidth: 220 }}>
                 You could live {freedomDaysTarget} day{freedomDaysTarget !== 1 ? 's' : ''} without income
@@ -907,7 +895,7 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
             </>
           ) : (
             <>
-              <div style={{ fontSize: 54, fontWeight: 800, color: numColor, letterSpacing: '-2px', lineHeight: 1, textAlign: 'center' }}>{displayNum}</div>
+              <div style={{ fontSize: 'clamp(36px, 13vw, 58px)', fontWeight: 800, color: numColor, letterSpacing: '-2px', lineHeight: 1, textAlign: 'center' }}>{displayNum}</div>
               <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.36)', letterSpacing: '0.2px' }}>{displaySub}</div>
             </>
           )}
@@ -1068,25 +1056,14 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
         >⚙</button>
 
         {/* Orb section */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '52%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 18 }}>
-          <div
-            onClick={() => isListening ? stopListening() : startListening()}
-            style={{ position: 'relative', width: 140, height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-          >
-            {orbState === 'speaking' && [0, 1, 2].map(i => (
-              <div key={i} style={{
-                position: 'absolute', width: '100%', height: '100%', borderRadius: '50%',
-                border: '1.5px solid rgba(127,119,221,0.48)',
-                animation: `ripple 1.9s ease-out ${i * 0.63}s infinite`,
-                pointerEvents: 'none',
-              }} />
-            ))}
-            <div style={{
-              width: 140, height: 140, borderRadius: '50%',
-              background: cfg.bg, boxShadow: cfg.glow, animation: cfg.anim,
-              transition: 'background 0.7s ease, box-shadow 0.7s ease',
-            }} />
-            {spendAlert && orbState === 'idle' && (
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '52%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
+          <div style={{ position: 'relative' }}>
+            <Orb
+              size={140}
+              state={debtMode && orbState === 'idle' ? 'debt' : orbState}
+              onTap={() => isListening ? stopListening() : startListening()}
+            />
+            {spendAlert && orbState === 'idle' && !debtMode && (
               <div style={{
                 position: 'absolute', top: 8, right: 8, width: 14, height: 14,
                 borderRadius: '50%', background: RED, border: `2px solid ${BG}`,
@@ -1097,7 +1074,7 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
             )}
           </div>
 
-          <div style={{ minHeight: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ minHeight: 36, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
             {isListening && transcript ? (
               <div style={{ color: 'rgba(255,255,255,0.72)', fontSize: 14, maxWidth: 260, textAlign: 'center', fontStyle: 'italic', padding: '0 20px' }}>
                 "{transcript}"
@@ -1111,17 +1088,15 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
                 Thinking…
               </div>
             ) : (
-              <div style={{ color: 'rgba(255,255,255,0.18)', fontSize: 13, letterSpacing: '0.4px' }}>
-                Tap orb or mic to speak
+              <div style={{
+                color: 'rgba(255,255,255,0.18)', fontSize: 13, letterSpacing: '0.4px',
+                opacity: tapHintVisible ? 1 : 0,
+                transition: 'opacity 0.8s ease',
+              }}>
+                Tap to speak
               </div>
             )}
           </div>
-
-          <MicBtn
-            listening={isListening}
-            supported={speechSupported}
-            onPress={isListening ? stopListening : startListening}
-          />
         </div>
 
         {/* Cards */}
@@ -1241,7 +1216,7 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
                   onChange={e => setEveningNote(e.target.value)}
                   placeholder="e.g. Grabbed a takeaway, forgot lunch..."
                   rows={3}
-                  style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '10px 14px', color: '#fff', fontSize: 14, outline: 'none', fontFamily: 'inherit', resize: 'none', boxSizing: 'border-box', marginBottom: 14 }}
+                  style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '10px 14px', color: '#fff', fontSize: 16, outline: 'none', fontFamily: 'inherit', resize: 'none', boxSizing: 'border-box', marginBottom: 14 }}
                 />
                 <button
                   onClick={handleEveningNo}
@@ -1664,23 +1639,6 @@ function WaveBars({ color }) {
   );
 }
 
-function MicBtn({ listening, supported, onPress }) {
-  return (
-    <button
-      onPointerDown={onPress}
-      disabled={!supported}
-      style={{
-        width: 52, height: 52, borderRadius: '50%', border: 'none', flexShrink: 0,
-        background: listening ? 'rgba(55,138,221,0.22)' : 'rgba(127,119,221,0.14)',
-        color: listening ? BLUE : PURPLE,
-        fontSize: 20, cursor: supported ? 'pointer' : 'not-allowed',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        animation: listening ? 'micPulse 1s ease-in-out infinite' : 'none',
-        transition: 'background 0.2s', opacity: supported ? 1 : 0.4,
-      }}
-    >🎤</button>
-  );
-}
 
 function Toggle({ on, onToggle }) {
   return (

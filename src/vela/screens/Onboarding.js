@@ -267,7 +267,7 @@ export default function Onboarding({ onDone }) {
   const cfg = ORB_CFG[orbState] || ORB_CFG.idle;
 
   return (
-    <div style={{ position: 'relative', height: '100vh', background: BG, overflow: 'hidden', fontFamily: 'inherit' }}>
+    <div style={{ position: 'relative', height: '100dvh', background: BG, overflow: 'hidden', fontFamily: 'inherit' }}>
 
       {/* Progress dots */}
       <div style={{ position: 'absolute', top: 32, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 8, zIndex: 5 }}>
