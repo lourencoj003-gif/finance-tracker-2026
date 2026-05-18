@@ -3,13 +3,13 @@ import { getData, saveData, getInsights, clearAll, tickStreak, shouldShowCheckin
 import PaydayCeremony from './PaydayCeremony';
 import Orb from '../Orb';
 
-const PURPLE    = '#7F77DD';
-const BLUE      = '#378ADD';
-const GREEN     = '#4eca8b';
-const AMBER     = '#f5a623';
-const RED       = '#ff6b6b';
+const PURPLE    = '#C8B89A';
+const BLUE      = '#A89880';
+const GREEN     = '#7CAE9E';
+const AMBER     = '#C9A96E';
+const RED       = '#E24B4A';
 const DEBT_RED  = '#E24B4A';
-const BG        = '#0a0a0f';
+const BG        = '#111318';
 
 const CHALLENGES = [
   { id: 'noSpendWeekend', name: 'No-Spend Weekend',       desc: 'Zero discretionary spend Sat & Sun',   saving: 80,  icon: '🚫' },
@@ -58,8 +58,8 @@ const KEYFRAMES = `
     50%     { opacity: 1; }
   }
   @keyframes micPulse {
-    0%,100% { box-shadow: 0 0 0 0 rgba(55,138,221,0.4); }
-    50%     { box-shadow: 0 0 0 12px rgba(55,138,221,0); }
+    0%,100% { box-shadow: 0 0 0 0 rgba(168,152,128,0.4); }
+    50%     { box-shadow: 0 0 0 12px rgba(168,152,128,0); }
   }
   @keyframes swipeHint {
     0%,100% { opacity: 0.55; transform: translateY(0); }
@@ -78,7 +78,7 @@ const KEYFRAMES = `
 
 const SLIDE = 'transform 0.42s cubic-bezier(0.32, 0.72, 0, 1)';
 
-const CONFETTI_COLORS = [PURPLE, BLUE, GREEN, AMBER, RED, '#ffffff', '#ee55ff', '#00eeff'];
+const CONFETTI_COLORS = [PURPLE, BLUE, GREEN, AMBER, RED, '#E8DDD0', '#ee55ff', '#00eeff'];
 const CONFETTI_DOTS = Array.from({ length: 20 }, (_, i) => {
   const angle = (i / 20) * 2 * Math.PI;
   const dist  = 120 + (i % 4) * 30;
@@ -365,7 +365,7 @@ export default function VelaCore({ onReset }) {
       const highRate = getDebts().reduce((mx, d) => d.rate > mx ? d.rate : mx, 0);
       msg = `Debt Destruction Mode is active${hi} — £${totalD.toLocaleString('en-GB')} total, highest rate at ${highRate}%. Every extra pound you throw at it today costs the lender money, not you. What shall we attack first?`;
     } else {
-      msg = `Hi${hi}. I'm Marcus, your personal financial navigator. How can I help you today?`;
+      msg = `Hi${hi}. I'm Noa, your personal financial navigator. How can I help you today?`;
     }
 
     const tid = setTimeout(() => { pushCard('vela', msg); speak(msg); }, 700);
@@ -617,7 +617,7 @@ export default function VelaCore({ onReset }) {
     };
     const ord = n => n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : `${n}th`;
 
-    return `You are Marcus — Cleo's warmth meets JARVIS's precision. You are a sharp, witty, PROACTIVE personal finance coach who celebrates wins and faces problems head-on — never robotic, never vague.
+    return `You are Noa — Cleo's warmth meets JARVIS's precision. You are a sharp, witty, PROACTIVE personal finance coach who celebrates wins and faces problems head-on — never robotic, never vague.
 ${name ? `\nYou are speaking with ${name}. Use their name occasionally — never robotically.` : ''}
 
 VOCABULARY: "Well done", "On it", "Here's the situation", "Good news", "One thing to watch". Rotate naturally — never all in one message.
@@ -681,7 +681,7 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
 4. When user asks what they can afford or spend, answer with the In My Pocket figure: £${inMyPocket}/day.
 5. Reference the user's Baby Step (Step ${babyStep}) when giving savings, debt, or investment advice.
 6. Never repeat what the user just said. Celebrate wins warmly; tackle problems directly.
-7. You are Marcus — never say "As an AI" or "As a language model".
+7. You are Noa — never say "As an AI" or "As a language model".
 8. Always end with a specific action or a sharp question that moves them forward.
 9. End any financial advice with: ⚖️ Guidance only — not FCA-regulated advice.`;
   }
@@ -843,18 +843,18 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
         {/* Gear — top right */}
         <button
           onClick={() => setShowSettings(true)}
-          style={{ position: 'absolute', top: 'max(env(safe-area-inset-top), 20px)', right: 20, zIndex: 5, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.26)', fontSize: 20, padding: 8, lineHeight: 1 }}
+          style={{ position: 'absolute', top: 'max(env(safe-area-inset-top), 20px)', right: 20, zIndex: 5, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(232,221,208,0.26)', fontSize: 20, padding: 8, lineHeight: 1 }}
           aria-label="Settings"
         >⚙</button>
 
         {/* Monthly / Annual toggle */}
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 2 }}>
-          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.06)', borderRadius: 20, padding: 3, gap: 2 }}>
+          <div style={{ display: 'flex', background: 'rgba(232,221,208,0.06)', borderRadius: 20, padding: 3, gap: 2 }}>
             {['monthly', 'annual'].map(m => (
               <button key={m} onClick={() => setViewMode(m)} style={{
                 padding: '5px 16px', borderRadius: 16, border: 'none', cursor: 'pointer',
                 background: viewMode === m ? PURPLE : 'transparent',
-                color: viewMode === m ? '#fff' : 'rgba(255,255,255,0.38)',
+                color: viewMode === m ? '#E8DDD0' : 'rgba(232,221,208,0.38)',
                 fontSize: 12, fontWeight: 600, letterSpacing: '0.3px',
                 transition: 'all 0.18s', textTransform: 'capitalize',
               }}>{m}</button>
@@ -864,7 +864,7 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
 
         {/* Top section */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-          <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.36)', letterSpacing: '0.2px' }}>{getGreeting()}</div>
+          <div style={{ fontSize: 15, color: 'rgba(232,221,208,0.36)', letterSpacing: '0.2px' }}>{getGreeting()}</div>
           <div
             onClick={() => { if (showEveningDot) { setEveningPhase('ask'); setEveningNote(''); setEveningCheckOpen(true); } }}
             style={{ cursor: showEveningDot ? 'pointer' : 'default' }}
@@ -877,7 +877,7 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
               <div style={{ fontSize: 'clamp(38px, 14vw, 62px)', fontWeight: 800, color: DEBT_RED, letterSpacing: '-3px', lineHeight: 1, textAlign: 'center' }}>
                 £{totalDebt.toLocaleString('en-GB')}
               </div>
-              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.32)', letterSpacing: '0.3px' }}>Destroying debt</div>
+              <div style={{ fontSize: 13, color: 'rgba(232,221,208,0.32)', letterSpacing: '0.3px' }}>Destroying debt</div>
               {dailyInterestCost > 0 && (
                 <div style={{ fontSize: 11, color: 'rgba(226,75,74,0.55)', textAlign: 'center' }}>
                   Costing £{dailyInterestCost.toFixed(2)}/day in interest
@@ -888,15 +888,15 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
           ) : freedomDaysTarget > 0 ? (
             <>
               <div style={{ fontSize: 'clamp(48px, 16vw, 72px)', fontWeight: 800, color: GREEN, letterSpacing: '-4px', lineHeight: 1, textAlign: 'center' }}>{freedomDays}</div>
-              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.32)', letterSpacing: '0.3px' }}>days of freedom</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', textAlign: 'center', maxWidth: 220 }}>
+              <div style={{ fontSize: 13, color: 'rgba(232,221,208,0.32)', letterSpacing: '0.3px' }}>days of freedom</div>
+              <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.2)', textAlign: 'center', maxWidth: 220 }}>
                 You could live {freedomDaysTarget} day{freedomDaysTarget !== 1 ? 's' : ''} without income
               </div>
             </>
           ) : (
             <>
               <div style={{ fontSize: 'clamp(36px, 13vw, 58px)', fontWeight: 800, color: numColor, letterSpacing: '-2px', lineHeight: 1, textAlign: 'center' }}>{displayNum}</div>
-              <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.36)', letterSpacing: '0.2px' }}>{displaySub}</div>
+              <div style={{ fontSize: 14, color: 'rgba(232,221,208,0.36)', letterSpacing: '0.2px' }}>{displaySub}</div>
             </>
           )}
 
@@ -910,15 +910,15 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
             {forecastCards.map((fc, i) => (
               <div key={i} style={{
                 minWidth: 108, flexShrink: 0, scrollSnapAlign: 'start',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.07)',
+                background: 'rgba(232,221,208,0.04)',
+                border: '1px solid rgba(232,221,208,0.07)',
                 borderRadius: 14, padding: '10px 8px 8px',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
               }}>
                 <div style={{ fontSize: 18, lineHeight: 1 }}>{fc.emoji}</div>
-                <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.6px', textTransform: 'uppercase' }}>{fc.label}</div>
+                <div style={{ fontSize: 9, color: 'rgba(232,221,208,0.3)', letterSpacing: '0.6px', textTransform: 'uppercase' }}>{fc.label}</div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: fc.color, letterSpacing: '-0.3px', textAlign: 'center', lineHeight: 1.2 }}>{fc.value}</div>
-                <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.24)', textAlign: 'center' }}>{fc.sub}</div>
+                <div style={{ fontSize: 9, color: 'rgba(232,221,208,0.24)', textAlign: 'center' }}>{fc.sub}</div>
               </div>
             ))}
           </div>
@@ -940,21 +940,21 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
         {/* Weekly Challenge card */}
         {!challengeData.completed && (
           <div style={{
-            marginBottom: 10, background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.09)', borderRadius: 16,
+            marginBottom: 10, background: 'rgba(232,221,208,0.04)',
+            border: '1px solid rgba(232,221,208,0.09)', borderRadius: 16,
             padding: '12px 14px', animation: 'cardIn 0.5s ease-out',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                 <span style={{ fontSize: 16 }}>{currentChallengeDef.icon}</span>
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>{currentChallengeDef.name}</div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.38)', marginTop: 1 }}>{currentChallengeDef.desc}</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#E8DDD0', lineHeight: 1.2 }}>{currentChallengeDef.name}</div>
+                  <div style={{ fontSize: 10, color: 'rgba(232,221,208,0.38)', marginTop: 1 }}>{currentChallengeDef.desc}</div>
                 </div>
               </div>
               <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 8 }}>
                 <div style={{ fontSize: 14, fontWeight: 800, color: GREEN }}>+£{currentChallengeDef.saving}</div>
-                <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)' }}>{daysLeftInWeek()}d left</div>
+                <div style={{ fontSize: 9, color: 'rgba(232,221,208,0.3)' }}>{daysLeftInWeek()}d left</div>
               </div>
             </div>
             {challengeData.accepted ? (
@@ -967,7 +967,7 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
                   setCelebrate(true);
                   setTimeout(() => setCelebrate(false), 2500);
                 }}
-                style={{ width: '100%', padding: '7px 0', background: 'rgba(78,202,139,0.14)', border: '1px solid rgba(78,202,139,0.28)', borderRadius: 10, color: GREEN, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                style={{ width: '100%', padding: '7px 0', background: 'rgba(124,174,158,0.14)', border: '1px solid rgba(124,174,158,0.28)', borderRadius: 10, color: GREEN, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
               >Mark complete ✓</button>
             ) : (
               <button
@@ -976,35 +976,38 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
                   saveChallenge(updated);
                   setChallengeData(updated);
                 }}
-                style={{ width: '100%', padding: '7px 0', background: 'rgba(127,119,221,0.14)', border: '1px solid rgba(127,119,221,0.28)', borderRadius: 10, color: PURPLE, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                style={{ width: '100%', padding: '7px 0', background: 'rgba(200,184,154,0.14)', border: '1px solid rgba(200,184,154,0.28)', borderRadius: 10, color: PURPLE, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
               >Accept challenge</button>
             )}
           </div>
         )}
 
-        {/* Talk to Marcus button */}
+        {/* Talk to Noa button */}
         <button
           onClick={() => { unlockAudio(); setChatOpen(true); }}
           style={{
-            width: '100%', height: 58, background: PURPLE, border: 'none', borderRadius: 18,
-            color: '#fff', fontSize: 17, fontWeight: 600, cursor: 'pointer',
-            letterSpacing: '0.2px', boxShadow: '0 0 24px 4px rgba(127,119,221,0.22)',
+            width: '100%', height: 58,
+            background: 'rgba(232,221,208,0.07)',
+            border: '1px solid rgba(232,221,208,0.28)',
+            borderRadius: 18,
+            color: '#E8DDD0', fontSize: 17, fontWeight: 500, cursor: 'pointer',
+            letterSpacing: '0.08em',
           }}
-        >Talk to Marcus</button>
+        >Talk to Noa</button>
 
         {/* Daily tip */}
         <div style={{
           display: 'flex', alignItems: 'flex-start', gap: 8, marginTop: 10,
-          background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)',
+          background: 'rgba(232,221,208,0.03)', border: '1px solid rgba(232,221,208,0.05)',
           borderRadius: 12, padding: '9px 12px',
         }}>
           <span style={{ fontSize: 13, flexShrink: 0, lineHeight: '1.5' }}>💡</span>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.34)', lineHeight: 1.5 }}>{getDailyTip()}</div>
+          <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.34)', lineHeight: 1.5 }}>{getDailyTip()}</div>
         </div>
 
         {/* Swipe-up hint */}
         <div style={{ textAlign: 'center', marginTop: 8, animation: 'swipeHint 2.6s ease-in-out infinite' }}>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.22)', letterSpacing: '0.5px' }}>↑  details</div>
+          <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.22)', letterSpacing: '0.5px' }}>↑  details</div>
         </div>
       </div>
 
@@ -1045,13 +1048,13 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
 
         <button
           onClick={() => setChatOpen(false)}
-          style={{ position: 'absolute', top: 20, left: 18, zIndex: 30, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.36)', fontSize: 22, padding: 8, lineHeight: 1 }}
+          style={{ position: 'absolute', top: 20, left: 18, zIndex: 30, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(232,221,208,0.36)', fontSize: 22, padding: 8, lineHeight: 1 }}
           aria-label="Close chat"
         >↓</button>
 
         <button
           onClick={() => setShowSettings(true)}
-          style={{ position: 'absolute', top: 20, right: 18, zIndex: 30, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.26)', fontSize: 20, padding: 8, lineHeight: 1 }}
+          style={{ position: 'absolute', top: 20, right: 18, zIndex: 30, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(232,221,208,0.26)', fontSize: 20, padding: 8, lineHeight: 1 }}
           aria-label="Settings"
         >⚙</button>
 
@@ -1067,7 +1070,7 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
               <div style={{
                 position: 'absolute', top: 8, right: 8, width: 14, height: 14,
                 borderRadius: '50%', background: RED, border: `2px solid ${BG}`,
-                boxShadow: '0 0 8px 3px rgba(255,107,107,0.55)',
+                boxShadow: '0 0 8px 3px rgba(226,75,74,0.55)',
                 animation: 'alertPulse 1.4s ease-in-out infinite',
                 pointerEvents: 'none',
               }} />
@@ -1076,7 +1079,7 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
 
           <div style={{ minHeight: 36, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
             {isListening && transcript ? (
-              <div style={{ color: 'rgba(255,255,255,0.72)', fontSize: 14, maxWidth: 260, textAlign: 'center', fontStyle: 'italic', padding: '0 20px' }}>
+              <div style={{ color: 'rgba(232,221,208,0.72)', fontSize: 14, maxWidth: 260, textAlign: 'center', fontStyle: 'italic', padding: '0 20px' }}>
                 "{transcript}"
               </div>
             ) : isListening ? (
@@ -1084,12 +1087,12 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
             ) : orbState === 'speaking' ? (
               <WaveBars color={PURPLE} />
             ) : orbState === 'thinking' ? (
-              <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, letterSpacing: '0.5px', animation: 'blink 1.6s ease-in-out infinite' }}>
+              <div style={{ color: 'rgba(232,221,208,0.4)', fontSize: 13, letterSpacing: '0.5px', animation: 'blink 1.6s ease-in-out infinite' }}>
                 Thinking…
               </div>
             ) : (
               <div style={{
-                color: 'rgba(255,255,255,0.18)', fontSize: 13, letterSpacing: '0.4px',
+                color: 'rgba(232,221,208,0.18)', fontSize: 13, letterSpacing: '0.4px',
                 opacity: tapHintVisible ? 1 : 0,
                 transition: 'opacity 0.8s ease',
               }}>
@@ -1119,16 +1122,16 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
           display: 'flex', alignItems: 'center', gap: 10,
           padding: '0 16px', paddingBottom: 'max(0px, env(safe-area-inset-bottom))',
           background: `linear-gradient(to top, ${BG} 60%, transparent)`,
-          borderTop: '1px solid rgba(255,255,255,0.04)',
+          borderTop: '1px solid rgba(232,221,208,0.04)',
         }}>
           <input
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && input.trim() && handleMessage(input)}
-            placeholder="Ask Marcus…"
+            placeholder="Ask Noa…"
             style={{
-              flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 22, padding: '10px 16px', color: '#fff', fontSize: 16,
+              flex: 1, background: 'rgba(232,221,208,0.05)', border: '1px solid rgba(232,221,208,0.08)',
+              borderRadius: 22, padding: '10px 16px', color: '#E8DDD0', fontSize: 16,
               outline: 'none', fontFamily: 'inherit',
             }}
           />
@@ -1136,8 +1139,8 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
             onClick={() => input.trim() && handleMessage(input)}
             style={{
               width: 42, height: 42, borderRadius: '50%', border: 'none', flexShrink: 0,
-              background: input.trim() ? 'rgba(127,119,221,0.22)' : 'rgba(255,255,255,0.05)',
-              color: input.trim() ? PURPLE : 'rgba(255,255,255,0.18)',
+              background: input.trim() ? 'rgba(200,184,154,0.22)' : 'rgba(232,221,208,0.05)',
+              color: input.trim() ? PURPLE : 'rgba(232,221,208,0.18)',
               fontSize: 22, cursor: input.trim() ? 'pointer' : 'default',
               transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
@@ -1172,7 +1175,7 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
           ))}
           <div style={{
             position: 'absolute',
-            color: '#fff', fontSize: 20, fontWeight: 800,
+            color: '#E8DDD0', fontSize: 20, fontWeight: 800,
             textAlign: 'center', lineHeight: 1.4,
             textShadow: '0 2px 24px rgba(0,0,0,0.9)',
             animation: 'cardIn 0.4s ease-out',
@@ -1189,40 +1192,40 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
       ══════════════════════════════════════════ */}
       {eveningCheckOpen && (
         <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.82)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, zIndex: 55 }}>
-          <div style={{ background: 'rgba(10,8,28,0.98)', border: '1px solid rgba(127,119,221,0.24)', borderRadius: 26, padding: 28, width: '100%', maxWidth: 320, animation: 'cardIn 0.28s ease-out' }}>
+          <div style={{ background: 'rgba(10,8,28,0.98)', border: '1px solid rgba(200,184,154,0.24)', borderRadius: 26, padding: 28, width: '100%', maxWidth: 320, animation: 'cardIn 0.28s ease-out' }}>
             {eveningPhase === 'ask' ? (
               <>
                 <div style={{ fontSize: 28, textAlign: 'center', marginBottom: 10 }}>🌙</div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', textAlign: 'center', marginBottom: 8 }}>Evening Check-in</div>
-                <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.52)', textAlign: 'center', lineHeight: 1.6, marginBottom: 26 }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: '#E8DDD0', textAlign: 'center', marginBottom: 8 }}>Evening Check-in</div>
+                <div style={{ fontSize: 14, color: 'rgba(232,221,208,0.52)', textAlign: 'center', lineHeight: 1.6, marginBottom: 26 }}>
                   How did today go financially?<br />Did you stick to your budget?
                 </div>
                 <button
                   onClick={handleEveningYes}
-                  style={{ width: '100%', padding: 13, background: 'rgba(78,202,139,0.14)', border: '1px solid rgba(78,202,139,0.3)', borderRadius: 12, color: GREEN, fontSize: 15, fontWeight: 700, cursor: 'pointer', marginBottom: 10 }}
+                  style={{ width: '100%', padding: 13, background: 'rgba(124,174,158,0.14)', border: '1px solid rgba(124,174,158,0.3)', borderRadius: 12, color: GREEN, fontSize: 15, fontWeight: 700, cursor: 'pointer', marginBottom: 10 }}
                 >Yes, I did ✓</button>
                 <button
                   onClick={() => setEveningPhase('followup')}
-                  style={{ width: '100%', padding: 13, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: 'rgba(255,255,255,0.6)', fontSize: 15, fontWeight: 600, cursor: 'pointer', marginBottom: 10 }}
+                  style={{ width: '100%', padding: 13, background: 'rgba(232,221,208,0.05)', border: '1px solid rgba(232,221,208,0.1)', borderRadius: 12, color: 'rgba(232,221,208,0.6)', fontSize: 15, fontWeight: 600, cursor: 'pointer', marginBottom: 10 }}
                 >No, not quite</button>
-                <button onClick={() => setEveningCheckOpen(false)} style={{ width: '100%', padding: 10, background: 'none', border: 'none', color: 'rgba(255,255,255,0.28)', fontSize: 13, cursor: 'pointer' }}>Later</button>
+                <button onClick={() => setEveningCheckOpen(false)} style={{ width: '100%', padding: 10, background: 'none', border: 'none', color: 'rgba(232,221,208,0.28)', fontSize: 13, cursor: 'pointer' }}>Later</button>
               </>
             ) : (
               <>
-                <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 6 }}>That's okay — reflect on it</div>
-                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', lineHeight: 1.55, marginBottom: 16 }}>What happened? A quick note helps with your monthly review.</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: '#E8DDD0', marginBottom: 6 }}>That's okay — reflect on it</div>
+                <div style={{ fontSize: 13, color: 'rgba(232,221,208,0.45)', lineHeight: 1.55, marginBottom: 16 }}>What happened? A quick note helps with your monthly review.</div>
                 <textarea
                   value={eveningNote}
                   onChange={e => setEveningNote(e.target.value)}
                   placeholder="e.g. Grabbed a takeaway, forgot lunch..."
                   rows={3}
-                  style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '10px 14px', color: '#fff', fontSize: 16, outline: 'none', fontFamily: 'inherit', resize: 'none', boxSizing: 'border-box', marginBottom: 14 }}
+                  style={{ width: '100%', background: 'rgba(232,221,208,0.06)', border: '1px solid rgba(232,221,208,0.1)', borderRadius: 12, padding: '10px 14px', color: '#E8DDD0', fontSize: 16, outline: 'none', fontFamily: 'inherit', resize: 'none', boxSizing: 'border-box', marginBottom: 14 }}
                 />
                 <button
                   onClick={handleEveningNo}
-                  style={{ width: '100%', padding: 13, background: PURPLE, border: 'none', borderRadius: 12, color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer', marginBottom: 10 }}
+                  style={{ width: '100%', padding: 13, background: PURPLE, border: 'none', borderRadius: 12, color: '#E8DDD0', fontSize: 15, fontWeight: 600, cursor: 'pointer', marginBottom: 10 }}
                 >Save reflection</button>
-                <button onClick={() => setEveningPhase('ask')} style={{ width: '100%', padding: 10, background: 'none', border: 'none', color: 'rgba(255,255,255,0.28)', fontSize: 13, cursor: 'pointer' }}>Back</button>
+                <button onClick={() => setEveningPhase('ask')} style={{ width: '100%', padding: 10, background: 'none', border: 'none', color: 'rgba(232,221,208,0.28)', fontSize: 13, cursor: 'pointer' }}>Back</button>
               </>
             )}
           </div>
@@ -1235,18 +1238,18 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
           style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.78)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, zIndex: 50 }}
         >
           <div style={{
-            background: 'rgba(16,14,36,0.97)', border: '1px solid rgba(127,119,221,0.22)',
+            background: 'rgba(16,14,36,0.97)', border: '1px solid rgba(200,184,154,0.22)',
             borderRadius: 26, padding: 28, width: '100%', maxWidth: 320,
             backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
             animation: 'cardIn 0.28s ease-out',
           }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 22 }}>Settings</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#E8DDD0', marginBottom: 22 }}>Settings</div>
             <Label>Your name</Label>
             <input
               value={settingName}
               onChange={e => setSettingName(e.target.value)}
-              placeholder="So Vela can address you"
-              style={{ width: '100%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.11)', borderRadius: 12, padding: '11px 14px', color: '#fff', fontSize: 16, outline: 'none', fontFamily: 'inherit', marginBottom: 20, boxSizing: 'border-box' }}
+              placeholder="So Noa can address you"
+              style={{ width: '100%', background: 'rgba(232,221,208,0.07)', border: '1px solid rgba(232,221,208,0.11)', borderRadius: 12, padding: '11px 14px', color: '#E8DDD0', fontSize: 16, outline: 'none', fontFamily: 'inherit', marginBottom: 20, boxSizing: 'border-box' }}
             />
             <Label>Payday day</Label>
             <input
@@ -1256,7 +1259,7 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
               placeholder="Day of month (e.g. 25)"
               min="1"
               max="31"
-              style={{ width: '100%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.11)', borderRadius: 12, padding: '11px 14px', color: '#fff', fontSize: 16, outline: 'none', fontFamily: 'inherit', marginBottom: 20, boxSizing: 'border-box' }}
+              style={{ width: '100%', background: 'rgba(232,221,208,0.07)', border: '1px solid rgba(232,221,208,0.11)', borderRadius: 12, padding: '11px 14px', color: '#E8DDD0', fontSize: 16, outline: 'none', fontFamily: 'inherit', marginBottom: 20, boxSizing: 'border-box' }}
             />
             <Label>Savings balance (£)</Label>
             <input
@@ -1265,12 +1268,12 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
               onChange={e => setSettingSavings(e.target.value)}
               placeholder="e.g. 2500"
               min="0"
-              style={{ width: '100%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.11)', borderRadius: 12, padding: '11px 14px', color: '#fff', fontSize: 16, outline: 'none', fontFamily: 'inherit', marginBottom: 20, boxSizing: 'border-box' }}
+              style={{ width: '100%', background: 'rgba(232,221,208,0.07)', border: '1px solid rgba(232,221,208,0.11)', borderRadius: 12, padding: '11px 14px', color: '#E8DDD0', fontSize: 16, outline: 'none', fontFamily: 'inherit', marginBottom: 20, boxSizing: 'border-box' }}
             />
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 26 }}>
               <div>
-                <div style={{ fontSize: 14, color: '#fff', marginBottom: 2 }}>Voice responses</div>
-                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.38)' }}>Marcus speaks aloud</div>
+                <div style={{ fontSize: 14, color: '#E8DDD0', marginBottom: 2 }}>Voice responses</div>
+                <div style={{ fontSize: 12, color: 'rgba(232,221,208,0.38)' }}>Noa speaks aloud</div>
               </div>
               <Toggle on={voiceOn} onToggle={() => setVoiceOn(v => !v)} />
             </div>
@@ -1279,10 +1282,10 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
               onClick={() => { clearAll(); onReset(); }}
               color="rgba(255,80,80,0.18)"
               border="rgba(255,80,80,0.28)"
-              textColor="#ff6b6b"
-              text="Reset Vela"
+              textColor="#E24B4A"
+              text="Reset Noa"
             />
-            <button onClick={() => setShowSettings(false)} style={{ width: '100%', padding: 12, background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', fontSize: 14, cursor: 'pointer', marginTop: 4 }}>
+            <button onClick={() => setShowSettings(false)} style={{ width: '100%', padding: 12, background: 'none', border: 'none', color: 'rgba(232,221,208,0.3)', fontSize: 14, cursor: 'pointer', marginTop: 4 }}>
               Cancel
             </button>
           </div>
@@ -1315,8 +1318,8 @@ function DetailView({ income, expenses, debt, goal, insights, surplus, goals, sa
 
       {/* Fixed header: drag handle + close */}
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', paddingLeft: 24, paddingRight: 16, paddingTop: 8, marginBottom: 18, position: 'relative', flexShrink: 0 }}>
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.18)' }} />
-        <button onClick={onClose} style={{ position: 'absolute', right: 16, top: 0, background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', fontSize: 24, cursor: 'pointer', padding: 6, lineHeight: 1 }}>×</button>
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(232,221,208,0.18)' }} />
+        <button onClick={onClose} style={{ position: 'absolute', right: 16, top: 0, background: 'none', border: 'none', color: 'rgba(232,221,208,0.3)', fontSize: 24, cursor: 'pointer', padding: 6, lineHeight: 1 }}>×</button>
       </div>
 
       {/* Scrollable content */}
@@ -1324,15 +1327,15 @@ function DetailView({ income, expenses, debt, goal, insights, surplus, goals, sa
 
         {/* Large income / expenses numbers */}
         <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
-          <div style={{ flex: 1, background: 'rgba(78,202,139,0.07)', border: '1px solid rgba(78,202,139,0.16)', borderRadius: 16, padding: '14px 14px' }}>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.32)', letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: 6 }}>Income</div>
+          <div style={{ flex: 1, background: 'rgba(124,174,158,0.07)', border: '1px solid rgba(124,174,158,0.16)', borderRadius: 16, padding: '14px 14px' }}>
+            <div style={{ fontSize: 10, color: 'rgba(232,221,208,0.32)', letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: 6 }}>Income</div>
             <div style={{ fontSize: 26, fontWeight: 800, color: GREEN, letterSpacing: '-0.5px' }}>£{income.toLocaleString('en-GB')}</div>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.26)', marginTop: 3 }}>per month</div>
+            <div style={{ fontSize: 10, color: 'rgba(232,221,208,0.26)', marginTop: 3 }}>per month</div>
           </div>
-          <div style={{ flex: 1, background: 'rgba(245,166,35,0.07)', border: '1px solid rgba(245,166,35,0.16)', borderRadius: 16, padding: '14px 14px' }}>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.32)', letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: 6 }}>Expenses</div>
+          <div style={{ flex: 1, background: 'rgba(201,169,110,0.07)', border: '1px solid rgba(201,169,110,0.16)', borderRadius: 16, padding: '14px 14px' }}>
+            <div style={{ fontSize: 10, color: 'rgba(232,221,208,0.32)', letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: 6 }}>Expenses</div>
             <div style={{ fontSize: 26, fontWeight: 800, color: AMBER, letterSpacing: '-0.5px' }}>£{expenses.toLocaleString('en-GB')}</div>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.26)', marginTop: 3 }}>per month</div>
+            <div style={{ fontSize: 10, color: 'rgba(232,221,208,0.26)', marginTop: 3 }}>per month</div>
           </div>
         </div>
 
@@ -1341,12 +1344,12 @@ function DetailView({ income, expenses, debt, goal, insights, surplus, goals, sa
           <>
             <DetailLabel>Estimated Breakdown</DetailLabel>
             {categories.map(c => (
-              <div key={c.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 10, paddingBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+              <div key={c.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 10, paddingBottom: 10, borderBottom: '1px solid rgba(232,221,208,0.05)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ width: 6, height: 6, borderRadius: '50%', background: c.color, flexShrink: 0 }} />
-                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.68)' }}>{c.name}</div>
+                  <div style={{ fontSize: 13, color: 'rgba(232,221,208,0.68)' }}>{c.name}</div>
                 </div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>~£{c.amount.toLocaleString('en-GB')}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#E8DDD0' }}>~£{c.amount.toLocaleString('en-GB')}</div>
               </div>
             ))}
             <HSep />
@@ -1387,13 +1390,13 @@ function DetailView({ income, expenses, debt, goal, insights, surplus, goals, sa
               return (
                 <div key={g.id} style={{ marginBottom: 18 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 7 }}>
-                    <div style={{ fontSize: 13, color: '#fff', fontWeight: 500 }}>{g.name}</div>
+                    <div style={{ fontSize: 13, color: '#E8DDD0', fontWeight: 500 }}>{g.name}</div>
                     <div style={{ fontSize: 13, color: PURPLE, fontWeight: 700 }}>£{g.target.toLocaleString('en-GB')}</div>
                   </div>
-                  <div style={{ height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 2, marginBottom: 6 }}>
+                  <div style={{ height: 4, background: 'rgba(232,221,208,0.08)', borderRadius: 2, marginBottom: 6 }}>
                     <div style={{ height: '100%', width: `${pct}%`, background: PURPLE, borderRadius: 2, transition: 'width 0.7s ease', minWidth: pct > 0 ? 4 : 0 }} />
                   </div>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.34)' }}>
+                  <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.34)' }}>
                     {monthsNeeded
                       ? `~${monthsNeeded} month${monthsNeeded !== 1 ? 's' : ''} at £${surplus.toFixed(0)}/month surplus`
                       : surplus <= 0 ? 'Resolve deficit to start saving' : 'Tracking not yet started'}
@@ -1416,21 +1419,21 @@ function DetailView({ income, expenses, debt, goal, insights, surplus, goals, sa
             <>
               <HSep />
               <DetailLabel>Goal</DetailLabel>
-              <div style={{ fontSize: 14, color: '#fff', lineHeight: 1.45, marginBottom: 5 }}>{goal}</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.42)' }}>
+              <div style={{ fontSize: 14, color: '#E8DDD0', lineHeight: 1.45, marginBottom: 5 }}>{goal}</div>
+              <div style={{ fontSize: 12, color: 'rgba(232,221,208,0.42)' }}>
                 {months ? `~${months} month${months !== 1 ? 's' : ''} at current rate` : surplus <= 0 ? 'Resolve shortfall first' : 'Add a £ amount to see timeline'}
               </div>
             </>
           );
         })()}
 
-        {/* Marcus's Insights */}
+        {/* Noa's Insights */}
         {insights.length > 0 && (
           <>
             <HSep />
-            <DetailLabel>Marcus's Insights</DetailLabel>
+            <DetailLabel>Noa's Insights</DetailLabel>
             {insights.slice(0, 3).map((ins, i) => (
-              <div key={i} style={{ fontSize: 12, color: 'rgba(255,255,255,0.52)', lineHeight: 1.55, marginBottom: 10, paddingLeft: 10, borderLeft: '2px solid rgba(127,119,221,0.35)' }}>
+              <div key={i} style={{ fontSize: 12, color: 'rgba(232,221,208,0.52)', lineHeight: 1.55, marginBottom: 10, paddingLeft: 10, borderLeft: '2px solid rgba(200,184,154,0.35)' }}>
                 {ins}
               </div>
             ))}
@@ -1477,31 +1480,31 @@ function WealthTimeline({ income, surplus, savings, totalDebt }) {
   return (
     <>
       <DetailLabel>Wealth Timeline</DetailLabel>
-      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.26)', marginBottom: 16, marginTop: -8 }}>
+      <div style={{ fontSize: 10, color: 'rgba(232,221,208,0.26)', marginBottom: 16, marginTop: -8 }}>
         Based on current rate + 7% growth
       </div>
       <div style={{ position: 'relative', paddingLeft: 28 }}>
         {/* Vertical connecting line */}
         <div style={{
           position: 'absolute', left: 9, top: 10, bottom: 10,
-          width: 2, background: 'linear-gradient(to bottom, rgba(78,202,139,0.5), rgba(78,202,139,0.1))',
+          width: 2, background: 'linear-gradient(to bottom, rgba(124,174,158,0.5), rgba(124,174,158,0.1))',
           borderRadius: 1,
         }} />
         {milestones.map((m, i) => {
           const isPositive = m.value >= 0;
-          const color      = i === 0 ? 'rgba(255,255,255,0.55)' : isPositive ? GREEN : RED;
+          const color      = i === 0 ? 'rgba(232,221,208,0.55)' : isPositive ? GREEN : RED;
           return (
             <div key={m.label} style={{ display: 'flex', alignItems: 'center', marginBottom: i < milestones.length - 1 ? 22 : 0 }}>
               <div style={{
                 position: 'absolute', left: 5,
                 width: 10, height: 10, borderRadius: '50%',
                 background: color,
-                boxShadow: i > 0 && isPositive ? `0 0 8px 2px rgba(78,202,139,0.4)` : 'none',
+                boxShadow: i > 0 && isPositive ? `0 0 8px 2px rgba(124,174,158,0.4)` : 'none',
                 border: `2px solid ${BG}`,
                 flexShrink: 0,
               }} />
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', width: '100%' }}>
-                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>{m.label}</div>
+                <div style={{ fontSize: 12, color: 'rgba(232,221,208,0.45)' }}>{m.label}</div>
                 <div style={{ fontSize: 16, fontWeight: 800, color, letterSpacing: '-0.5px' }}>{fmt(m.value)}</div>
               </div>
             </div>
@@ -1517,21 +1520,21 @@ function NumberRow({ label, value, color }) {
     <div style={{
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       paddingTop: 11, paddingBottom: 11,
-      borderBottom: '1px solid rgba(255,255,255,0.05)',
+      borderBottom: '1px solid rgba(232,221,208,0.05)',
     }}>
-      <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)' }}>{label}</div>
+      <div style={{ fontSize: 14, color: 'rgba(232,221,208,0.5)' }}>{label}</div>
       <div style={{ fontSize: 14, fontWeight: 600, color }}>{value}</div>
     </div>
   );
 }
 
 function HSep() {
-  return <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '18px 0 14px' }} />;
+  return <div style={{ height: 1, background: 'rgba(232,221,208,0.06)', margin: '18px 0 14px' }} />;
 }
 
 function DetailLabel({ children }) {
   return (
-    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.32)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 12 }}>
+    <div style={{ fontSize: 10, color: 'rgba(232,221,208,0.32)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 12 }}>
       {children}
     </div>
   );
@@ -1542,10 +1545,10 @@ function DetailLabel({ children }) {
 function SmallOrb({ alert, debtMode, eveningDot }) {
   const bg  = debtMode
     ? `radial-gradient(circle at 35% 35%, #f08080, ${DEBT_RED} 55%, #7a1010)`
-    : `radial-gradient(circle at 35% 35%, #b0acee, ${PURPLE} 55%, #3a369e)`;
+    : `radial-gradient(circle at 35% 35%, #d8cebe, ${PURPLE} 55%, #7a6a52)`;
   const glow = debtMode
     ? '0 0 18px 6px rgba(226,75,74,0.42)'
-    : '0 0 18px 6px rgba(127,119,221,0.32)';
+    : '0 0 18px 6px rgba(200,184,154,0.32)';
   return (
     <div style={{ position: 'relative', flexShrink: 0 }}>
       <div style={{
@@ -1559,7 +1562,7 @@ function SmallOrb({ alert, debtMode, eveningDot }) {
           position: 'absolute', top: 1, right: 1,
           width: 12, height: 12, borderRadius: '50%',
           background: RED, border: `2px solid ${BG}`,
-          boxShadow: '0 0 6px 2px rgba(255,107,107,0.6)',
+          boxShadow: '0 0 6px 2px rgba(226,75,74,0.6)',
           animation: 'alertPulse 1.4s ease-in-out infinite',
         }} />
       )}
@@ -1568,7 +1571,7 @@ function SmallOrb({ alert, debtMode, eveningDot }) {
           position: 'absolute', top: 1, right: 1,
           width: 12, height: 12, borderRadius: '50%',
           background: AMBER, border: `2px solid ${BG}`,
-          boxShadow: '0 0 8px 3px rgba(245,166,35,0.65)',
+          boxShadow: '0 0 8px 3px rgba(201,169,110,0.65)',
           animation: 'alertPulse 1.8s ease-in-out infinite',
         }} />
       )}
@@ -1582,13 +1585,13 @@ function MetricPill({ label, value, color, badge, badgeColor }) {
     <div style={{
       flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       gap: 6, padding: '14px 6px',
-      background: 'rgba(255,255,255,0.04)',
-      border: '1px solid rgba(255,255,255,0.06)',
+      background: 'rgba(232,221,208,0.04)',
+      border: '1px solid rgba(232,221,208,0.06)',
       borderRadius: 16, position: 'relative',
     }}>
       <div style={{ width: 6, height: 6, borderRadius: '50%', background: color, flexShrink: 0 }} />
       <div style={{ fontSize: isLong ? 13 : 20, fontWeight: 700, color, lineHeight: 1, textAlign: 'center' }}>{value}</div>
-      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.6px', textTransform: 'uppercase' }}>{label}</div>
+      <div style={{ fontSize: 10, color: 'rgba(232,221,208,0.3)', letterSpacing: '0.6px', textTransform: 'uppercase' }}>{label}</div>
       {badge && (
         <div style={{ position: 'absolute', top: 6, right: 7, fontSize: 9, fontWeight: 700, color: badgeColor, letterSpacing: '0.2px' }}>
           {badge}
@@ -1603,8 +1606,8 @@ function GlassCard({ card, opacity = 1, onSpeak }) {
   return (
     <div style={{
       position: 'relative',
-      background: isUser ? 'rgba(127,119,221,0.08)' : 'rgba(255,255,255,0.05)',
-      border: `1px solid ${isUser ? 'rgba(127,119,221,0.26)' : 'rgba(255,255,255,0.1)'}`,
+      background: isUser ? 'rgba(200,184,154,0.08)' : 'rgba(232,221,208,0.05)',
+      border: `1px solid ${isUser ? 'rgba(200,184,154,0.26)' : 'rgba(232,221,208,0.1)'}`,
       borderRadius: 20, padding: '12px 16px', marginBottom: 10,
       backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
       animation: 'cardIn 0.35s ease-out', opacity, transition: 'opacity 0.5s ease',
@@ -1612,13 +1615,13 @@ function GlassCard({ card, opacity = 1, onSpeak }) {
       {!isUser && onSpeak && (
         <button
           onClick={onSpeak}
-          style={{ position: 'absolute', top: 8, right: 10, background: 'none', border: 'none', color: 'rgba(255,255,255,0.28)', fontSize: 13, cursor: 'pointer', padding: 4, lineHeight: 1 }}
+          style={{ position: 'absolute', top: 8, right: 10, background: 'none', border: 'none', color: 'rgba(232,221,208,0.28)', fontSize: 13, cursor: 'pointer', padding: 4, lineHeight: 1 }}
         >🔊</button>
       )}
-      <div style={{ fontSize: 10, color: isUser ? 'rgba(127,119,221,0.65)' : 'rgba(255,255,255,0.28)', marginBottom: 5, letterSpacing: '0.8px', textTransform: 'uppercase', fontWeight: 600 }}>
-        {isUser ? 'You' : 'Marcus'}
+      <div style={{ fontSize: 10, color: isUser ? 'rgba(200,184,154,0.65)' : 'rgba(232,221,208,0.28)', marginBottom: 5, letterSpacing: '0.8px', textTransform: 'uppercase', fontWeight: 600 }}>
+        {isUser ? 'You' : 'Noa'}
       </div>
-      <div style={{ fontSize: 14, color: '#eeeeff', lineHeight: 1.62, whiteSpace: 'pre-wrap', paddingRight: onSpeak ? 22 : 0 }}>{card.text}</div>
+      <div style={{ fontSize: 14, color: '#E8DDD0', lineHeight: 1.62, whiteSpace: 'pre-wrap', paddingRight: onSpeak ? 22 : 0 }}>{card.text}</div>
     </div>
   );
 }
@@ -1644,12 +1647,12 @@ function Toggle({ on, onToggle }) {
   return (
     <button onClick={onToggle} style={{
       width: 48, height: 26, borderRadius: 13, border: 'none', cursor: 'pointer',
-      background: on ? PURPLE : 'rgba(255,255,255,0.14)',
+      background: on ? PURPLE : 'rgba(232,221,208,0.14)',
       position: 'relative', transition: 'background 0.22s', flexShrink: 0,
     }}>
       <div style={{
         position: 'absolute', top: 3, left: on ? 25 : 3,
-        width: 20, height: 20, borderRadius: '50%', background: '#fff',
+        width: 20, height: 20, borderRadius: '50%', background: '#E8DDD0',
         transition: 'left 0.22s',
       }} />
     </button>
@@ -1658,13 +1661,13 @@ function Toggle({ on, onToggle }) {
 
 function Label({ children }) {
   return (
-    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.6px', fontWeight: 600 }}>
+    <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.4)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.6px', fontWeight: 600 }}>
       {children}
     </div>
   );
 }
 
-function SettingsBtn({ onClick, color, border, textColor = '#fff', text }) {
+function SettingsBtn({ onClick, color, border, textColor = '#E8DDD0', text }) {
   return (
     <button onClick={onClick} style={{
       width: '100%', padding: 13, background: color,

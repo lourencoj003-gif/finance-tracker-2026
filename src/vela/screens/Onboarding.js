@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { parseAmount, parseDebt } from '../scoring';
 import { saveData, saveInsights, markReady } from '../storage';
 
-const PURPLE = '#7F77DD';
-const BG     = '#0a0a0f';
+const PURPLE = '#C8B89A';
+const BG     = '#111318';
 
 const KEYFRAMES = `
   @keyframes orbIdle {
@@ -41,25 +41,25 @@ const KEYFRAMES = `
 
 const ORB_CFG = {
   idle: {
-    bg:   `radial-gradient(circle at 35% 35%, #b0acee, ${PURPLE} 55%, #3a369e)`,
-    glow: `0 0 40px 12px rgba(127,119,221,0.42), 0 0 90px 35px rgba(127,119,221,0.14)`,
+    bg:   `radial-gradient(circle at 35% 35%, #d8cebe, ${PURPLE} 55%, #7a6a52)`,
+    glow: `0 0 40px 12px rgba(200,184,154,0.42), 0 0 90px 35px rgba(200,184,154,0.14)`,
     anim: 'orbIdle 3s ease-in-out infinite',
   },
   thinking: {
-    bg:   `radial-gradient(circle at 35% 35%, #8a86d5, ${PURPLE} 55%, #27246a)`,
-    glow: `0 0 28px 8px rgba(127,119,221,0.28), 0 0 60px 20px rgba(127,119,221,0.08)`,
+    bg:   `radial-gradient(circle at 35% 35%, #b8a898, ${PURPLE} 55%, #5a4e3e)`,
+    glow: `0 0 28px 8px rgba(200,184,154,0.28), 0 0 60px 20px rgba(200,184,154,0.08)`,
     anim: 'orbThinking 2.2s ease-in-out infinite',
   },
   speaking: {
-    bg:   `radial-gradient(circle at 35% 35%, #cac7f8, ${PURPLE} 55%, #5250c0)`,
-    glow: `0 0 72px 28px rgba(127,119,221,0.82), 0 0 150px 65px rgba(127,119,221,0.32)`,
+    bg:   `radial-gradient(circle at 35% 35%, #d8cebe, ${PURPLE} 55%, #8a7a62)`,
+    glow: `0 0 72px 28px rgba(200,184,154,0.82), 0 0 150px 65px rgba(200,184,154,0.32)`,
     anim: 'orbSpeaking 0.42s ease-in-out infinite',
   },
 };
 
 const Q = [
   {
-    ask: ()           => "Hi, I'm Marcus 👋 I'm your personal finance coach — think of me as the friend who actually knows money.\n\nLet's build your picture. First: what's your monthly take-home pay?",
+    ask: ()           => "Hi, I'm Noa 👋 I'm your personal finance coach — think of me as the friend who actually knows money.\n\nLet's build your picture. First: what's your monthly take-home pay?",
     ph:  'e.g. £2,500',
   },
   {
@@ -229,7 +229,7 @@ export default function Onboarding({ onDone }) {
     const surplus = income - expenses;
     const started = Date.now();
 
-    const sysPrompt = `You are Marcus, a personal finance coach. Respond with exactly 3 short financial insights as a JSON array. Each must be under 28 words, start with an action verb, and reference a specific £ amount. Format: ["insight1","insight2","insight3"] — nothing else.`;
+    const sysPrompt = `You are Noa, a personal finance coach. Respond with exactly 3 short financial insights as a JSON array. Each must be under 28 words, start with an action verb, and reference a specific £ amount. Format: ["insight1","insight2","insight3"] — nothing else.`;
     const userMsg   = `Monthly income: £${income}. Monthly expenses: £${expenses}. Surplus: £${surplus.toFixed(0)}. Total debt: £${debt}. Goal: ${goal}.`;
 
     let insights;
@@ -274,7 +274,7 @@ export default function Onboarding({ onDone }) {
         {Q.map((_, i) => (
           <div key={i} style={{
             width: i < step ? 22 : 7, height: 7, borderRadius: 4,
-            background: i < step ? PURPLE : 'rgba(255,255,255,0.15)',
+            background: i < step ? PURPLE : 'rgba(232,221,208,0.15)',
             transition: 'all 0.4s ease',
           }} />
         ))}
@@ -288,7 +288,7 @@ export default function Onboarding({ onDone }) {
           {orbState === 'speaking' && [0, 1, 2].map(i => (
             <div key={i} style={{
               position: 'absolute', width: '100%', height: '100%', borderRadius: '50%',
-              border: '1.5px solid rgba(127,119,221,0.48)',
+              border: '1.5px solid rgba(200,184,154,0.48)',
               animation: `ripple 1.9s ease-out ${i * 0.63}s infinite`,
               pointerEvents: 'none',
             }} />
@@ -307,11 +307,11 @@ export default function Onboarding({ onDone }) {
           {orbState === 'speaking' ? (
             <WaveBars />
           ) : orbState === 'thinking' ? (
-            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, letterSpacing: '0.5px', animation: 'blink 1.6s ease-in-out infinite' }}>
+            <div style={{ color: 'rgba(232,221,208,0.4)', fontSize: 13, letterSpacing: '0.5px', animation: 'blink 1.6s ease-in-out infinite' }}>
               {building ? 'Building your picture…' : 'Processing…'}
             </div>
           ) : (
-            <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: 12, letterSpacing: '0.3px' }}>
+            <div style={{ color: 'rgba(232,221,208,0.2)', fontSize: 12, letterSpacing: '0.3px' }}>
               {!building && step < Q.length ? `Question ${step + 1} of ${Q.length}` : ''}
             </div>
           )}
@@ -335,24 +335,24 @@ export default function Onboarding({ onDone }) {
             key={cardKey}
             style={{
               position: 'relative',
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.1)',
+              background: 'rgba(232,221,208,0.05)',
+              border: '1px solid rgba(232,221,208,0.1)',
               borderRadius: 24,
               padding: '22px 24px',
               backdropFilter: 'blur(24px)',
               WebkitBackdropFilter: 'blur(24px)',
               animation: 'cardIn 0.4s ease-out',
-              boxShadow: '0 8px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06)',
+              boxShadow: '0 8px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(232,221,208,0.06)',
             }}
           >
             <button
               onClick={() => { unlockAudio(); speak(currentQ); }}
-              style={{ position: 'absolute', top: 12, right: 16, background: 'none', border: 'none', color: 'rgba(255,255,255,0.28)', fontSize: 13, cursor: 'pointer', padding: 4, lineHeight: 1 }}
+              style={{ position: 'absolute', top: 12, right: 16, background: 'none', border: 'none', color: 'rgba(232,221,208,0.28)', fontSize: 13, cursor: 'pointer', padding: 4, lineHeight: 1 }}
             >🔊</button>
-            <div style={{ fontSize: 10, color: 'rgba(127,119,221,0.7)', marginBottom: 12, letterSpacing: '0.9px', textTransform: 'uppercase', fontWeight: 600 }}>
-              Marcus
+            <div style={{ fontSize: 10, color: 'rgba(200,184,154,0.7)', marginBottom: 12, letterSpacing: '0.9px', textTransform: 'uppercase', fontWeight: 600 }}>
+              Noa
             </div>
-            <div style={{ fontSize: 16, color: '#eeeeff', lineHeight: 1.68, whiteSpace: 'pre-wrap', fontWeight: 400, paddingRight: 22 }}>
+            <div style={{ fontSize: 16, color: '#E8DDD0', lineHeight: 1.68, whiteSpace: 'pre-wrap', fontWeight: 400, paddingRight: 22 }}>
               {currentQ}
             </div>
           </div>
@@ -366,7 +366,7 @@ export default function Onboarding({ onDone }) {
           display: 'flex', alignItems: 'center', gap: 10,
           padding: '0 16px', paddingBottom: 'max(0px, env(safe-area-inset-bottom))',
           background: `linear-gradient(to top, ${BG} 65%, transparent)`,
-          borderTop: '1px solid rgba(255,255,255,0.04)',
+          borderTop: '1px solid rgba(232,221,208,0.04)',
         }}>
           <input
             value={input}
@@ -374,15 +374,15 @@ export default function Onboarding({ onDone }) {
             onKeyDown={onKey}
             placeholder={Q[step]?.ph || ''}
             style={{
-              flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 22, padding: '11px 16px', color: '#fff', fontSize: 16,
+              flex: 1, background: 'rgba(232,221,208,0.05)', border: '1px solid rgba(232,221,208,0.08)',
+              borderRadius: 22, padding: '11px 16px', color: '#E8DDD0', fontSize: 16,
               outline: 'none', fontFamily: 'inherit',
             }}
           />
           <button onClick={send} style={{
             width: 44, height: 44, borderRadius: '50%', border: 'none', flexShrink: 0,
-            background: input.trim() ? 'rgba(127,119,221,0.22)' : 'rgba(255,255,255,0.05)',
-            color: input.trim() ? PURPLE : 'rgba(255,255,255,0.18)',
+            background: input.trim() ? 'rgba(200,184,154,0.22)' : 'rgba(232,221,208,0.05)',
+            color: input.trim() ? PURPLE : 'rgba(232,221,208,0.18)',
             fontSize: 22, cursor: input.trim() ? 'pointer' : 'default',
             transition: 'all 0.15s',
             display: 'flex', alignItems: 'center', justifyContent: 'center',

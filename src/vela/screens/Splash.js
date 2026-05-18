@@ -4,7 +4,7 @@ import { t } from '../theme';
 const INTRO_KEY = 'vela_intro_seen';
 
 const SENTENCES = [
-  { text: 'Hey. I am Marcus.',                            delay: 2000 },
+  { text: 'Hey. I am Noa.',                              delay: 2000 },
   { text: 'I know exactly what to do with your money.',   delay: 2500 },
   { text: 'Most people never figure this out.',           delay: 2500 },
   { text: 'You are about to.',                            delay: 2000 },
@@ -63,12 +63,11 @@ export default function Splash({ onDone }) {
       return () => { earlyTimers.forEach(clearTimeout); };
     }
 
-    // Build cumulative delay schedule
-    let t = 0;
+    let cumulative = 0;
     SENTENCES.forEach((s, i) => {
-      t += s.delay;
-      const showAt  = t;
-      const hideAt  = i < SENTENCES.length - 1 ? showAt + 1600 : null;
+      cumulative += s.delay;
+      const showAt = cumulative;
+      const hideAt = i < SENTENCES.length - 1 ? showAt + 1600 : null;
 
       push(() => {
         setSubtitle(s.text);
@@ -81,8 +80,7 @@ export default function Splash({ onDone }) {
       }
     });
 
-    // Auto-advance after last sentence
-    push(finish, t + 2000);
+    push(finish, cumulative + 2000);
 
     const timers = timersRef.current;
     return () => {
@@ -101,59 +99,78 @@ export default function Splash({ onDone }) {
         cursor: isFirstTime ? 'pointer' : 'default',
       }}
     >
+      {/* ── Noa wordmark logo ── */}
+      <div style={{
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 32,
+      }}>
+        {/* Compass north dot above the 'o' */}
+        <div style={{
+          position: 'absolute',
+          top: -14,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: 4,
+          height: 4,
+          borderRadius: '50%',
+          background: '#7CAE9E',
+          opacity: lineLen === 1 ? 1 : 0,
+          transition: 'opacity 0.5s ease 0.8s',
+          boxShadow: '0 0 6px 2px rgba(124,174,158,0.6)',
+        }} />
 
-      {/* SVG V logo with navigation arc */}
-      <svg
-        width="120"
-        height="120"
-        viewBox="0 0 120 120"
-        style={{ marginBottom: 28, filter: 'drop-shadow(0 0 24px rgba(127,119,221,0.6))' }}
-      >
-        <path
-          d="M 18 38 Q 60 95 102 38"
-          stroke="rgba(127,119,221,0.55)"
-          strokeWidth="1.5"
-          fill="none"
-          strokeLinecap="round"
-          strokeDasharray="120"
-          strokeDashoffset={lineLen === 0 ? 120 : 0}
-          style={{ transition: 'stroke-dashoffset 1.4s cubic-bezier(0.4,0,0.2,1)' }}
-        />
-        <circle
-          cx="60"
-          cy="78"
-          r="3"
-          fill="#7F77DD"
-          opacity={lineLen === 1 ? 1 : 0}
-          style={{ transition: 'opacity 0.4s ease 1.3s' }}
-        />
-        <path d="M 22 28 L 60 82" stroke="white" strokeWidth="7"   strokeLinecap="round" fill="none" />
-        <path d="M 98 28 L 60 82" stroke="white" strokeWidth="7"   strokeLinecap="round" fill="none" />
-        <path d="M 14 28 L 30 28" stroke="white" strokeWidth="4.5" strokeLinecap="round" fill="none" />
-        <path d="M 90 28 L 106 28" stroke="white" strokeWidth="4.5" strokeLinecap="round" fill="none" />
-        <path
-          d="M 60 62 L 60 68"
-          stroke="rgba(127,119,221,0.7)"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          opacity={lineLen === 1 ? 1 : 0}
-          style={{ transition: 'opacity 0.4s ease 1.5s' }}
-        />
-      </svg>
+        {/* The wordmark */}
+        <div style={{
+          fontSize: 52,
+          fontWeight: 300,
+          color: '#E8DDD0',
+          letterSpacing: '0.3em',
+          lineHeight: 1,
+          fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif',
+          filter: 'drop-shadow(0 0 20px rgba(232,221,208,0.25))',
+        }}>
+          noa
+        </div>
+      </div>
 
-      {/* Speech subtitle */}
+      {/* Tagline */}
+      <div style={{
+        fontSize: 7,
+        fontWeight: 500,
+        color: '#A89880',
+        letterSpacing: '0.2em',
+        textTransform: 'uppercase',
+        marginBottom: 32,
+        opacity: lineLen === 1 ? 1 : 0,
+        transition: 'opacity 0.5s ease 0.6s',
+      }}>
+        Your Financial Navigator
+      </div>
+
+      {/* Subtle underline accent */}
+      <div style={{
+        width: lineLen === 1 ? 48 : 0,
+        height: 1,
+        background: 'rgba(124,174,158,0.5)',
+        marginBottom: 32,
+        transition: 'width 0.8s cubic-bezier(0.4,0,0.2,1) 0.3s',
+      }} />
+
+      {/* Speech subtitle — first time only */}
       {isFirstTime && (
         <div style={{
           height: 52,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          marginBottom: 8,
           padding: '0 36px',
           textAlign: 'center',
         }}>
           <div style={{
             fontSize: 17,
-            fontWeight: 500,
-            color: 'rgba(255,255,255,0.88)',
+            fontWeight: 400,
+            color: 'rgba(232,221,208,0.82)',
             letterSpacing: '0.01em',
             lineHeight: 1.45,
             opacity: subtitleOpacity,
@@ -162,22 +179,6 @@ export default function Splash({ onDone }) {
             {subtitle}
           </div>
         </div>
-      )}
-
-      {!isFirstTime && (
-        <>
-          <div style={{
-            fontSize: 13, fontWeight: 700,
-            color: 'rgba(255,255,255,0.7)',
-            letterSpacing: '0.26em', textTransform: 'uppercase',
-            marginBottom: 6,
-          }}>
-            Your Financial Navigator
-          </div>
-          <div style={{ fontSize: 11, color: 'rgba(127,119,221,0.5)', letterSpacing: '0.1em', marginTop: 6 }}>
-            Vela
-          </div>
-        </>
       )}
     </div>
   );

@@ -1,6 +1,6 @@
 {
-  "name": "Vela",
-  "short_name": "Vela",
+  "name": "Noa",
+  "short_name": "Noa",
   "description": "Your personal AI finance navigator",
   "icons": [
     {
@@ -24,6 +24,6 @@
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "theme_color": "#0a0a0f",
-  "background_color": "#0a0a0f"
+  "theme_color": "#111318",
+  "background_color": "#111318"
 }
