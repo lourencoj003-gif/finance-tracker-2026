@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getData, saveData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin, getGoals, saveGoals, getLastOpen, setLastOpen, getLastCeremonyYM, setLastCeremonyYM, getDebts, saveDebts, getChallenge, saveChallenge } from '../storage';
+import { getData, saveData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin, getGoals, saveGoals, getLastOpen, setLastOpen, getLastCeremonyYM, setLastCeremonyYM, getDebts, saveDebts, getChallenge, saveChallenge, getExpenseLog, saveExpenseLog, getEveningDate, setEveningDate, appendEveningLog } from '../storage';
 import PaydayCeremony from './PaydayCeremony';
 
 const PURPLE    = '#7F77DD';
@@ -168,6 +168,17 @@ function splitSentences(text) {
   return (text.match(/[^.!?]+[.!?]*/g) || [text]).map(s => s.trim()).filter(Boolean);
 }
 
+function parseExpenseFromText(text) {
+  // "just spent £12 on coffee" | "spent 8 on lunch" | "£12 on coffee" | "I spent £50"
+  const m = text.match(/(?:just\s+)?spent\s+£?\s*([\d]+(?:\.\d{1,2})?)\s*(?:on\s+([^,.!?]+))?/i)
+         || text.match(/£\s*([\d]+(?:\.\d{1,2})?)\s+on\s+([^,.!?]+)/i);
+  if (!m) return null;
+  const amount = parseFloat(m[1]);
+  if (isNaN(amount) || amount <= 0 || amount > 9999) return null;
+  const category = m[2] ? m[2].trim().replace(/[.!?]+$/, '') : 'general';
+  return { amount, category, date: new Date().toISOString().slice(0, 10), ts: Date.now() };
+}
+
 function parseDebtFromText(text) {
   if (!/\b(debt|owe|loan|card|credit|overdraft|finance|borrowed)\b/i.test(text)) return null;
   const amtM = text.match(/£\s*([\d,]+(?:\.\d{1,2})?)/);
@@ -241,6 +252,10 @@ export default function VelaCore({ onReset }) {
   const [freedomDays, setFreedomDays]     = useState(0);
   const [settingSavings, setSettingSavings] = useState(() => String((getData() || {}).savings || ''));
   const [debts, setDebts]                   = useState(() => getDebts());
+  const [eveningCheckOpen, setEveningCheckOpen] = useState(false);
+  const [eveningAnswered, setEveningAnswered]   = useState(() => getEveningDate() === new Date().toISOString().slice(0, 10));
+  const [eveningPhase, setEveningPhase]         = useState('ask');
+  const [eveningNote, setEveningNote]           = useState('');
   const [challengeData, setChallengeData]   = useState(() => {
     const stored = getChallenge();
     const weekId = getISOWeek();
@@ -476,6 +491,28 @@ export default function VelaCore({ onReset }) {
       return;
     }
 
+    // Voice expense logging — detect and respond locally
+    const expense = parseExpenseFromText(clean);
+    if (expense) {
+      const log         = getExpenseLog();
+      const thisMonth   = new Date().toISOString().slice(0, 7);
+      const updatedLog  = [...log, expense];
+      saveExpenseLog(updatedLog);
+      const monthTotal  = updatedLog
+        .filter(e => e.date.startsWith(thisMonth))
+        .reduce((s, e) => s + e.amount, 0);
+      const surplus     = income - expenses;
+      const remaining   = Math.max(0, surplus - monthTotal);
+      const reply       = surplus > 0
+        ? `On it — £${expense.amount.toFixed(2)} added to ${expense.category}. You've spent £${monthTotal.toFixed(2)} from your surplus this month, leaving £${remaining.toFixed(2)} remaining.`
+        : `That's £${expense.amount.toFixed(2)} logged for ${expense.category}. Keep an eye on spend — your surplus is tight this month.`;
+      pushCard('user', clean);
+      setInput('');
+      pushCard('vela', reply);
+      speak(reply);
+      return;
+    }
+
     // Detect savings goals ("save £X for Y by Z")
     const newGoal = parseGoalFromText(clean);
     if (newGoal) {
@@ -627,6 +664,20 @@ Step 4: Invest 15% of income (£${Math.round(income * 0.15).toLocaleString('en-G
 Step 5: Save for specific goals using named pots
 → This user is currently on STEP ${babyStep}
 
+══ UK PEER BENCHMARKS — 22–35 age group (ONS / Money Charity UK data) ══
+Reference these naturally and specifically when comparing performance. Never mention other users — only benchmarks.
+• Avg savings rate (22–35):  8% of take-home pay
+• Avg lifestyle spend:       35% of take-home (dining, clothes, entertainment)
+• Avg consumer debt:         £6,500 (credit cards, personal loans)
+• Avg monthly savings:       £250/month
+• Emergency fund adequacy:   62% of this age group have < 1 month saved
+• ISA ownership:             38% have any ISA; only 14% hold Stocks & Shares ISA
+
+THIS USER'S POSITION vs PEERS:
+• Savings rate: ${savingsRate}% vs avg 8% → ${savingsRate >= 30 ? 'top 5% of savers their age — exceptional' : savingsRate >= 20 ? 'top 15% — well above average' : savingsRate >= 15 ? 'top 25% — comfortably above average' : savingsRate >= 8 ? 'above the peer average' : 'below the 8% peer average — there is clear room to improve'}
+• Lifestyle spend ratio: ${income > 0 ? Math.round((expenses / income) * 100) : 0}% of income vs avg 35% peer benchmark
+Use these comparisons warmly — celebrate above-average, encourage below-average without shaming.
+
 ══ FINANCIAL EDUCATION — weave in naturally, never lecture ══
 • Compound interest: "£100/month at 7% for 30 years = £121,000. Starting 10 years later roughly halves that outcome."
 • Pound cost averaging: "A fixed monthly investment buys more shares when prices fall — you never need to time the market."
@@ -654,6 +705,31 @@ Step 5: Save for specific goals using named pots
     setShowSettings(false);
   }
 
+  // ── Evening check-in handlers ────────────────────────────────────
+  function handleEveningYes() {
+    setEveningDate();
+    appendEveningLog({ date: new Date().toISOString().slice(0, 10), stuck: true });
+    setEveningAnswered(true);
+    setEveningCheckOpen(false);
+    const name = localStorage.getItem('vela_name') || '';
+    const msg  = `Well done${name ? `, ${name}` : ''}. Sticking to your budget today is exactly how wealth is built — one decision at a time.`;
+    setCelebrateMsg('Budget kept today! Your discipline compounds.');
+    setCelebrate(true);
+    setTimeout(() => setCelebrate(false), 2500);
+    speak(msg);
+  }
+
+  function handleEveningNo() {
+    setEveningDate();
+    appendEveningLog({ date: new Date().toISOString().slice(0, 10), stuck: false, note: eveningNote });
+    setEveningAnswered(true);
+    setEveningCheckOpen(false);
+    const msg = `That's honest — and honesty is how you improve. One off day doesn't define your finances. We'll look at it together tomorrow.`;
+    pushCard('vela', msg);
+    speak(msg);
+    setTimeout(() => setChatOpen(true), 400);
+  }
+
   // ── Dashboard calculations ───────────────────────────────────────
   const surplus      = income - expenses;
   const isPositive   = surplus >= 0;
@@ -673,6 +749,10 @@ Step 5: Save for specific goals using named pots
 
   // Current week challenge
   const currentChallengeDef = CHALLENGES.find(c => c.id === challengeData.id) || CHALLENGES[0];
+
+  // Evening check-in
+  const isEveningTime   = new Date().getHours() >= 19 && new Date().getHours() < 21;
+  const showEveningDot  = isEveningTime && !eveningAnswered;
 
   // Vela Score
   const velaScore      = calcVelaScore({ income, expenses, debt, streak });
@@ -797,7 +877,12 @@ Step 5: Save for specific goals using named pots
         {/* Top section */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
           <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.36)', letterSpacing: '0.2px' }}>{getGreeting()}</div>
-          <SmallOrb alert={spendAlert} debtMode={debtMode} />
+          <div
+            onClick={() => { if (showEveningDot) { setEveningPhase('ask'); setEveningNote(''); setEveningCheckOpen(true); } }}
+            style={{ cursor: showEveningDot ? 'pointer' : 'default' }}
+          >
+            <SmallOrb alert={spendAlert} debtMode={debtMode} eveningDot={showEveningDot} />
+          </div>
           {debtMode ? (
             <>
               <div style={{ fontSize: 11, color: 'rgba(226,75,74,0.7)', letterSpacing: '1.5px', textTransform: 'uppercase', fontWeight: 700 }}>Debt Destruction Mode</div>
@@ -1124,6 +1209,51 @@ Step 5: Save for specific goals using named pots
       {/* ══════════════════════════════════════════
           SETTINGS OVERLAY
       ══════════════════════════════════════════ */}
+      {/* ══════════════════════════════════════════
+          EVENING CHECK-IN OVERLAY
+      ══════════════════════════════════════════ */}
+      {eveningCheckOpen && (
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.82)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, zIndex: 55 }}>
+          <div style={{ background: 'rgba(10,8,28,0.98)', border: '1px solid rgba(127,119,221,0.24)', borderRadius: 26, padding: 28, width: '100%', maxWidth: 320, animation: 'cardIn 0.28s ease-out' }}>
+            {eveningPhase === 'ask' ? (
+              <>
+                <div style={{ fontSize: 28, textAlign: 'center', marginBottom: 10 }}>🌙</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', textAlign: 'center', marginBottom: 8 }}>Evening Check-in</div>
+                <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.52)', textAlign: 'center', lineHeight: 1.6, marginBottom: 26 }}>
+                  How did today go financially?<br />Did you stick to your budget?
+                </div>
+                <button
+                  onClick={handleEveningYes}
+                  style={{ width: '100%', padding: 13, background: 'rgba(78,202,139,0.14)', border: '1px solid rgba(78,202,139,0.3)', borderRadius: 12, color: GREEN, fontSize: 15, fontWeight: 700, cursor: 'pointer', marginBottom: 10 }}
+                >Yes, I did ✓</button>
+                <button
+                  onClick={() => setEveningPhase('followup')}
+                  style={{ width: '100%', padding: 13, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: 'rgba(255,255,255,0.6)', fontSize: 15, fontWeight: 600, cursor: 'pointer', marginBottom: 10 }}
+                >No, not quite</button>
+                <button onClick={() => setEveningCheckOpen(false)} style={{ width: '100%', padding: 10, background: 'none', border: 'none', color: 'rgba(255,255,255,0.28)', fontSize: 13, cursor: 'pointer' }}>Later</button>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 6 }}>That's okay — reflect on it</div>
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', lineHeight: 1.55, marginBottom: 16 }}>What happened? A quick note helps with your monthly review.</div>
+                <textarea
+                  value={eveningNote}
+                  onChange={e => setEveningNote(e.target.value)}
+                  placeholder="e.g. Grabbed a takeaway, forgot lunch..."
+                  rows={3}
+                  style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '10px 14px', color: '#fff', fontSize: 14, outline: 'none', fontFamily: 'inherit', resize: 'none', boxSizing: 'border-box', marginBottom: 14 }}
+                />
+                <button
+                  onClick={handleEveningNo}
+                  style={{ width: '100%', padding: 13, background: PURPLE, border: 'none', borderRadius: 12, color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer', marginBottom: 10 }}
+                >Save reflection</button>
+                <button onClick={() => setEveningPhase('ask')} style={{ width: '100%', padding: 10, background: 'none', border: 'none', color: 'rgba(255,255,255,0.28)', fontSize: 13, cursor: 'pointer' }}>Back</button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {showSettings && (
         <div
           onClick={e => e.target === e.currentTarget && setShowSettings(false)}
@@ -1434,7 +1564,7 @@ function DetailLabel({ children }) {
 
 // ── Shared sub-components ───────────────────────────────────────────
 
-function SmallOrb({ alert, debtMode }) {
+function SmallOrb({ alert, debtMode, eveningDot }) {
   const bg  = debtMode
     ? `radial-gradient(circle at 35% 35%, #f08080, ${DEBT_RED} 55%, #7a1010)`
     : `radial-gradient(circle at 35% 35%, #b0acee, ${PURPLE} 55%, #3a369e)`;
@@ -1449,13 +1579,22 @@ function SmallOrb({ alert, debtMode }) {
         animation: 'orbIdle 3s ease-in-out infinite',
         transition: 'background 0.8s ease, box-shadow 0.8s ease',
       }} />
-      {alert && !debtMode && (
+      {alert && !debtMode && !eveningDot && (
         <div style={{
           position: 'absolute', top: 1, right: 1,
           width: 12, height: 12, borderRadius: '50%',
           background: RED, border: `2px solid ${BG}`,
           boxShadow: '0 0 6px 2px rgba(255,107,107,0.6)',
           animation: 'alertPulse 1.4s ease-in-out infinite',
+        }} />
+      )}
+      {eveningDot && (
+        <div style={{
+          position: 'absolute', top: 1, right: 1,
+          width: 12, height: 12, borderRadius: '50%',
+          background: AMBER, border: `2px solid ${BG}`,
+          boxShadow: '0 0 8px 3px rgba(245,166,35,0.65)',
+          animation: 'alertPulse 1.8s ease-in-out infinite',
         }} />
       )}
     </div>

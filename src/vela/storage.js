@@ -15,6 +15,9 @@ const K = {
   CEREMONY_YM:  'vela_ceremony_ym',
   DEBTS:        'vela_debts',
   CHALLENGE:    'vela_challenge',
+  EXPENSE_LOG:  'vela_expense_log',
+  EVENING_DATE: 'vela_evening_date',
+  EVENING_LOG:  'vela_evening_log',
 };
 
 export const getPin            = ()    => localStorage.getItem(K.PIN);
@@ -65,9 +68,19 @@ export const setLastCeremonyYM = () => {
   localStorage.setItem(K.CEREMONY_YM, `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}`);
 };
 
-export const getDebts      = ()    => { const r = localStorage.getItem(K.DEBTS);     return r ? JSON.parse(r) : []; };
+export const getDebts      = ()    => { const r = localStorage.getItem(K.DEBTS);       return r ? JSON.parse(r) : []; };
 export const saveDebts     = (d)   => localStorage.setItem(K.DEBTS, JSON.stringify(d));
-export const getChallenge  = ()    => { const r = localStorage.getItem(K.CHALLENGE); return r ? JSON.parse(r) : null; };
+export const getChallenge  = ()    => { const r = localStorage.getItem(K.CHALLENGE);   return r ? JSON.parse(r) : null; };
 export const saveChallenge = (c)   => localStorage.setItem(K.CHALLENGE, JSON.stringify(c));
+export const getExpenseLog = ()    => { const r = localStorage.getItem(K.EXPENSE_LOG); return r ? JSON.parse(r) : []; };
+export const saveExpenseLog = (d)  => localStorage.setItem(K.EXPENSE_LOG, JSON.stringify(d));
+export const getEveningDate = ()   => localStorage.getItem(K.EVENING_DATE) || '';
+export const setEveningDate = ()   => localStorage.setItem(K.EVENING_DATE, new Date().toISOString().slice(0, 10));
+export const getEveningLog  = ()   => { const r = localStorage.getItem(K.EVENING_LOG); return r ? JSON.parse(r) : []; };
+export const appendEveningLog = (entry) => {
+  const log = getEveningLog();
+  log.push(entry);
+  localStorage.setItem(K.EVENING_LOG, JSON.stringify(log));
+};
 
 export const clearAll  = ()    => Object.values(K).forEach(k => localStorage.removeItem(k));
