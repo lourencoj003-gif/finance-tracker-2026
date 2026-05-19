@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { parseAmount, parseDebt } from '../scoring';
 import { saveData, saveInsights, markReady } from '../storage';
+import { speak as voiceSpeak, stopSpeaking } from '../voice';
 
 const PURPLE = '#C8B89A';
 const BG     = '#111318';
@@ -41,6 +42,15 @@ const KEYFRAMES = `
     from { opacity: 0; transform: translateY(3px); }
     to   { opacity: 1; transform: translateY(0); }
   }
+  @keyframes orbExpand {
+    0%   { transform: scale(1);   opacity: 1; }
+    60%  { transform: scale(8);   opacity: 0.6; }
+    100% { transform: scale(20);  opacity: 0; }
+  }
+  @keyframes expandFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
   input::placeholder, textarea::placeholder { color: #A89880; opacity: 1; }
 `;
 
@@ -64,31 +74,57 @@ const ORB_CFG = {
 
 const Q = [
   {
-    ask: ()           => "Hi, I'm Noa 👋 I'm your personal finance coach — think of me as the friend who actually knows money.\n\nLet's build your picture. First: what's your monthly take-home pay?",
+    id: 'name',
+    ask: () => "Hey, I'm Noa. Before we get started, what's your first name?",
+    ph:  'e.g. Alex',
+  },
+  {
+    id: 'income',
+    ask: ({ name }) => `Nice to meet you, ${name}. What's your monthly take-home pay after tax?`,
     ph:  'e.g. £2,500',
   },
   {
-    ask: ({ income }) => `Got it — £${income.toFixed(0)}/month. Now roughly how much do you spend each month? Rent, food, transport, subscriptions — give me a total.`,
-    ph:  'e.g. £1,800',
+    id: 'payday',
+    ask: () => "What day of the month does your salary land?",
+    ph:  'e.g. 25th, or "last day of month"',
   },
   {
-    ask: ({ income, expenses }) => {
-      const s = income - expenses;
-      return s >= 0
-        ? `You're keeping £${s.toFixed(0)}/month — solid start. Any debts? Credit card, loan, overdraft. Give me the total or say "none".`
-        : `Spending £${Math.abs(s).toFixed(0)} more than you earn right now — we'll fix that. Any debts on top? Or say "none".`;
-    },
-    ph: 'e.g. £3,000 or "none"',
+    id: 'expenses',
+    ask: () => "Do you have any fixed monthly costs — things like rent, subscriptions, bills? Tell me what they are and roughly how much each costs.",
+    ph:  'e.g. £900 rent, £60 Netflix, £40 gym',
   },
   {
-    ask: () => "Got it. What's your main financial goal right now? Save for something, pay off debt, build an emergency fund — anything.",
+    id: 'lifestyle',
+    ask: ({ name }) => `Outside of fixed costs, where does most of your money tend to go each month${name ? `, ${name}` : ''}?`,
+    ph:  'e.g. Eating out, clothes, weekends away',
+  },
+  {
+    id: 'debt',
+    ask: () => "Do you have any debts right now — credit cards, loans, overdrafts, buy now pay later? If yes, what's the total and do you know the interest rate?",
+    ph:  'e.g. £3,000 credit card at 24% or "none"',
+  },
+  {
+    id: 'goal',
+    ask: ({ name }) => `What's your biggest financial goal right now${name ? `, ${name}` : ''}?`,
     ph:  'e.g. Save a £5,000 emergency fund',
   },
   {
-    ask: () => "Last one — what day of the month do you usually get paid? I'll use this to trigger your payday routine at the right moment.",
-    ph:  'e.g. 25 or "last of month"',
+    id: 'savings',
+    ask: () => "Do you have any savings currently — and if so, roughly how much?",
+    ph:  'e.g. £2,000 or "none"',
   },
 ];
+
+function parsePayday(val) {
+  if (/last|end.?of.?month|eom/i.test(val)) return 28;
+  const m = val.match(/\b(\d{1,2})\b/);
+  return m ? Math.min(31, Math.max(1, parseInt(m[0], 10))) : 25;
+}
+
+function parseSavings(val) {
+  if (/\b(none|nothing|no|nope|zero|nil|n\/a)\b/i.test(val)) return 0;
+  return parseAmount(val);
+}
 
 function fallbackInsights({ income, expenses, debt }) {
   const surplus = income - expenses;
@@ -112,20 +148,20 @@ function splitSentences(text) {
 }
 
 export default function Onboarding({ onDone }) {
-  const [step, setStep]           = useState(0);
-  const [input, setInput]         = useState('');
-  const [data, setData]           = useState({ income: 0, expenses: 0, debt: 0, goal: '' });
-  const [building, setBuilding]   = useState(false);
-  const [orbState, setOrbState]   = useState('idle');
-  const [currentQ, setCurrentQ]   = useState('');
-  const [cardKey, setCardKey]     = useState(0);
-  const [vpH, setVpH]             = useState(
+  const [step, setStep]         = useState(0);
+  const [input, setInput]       = useState('');
+  const [data, setData]         = useState({ name: '', income: 0, payday: 25, expenses: 0, expenseDetails: '', lifestyleSpend: '', debt: 0, goal: '', savings: 0 });
+  const [building, setBuilding] = useState(false);
+  const [orbState, setOrbState] = useState('idle');
+  const [currentQ, setCurrentQ] = useState('');
+  const [cardKey, setCardKey]   = useState(0);
+  const [expanding, setExpanding] = useState(false);
+  const [vpH, setVpH]           = useState(
     window.visualViewport ? Math.round(window.visualViewport.height) : null
   );
 
-  const buildingRef      = useRef(false);
-  const hasInit          = useRef(false);
-  const audioUnlockedRef = useRef(false);
+  const buildingRef = useRef(false);
+  const hasInit     = useRef(false);
 
   useEffect(() => { buildingRef.current = building; }, [building]);
 
@@ -136,7 +172,7 @@ export default function Onboarding({ onDone }) {
       el.textContent = KEYFRAMES;
       document.head.appendChild(el);
     }
-    return () => { window.speechSynthesis?.cancel(); };
+    return () => { stopSpeaking(); };
   }, []);
 
   useEffect(() => {
@@ -156,65 +192,27 @@ export default function Onboarding({ onDone }) {
     return () => clearTimeout(tid);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  function unlockAudio() {
-    if (audioUnlockedRef.current || !window.speechSynthesis) return;
-    audioUnlockedRef.current = true;
-    const u = new SpeechSynthesisUtterance('');
-    u.volume = 0;
-    window.speechSynthesis.speak(u);
-  }
-
   function speak(text) {
-    if (!window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const clean = text.replace(/[\u{1F000}-\u{1FFFF}|\u{2600}-\u{27FF}|\u{2300}-\u{23FF}|\u{2B00}-\u{2BFF}|\u{1F300}-\u{1F9FF}|\u{FE00}-\u{FE0F}]/gu, '').trim();
-    const sentences = splitSentences(clean);
-    const fire = () => {
-      const voices   = window.speechSynthesis.getVoices();
-      const PRIORITY = ['Samantha', 'Karen', 'Moira', 'Victoria', 'Tessa'];
-      const voice    = PRIORITY.reduce((found, name) => found || voices.find(v => v.name.includes(name)), null)
-                    || voices.find(v => v.lang === 'en-GB')
-                    || voices.find(v => v.lang.startsWith('en'))
-                    || null;
-      setOrbState('speaking');
-      let i = 0;
-      const next = () => {
-        if (i >= sentences.length) { setOrbState(buildingRef.current ? 'thinking' : 'idle'); return; }
-        const u = new SpeechSynthesisUtterance(sentences[i++]);
-        u.rate   = 0.78;
-        u.pitch  = 0.95;
-        u.volume = 1;
-        if (voice) u.voice = voice;
-        u.onend   = () => setTimeout(next, i < sentences.length ? 200 : 0);
-        u.onerror = () => setOrbState(buildingRef.current ? 'thinking' : 'idle');
-        window.speechSynthesis.speak(u);
-      };
-      setTimeout(next, 500);
-    };
-    window.speechSynthesis.getVoices().length > 0
-      ? fire()
-      : (window.speechSynthesis.onvoiceschanged = () => { fire(); window.speechSynthesis.onvoiceschanged = null; });
+    voiceSpeak(text, {
+      onStart: () => setOrbState('speaking'),
+      onEnd:   () => setOrbState(buildingRef.current ? 'thinking' : 'idle'),
+    });
   }
 
   function send() {
     const val = input.trim();
     if (!val || building || step >= Q.length) return;
-    unlockAudio();
     setInput('');
 
     const nd = { ...data };
-    if (step === 0)      nd.income   = parseAmount(val);
-    else if (step === 1) nd.expenses = parseAmount(val);
-    else if (step === 2) nd.debt     = parseDebt(val);
-    else if (step === 3) nd.goal     = val;
-    else if (step === 4) {
-      if (/last|end.?of.?month|eom/i.test(val)) {
-        nd.payday = 28;
-      } else {
-        const m = val.match(/\b(\d{1,2})\b/);
-        nd.payday = m ? Math.min(31, Math.max(1, parseInt(m[0], 10))) : 25;
-      }
-    }
+    if      (step === 0) { nd.name = val; localStorage.setItem('vela_name', val); localStorage.setItem('userName', val); }
+    else if (step === 1) { nd.income = parseAmount(val); }
+    else if (step === 2) { nd.payday = parsePayday(val); }
+    else if (step === 3) { nd.expenses = parseAmount(val); nd.expenseDetails = val; }
+    else if (step === 4) { nd.lifestyleSpend = val; }
+    else if (step === 5) { nd.debt = parseDebt(val); }
+    else if (step === 6) { nd.goal = val; }
+    else if (step === 7) { nd.savings = parseSavings(val); }
     setData(nd);
 
     const next = step + 1;
@@ -229,7 +227,8 @@ export default function Onboarding({ onDone }) {
         speak(q);
       }, 650);
     } else {
-      const finalMsg = 'Perfect. Give me a moment to build your financial picture ✨';
+      const name = nd.name || '';
+      const finalMsg = `Perfect${name ? ` ${name}` : ''}. I have everything I need. Give me a moment to build your financial picture.`;
       setTimeout(() => {
         setCurrentQ(finalMsg);
         setCardKey(k => k + 1);
@@ -247,7 +246,7 @@ export default function Onboarding({ onDone }) {
     const started = Date.now();
 
     const sysPrompt = `You are Noa, a personal finance coach. Respond with exactly 3 short financial insights as a JSON array. Each must be under 28 words, start with an action verb, and reference a specific £ amount. Format: ["insight1","insight2","insight3"] — nothing else.`;
-    const userMsg   = `Monthly income: £${income}. Monthly expenses: £${expenses}. Surplus: £${surplus.toFixed(0)}. Total debt: £${debt}. Goal: ${goal}.`;
+    const userMsg   = `Monthly income: £${income}. Monthly expenses: £${expenses}. Surplus: £${surplus.toFixed(0)}. Total debt: £${debt}. Goal: ${goal}. Savings: £${d.savings || 0}.`;
 
     let insights;
     try {
@@ -273,8 +272,10 @@ export default function Onboarding({ onDone }) {
     markReady();
 
     const elapsed = Date.now() - started;
-    await new Promise(r => setTimeout(r, Math.max(0, 2400 - elapsed)));
-    onDone();
+    await new Promise(r => setTimeout(r, Math.max(0, 1800 - elapsed)));
+
+    setExpanding(true);
+    setTimeout(onDone, 1600);
   }
 
   function onKey(e) {
@@ -288,10 +289,10 @@ export default function Onboarding({ onDone }) {
     <div style={{ position: 'relative', height: containerH, background: BG, overflow: 'hidden', fontFamily: 'inherit' }}>
 
       {/* Progress dots */}
-      <div style={{ position: 'absolute', top: 32, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 8, zIndex: 5 }}>
+      <div style={{ position: 'absolute', top: 32, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 7, zIndex: 5 }}>
         {Q.map((_, i) => (
           <div key={i} style={{
-            width: i < step ? 22 : 7, height: 7, borderRadius: 4,
+            width: i < step ? 18 : 6, height: 6, borderRadius: 3,
             background: i < step ? PURPLE : 'rgba(232,221,208,0.15)',
             transition: 'all 0.4s ease',
           }} />
@@ -330,7 +331,7 @@ export default function Onboarding({ onDone }) {
             </div>
           ) : (
             <div style={{ color: 'rgba(232,221,208,0.2)', fontSize: 12, letterSpacing: '0.3px' }}>
-              {!building && step < Q.length ? `Question ${step + 1} of ${Q.length}` : ''}
+              {!building && step < Q.length ? `${step + 1} of ${Q.length}` : ''}
             </div>
           )}
         </div>
@@ -364,7 +365,7 @@ export default function Onboarding({ onDone }) {
             }}
           >
             <button
-              onClick={() => { unlockAudio(); speak(currentQ); }}
+              onClick={() => speak(currentQ)}
               style={{ position: 'absolute', top: 12, right: 16, background: 'none', border: 'none', color: 'rgba(232,221,208,0.28)', fontSize: 13, cursor: 'pointer', padding: 4, lineHeight: 1 }}
             >🔊</button>
             <div style={{ fontSize: 10, color: '#A89880', marginBottom: 12, letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: 500 }}>
@@ -414,6 +415,23 @@ export default function Onboarding({ onDone }) {
             transition: 'all 0.15s',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>›</button>
+        </div>
+      )}
+
+      {/* ── Expansion overlay ── */}
+      {expanding && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 200,
+          background: BG,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          animation: 'expandFadeIn 0.4s ease-out',
+        }}>
+          <div style={{
+            width: 140, height: 140, borderRadius: '50%',
+            background: `radial-gradient(circle at 35% 35%, #d8cebe, ${PURPLE} 55%, #7a6a52)`,
+            boxShadow: `0 0 80px 40px rgba(200,184,154,0.5)`,
+            animation: 'orbExpand 1.6s ease-in-out forwards',
+          }} />
         </div>
       )}
     </div>

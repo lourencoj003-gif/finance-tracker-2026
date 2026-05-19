@@ -2,6 +2,17 @@ import { useState, useEffect, useRef } from 'react';
 import { getData, saveData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin, getGoals, saveGoals, getLastOpen, setLastOpen, getLastCeremonyYM, setLastCeremonyYM, getDebts, saveDebts, getChallenge, saveChallenge, getExpenseLog, saveExpenseLog, getEveningDate, setEveningDate, appendEveningLog } from '../storage';
 import PaydayCeremony from './PaydayCeremony';
 import Orb from '../Orb';
+import { speak as voiceSpeak, stopSpeaking } from '../voice';
+
+const HISTORY_KEY = 'noaHistory';
+const MAX_HISTORY = 30;
+
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch { return []; }
+}
+function saveHistory(h) {
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(h.slice(-MAX_HISTORY)));
+}
 
 const PURPLE    = '#C8B89A';
 const BLUE      = '#A89880';
@@ -241,6 +252,8 @@ export default function VelaCore({ onReset }) {
   const [eveningPhase, setEveningPhase]         = useState('ask');
   const [eveningNote, setEveningNote]           = useState('');
   const [tapHintVisible, setTapHintVisible] = useState(() => !localStorage.getItem('vela_tap_hint_seen'));
+  const [walkthrough, setWalkthrough] = useState(() => !localStorage.getItem('vela_walkthrough_seen'));
+  const [tooltipStep, setTooltipStep] = useState(0);
   const [challengeData, setChallengeData]   = useState(() => {
     const stored = getChallenge();
     const weekId = getISOWeek();
@@ -277,6 +290,21 @@ export default function VelaCore({ onReset }) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    if (!walkthrough) return;
+    const tid = setTimeout(() => {
+      setTooltipStep(s => {
+        const next = s + 1;
+        if (next >= 3) {
+          setWalkthrough(false);
+          localStorage.setItem('vela_walkthrough_seen', '1');
+        }
+        return next;
+      });
+    }, 2800);
+    return () => clearTimeout(tid);
+  }, [walkthrough, tooltipStep]);
+
+  useEffect(() => {
     if (!document.getElementById('vela-kf')) {
       const el = document.createElement('style');
       el.id = 'vela-kf';
@@ -284,7 +312,7 @@ export default function VelaCore({ onReset }) {
       document.head.appendChild(el);
     }
     return () => {
-      window.speechSynthesis?.cancel();
+      stopSpeaking();
       recognitionRef.current?.abort();
     };
   }, []);
@@ -408,44 +436,21 @@ export default function VelaCore({ onReset }) {
 
   // ── Audio unlock (iOS requires speech from a user gesture) ───────
   function unlockAudio() {
-    if (audioUnlockedRef.current || !window.speechSynthesis) return;
+    if (audioUnlockedRef.current) return;
     audioUnlockedRef.current = true;
     const u = new SpeechSynthesisUtterance('');
     u.volume = 0;
-    window.speechSynthesis.speak(u);
+    window.speechSynthesis?.speak(u);
   }
 
   // ── Speech synthesis ─────────────────────────────────────────────
   function speak(text) {
-    if (!voiceOnRef.current || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const clean = text.replace(/[\u{1F000}-\u{1FFFF}|\u{2600}-\u{27FF}|\u{2300}-\u{23FF}|\u{2B00}-\u{2BFF}|\u{1F300}-\u{1F9FF}|\u{FE00}-\u{FE0F}]/gu, '').trim();
-    const sentences = splitSentences(clean);
-    const fire = () => {
-      const voices   = window.speechSynthesis.getVoices();
-      const PRIORITY = ['Samantha', 'Karen', 'Moira', 'Victoria', 'Tessa'];
-      const voice    = PRIORITY.reduce((found, name) => found || voices.find(v => v.name.includes(name)), null)
-                    || voices.find(v => v.lang === 'en-GB')
-                    || voices.find(v => v.lang.startsWith('en'))
-                    || null;
-      setOrbState('speaking');
-      let i = 0;
-      const next = () => {
-        if (i >= sentences.length) { setOrbState('idle'); return; }
-        const u = new SpeechSynthesisUtterance(sentences[i++]);
-        u.rate   = 0.78;
-        u.pitch  = 0.95;
-        u.volume = 1;
-        if (voice) u.voice = voice;
-        u.onend   = () => setTimeout(next, i < sentences.length ? 200 : 0);
-        u.onerror = () => setOrbState('idle');
-        window.speechSynthesis.speak(u);
-      };
-      setTimeout(next, 500);
-    };
-    window.speechSynthesis.getVoices().length > 0
-      ? fire()
-      : (window.speechSynthesis.onvoiceschanged = () => { fire(); window.speechSynthesis.onvoiceschanged = null; });
+    if (!voiceOnRef.current) return;
+    voiceSpeak(text, {
+      onStart: () => setOrbState('speaking'),
+      onEnd:   () => setOrbState('idle'),
+      onError: () => setOrbState('idle'),
+    });
   }
 
   // ── Speech recognition ───────────────────────────────────────────
@@ -454,7 +459,7 @@ export default function VelaCore({ onReset }) {
   function startListening() {
     if (!speechSupported || isListening) return;
     unlockAudio();
-    window.speechSynthesis?.cancel();
+    stopSpeaking();
     const SR  = window.SpeechRecognition || window.webkitSpeechRecognition;
     const rec = new SR();
     recognitionRef.current = rec;
@@ -548,6 +553,8 @@ export default function VelaCore({ onReset }) {
       }
     }
 
+    const history = loadHistory();
+    history.push({ role: 'user', content: clean });
     pushCard('user', clean);
     setInput('');
     setOrbState('thinking');
@@ -555,14 +562,17 @@ export default function VelaCore({ onReset }) {
       const res  = await fetch('/api/chat', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ financialContext: buildPrompt(), messages: [{ role: 'user', content: clean }] }),
+        body: JSON.stringify({ financialContext: buildPrompt(), messages: history }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
+      history.push({ role: 'assistant', content: json.text });
+      saveHistory(history);
       setOrbState('idle');
       pushCard('vela', json.text);
       speak(json.text);
     } catch {
+      saveHistory(history);
       setOrbState('idle');
       const err = "I'm having trouble reaching my systems right now. Please try again.";
       pushCard('vela', err);
@@ -636,6 +646,8 @@ export default function VelaCore({ onReset }) {
 
     return `You are Noa — Cleo's warmth meets JARVIS's precision. You are a sharp, witty, PROACTIVE personal finance coach who celebrates wins and faces problems head-on — never robotic, never vague.
 ${name ? `\nYou are speaking with ${name}. Use their name occasionally — never robotically.` : ''}
+
+MEMORY: You have perfect memory of everything the user has told you. Never contradict previous statements. If the user said their payday is on the 7th, always remember it is the 7th. Never ask for information they have already provided.
 
 VOCABULARY: "Well done", "On it", "Here's the situation", "Good news", "One thing to watch". Rotate naturally — never all in one message.
 
@@ -826,9 +838,9 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
   ];
 
   // ── Chat overlay state ───────────────────────────────────────────
-  const visibleCards = cards.slice(-3);
-  const opacityMap   = { 0: [1], 1: [1], 2: [0.55, 1], 3: [0.32, 0.65, 1] };
-  const cardOpacities = opacityMap[Math.min(visibleCards.length, 3)] || [0.32, 0.65, 1];
+  const visibleCards = cards.slice(-2);
+  const opacityMap   = { 0: [], 1: [1], 2: [0.42, 1] };
+  const cardOpacities = opacityMap[Math.min(visibleCards.length, 2)] || [0.42, 1];
 
   return (
     <div style={{ position: 'relative', height: containerH, background: BG, overflow: 'hidden', fontFamily: 'inherit' }}>
@@ -1318,6 +1330,52 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
           </div>
         </div>
       )}
+
+      {/* ══════════════════════════════════════════
+          WALKTHROUGH TOOLTIP OVERLAY
+      ══════════════════════════════════════════ */}
+      {walkthrough && tooltipStep < 3 && (() => {
+        const tips = [
+          { text: 'This is your financial position', top: '51%' },
+          { text: 'Your key health indicators',      top: '74%' },
+          { text: 'Tap here anytime to talk to me',  top: '87%' },
+        ];
+        const tip = tips[tooltipStep];
+        return (
+          <div
+            onClick={() => {
+              const next = tooltipStep + 1;
+              if (next >= 3) {
+                setWalkthrough(false);
+                localStorage.setItem('vela_walkthrough_seen', '1');
+              }
+              setTooltipStep(next);
+            }}
+            style={{ position: 'absolute', inset: 0, zIndex: 45, pointerEvents: 'all' }}
+          >
+            <div style={{
+              position: 'absolute',
+              left: 24, right: 24,
+              top: tip.top,
+              background: 'rgba(17,19,24,0.92)',
+              border: `1px solid rgba(200,184,154,0.32)`,
+              borderRadius: 16,
+              padding: '14px 18px',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              animation: 'cardIn 0.35s ease-out',
+              boxShadow: `0 0 0 1px rgba(200,184,154,0.12), 0 8px 32px rgba(0,0,0,0.5)`,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ fontSize: 13, color: PURPLE, fontWeight: 600, flex: 1 }}>{tip.text}</div>
+                <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.32)', flexShrink: 0 }}>
+                  {tooltipStep + 1}/3 · tap to continue
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

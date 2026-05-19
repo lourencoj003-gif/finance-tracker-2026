@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { t } from '../theme';
+import { speak as voiceSpeak, stopSpeaking } from '../voice';
 
 const INTRO_KEY = 'vela_intro_seen';
 
@@ -11,27 +12,6 @@ const SENTENCES = [
   { text: 'Tap me.',                                      delay: 2000 },
 ];
 
-function trySpeak(text) {
-  if (!window.speechSynthesis) return;
-  window.speechSynthesis.cancel();
-  const fire = () => {
-    const voices   = window.speechSynthesis.getVoices();
-    const PRIORITY = ['Samantha', 'Karen', 'Moira', 'Victoria', 'Tessa'];
-    const voice    = PRIORITY.reduce((f, n) => f || voices.find(v => v.name.includes(n)), null)
-                  || voices.find(v => v.lang === 'en-GB')
-                  || voices.find(v => v.lang.startsWith('en'))
-                  || null;
-    const u = new SpeechSynthesisUtterance(text);
-    u.rate   = 0.78;
-    u.pitch  = 0.95;
-    u.volume = 1;
-    if (voice) u.voice = voice;
-    window.speechSynthesis.speak(u);
-  };
-  window.speechSynthesis.getVoices().length > 0
-    ? fire()
-    : (window.speechSynthesis.onvoiceschanged = () => { fire(); window.speechSynthesis.onvoiceschanged = null; });
-}
 
 export default function Splash({ onDone }) {
   const [visible,         setVisible]         = useState(false);
@@ -46,7 +26,7 @@ export default function Splash({ onDone }) {
     if (doneRef.current) return;
     doneRef.current = true;
     timersRef.current.forEach(clearTimeout);
-    window.speechSynthesis?.cancel();
+    stopSpeaking();
     localStorage.setItem(INTRO_KEY, '1');
     onDone();
   }, [onDone]);
@@ -60,7 +40,7 @@ export default function Splash({ onDone }) {
     if (!isFirstTime) {
       push(finish, 2600);
       const earlyTimers = timersRef.current;
-      return () => { earlyTimers.forEach(clearTimeout); };
+      return () => { earlyTimers.forEach(clearTimeout); stopSpeaking(); };
     }
 
     let cumulative = 0;
@@ -72,7 +52,7 @@ export default function Splash({ onDone }) {
       push(() => {
         setSubtitle(s.text);
         setSubtitleOpacity(1);
-        trySpeak(s.text);
+        voiceSpeak(s.text);
       }, showAt);
 
       if (hideAt !== null) {
@@ -85,7 +65,7 @@ export default function Splash({ onDone }) {
     const timers = timersRef.current;
     return () => {
       timers.forEach(clearTimeout);
-      window.speechSynthesis?.cancel();
+      stopSpeaking();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
