@@ -585,16 +585,16 @@ export default function VelaCore({ onReset }) {
   }
 
   function buildPrompt() {
-    const name    = localStorage.getItem('vela_name') || '';
+    const d       = getData() || {};
+    const name    = localStorage.getItem('vela_name') || d.name || '';
     const surplus = income - expenses;
+    const ord     = n => n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : `${n}th`;
 
     // ── Temporal context ──────────────────────────────────────────────
     const now         = new Date();
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const dayOfMonth  = now.getDate();
     const daysLeft    = Math.max(1, daysInMonth - dayOfMonth + 1);
-
-    // In My Pocket — safe discretionary daily spend from remaining monthly surplus
     const inMyPocket  = surplus > 0 ? Math.floor(surplus / daysLeft) : 0;
 
     // Days to next payday
@@ -608,10 +608,10 @@ export default function VelaCore({ onReset }) {
     const daysToPayday = Math.ceil((nextPay - now) / 86400000);
     const paydayStatus = daysToPayday === 0 ? 'TODAY' : `in ${daysToPayday} day${daysToPayday === 1 ? '' : 's'}`;
     const paydayAlert  = daysToPayday <= 3
-      ? `\n⚡ PAYDAY ALERT: Payday is ${paydayStatus} — proactively open with the Payday Routine allocation below.`
+      ? `\n⚡ PAYDAY ALERT: Payday is ${paydayStatus} — proactively lead with the Payday Routine.`
       : '';
 
-    // ── Baby Steps UK — determine current step ────────────────────────
+    // ── Baby Steps UK ────────────────────────────────────────────────
     const goalLower   = (goal || '').toLowerCase();
     const goalsText   = goals.map(g => g.name.toLowerCase()).join(' ');
     const investFocus = /invest|pension|isa|stocks|fund/i.test(goalLower + ' ' + goalsText);
@@ -619,100 +619,95 @@ export default function VelaCore({ onReset }) {
     if (debt > 0) {
       babyStep      = surplus > 0 ? 2 : 1;
       babyStepLabel = surplus > 0
-        ? `STEP 2 — Debt snowball: throw £${Math.min(surplus, debt).toFixed(0)}/month at the smallest balance first, then roll that payment to the next debt.`
-        : `STEP 1 — Fix the £${Math.abs(surplus).toFixed(0)}/month deficit before any debt overpayments are possible.`;
+        ? `STEP 2 — Debt snowball: pay £${Math.min(surplus, debt).toFixed(0)}/month at the smallest balance first.`
+        : `STEP 1 — Fix the £${Math.abs(surplus).toFixed(0)}/month deficit before any debt overpayments.`;
     } else if (investFocus) {
       babyStep      = 4;
-      babyStepLabel = `STEP 4 — Invest 15% of income: £${Math.round(income * 0.15).toLocaleString('en-GB')}/month split between workplace pension and Stocks & Shares ISA (£20k/year allowance).`;
+      babyStepLabel = `STEP 4 — Invest 15% of income: £${Math.round(income * 0.15).toLocaleString('en-GB')}/month into pension + ISA.`;
     } else if (goals.length > 0) {
       babyStep      = 5;
-      babyStepLabel = `STEP 5 — Goal-based saving: ${goals.map(g => `${g.name} (£${g.target.toLocaleString('en-GB')})`).join(', ')}.`;
+      babyStepLabel = `STEP 5 — Goal saving: ${goals.map(g => `${g.name} (£${g.target.toLocaleString('en-GB')})`).join(', ')}.`;
     } else {
       babyStep      = 3;
       const lo3     = Math.round(expenses * 3).toLocaleString('en-GB');
       const hi6     = Math.round(expenses * 6).toLocaleString('en-GB');
       const months  = surplus > 0 ? Math.ceil((expenses * 3) / surplus) : null;
-      babyStepLabel = `STEP 3 — Build 3–6 month emergency fund (£${lo3}–£${hi6}). ${months ? `At £${surplus.toFixed(0)}/month surplus that's ~${months} months to hit the lower target.` : 'Resolve the deficit first.'}`;
+      babyStepLabel = `STEP 3 — Build emergency fund (£${lo3}–£${hi6}).${months ? ` At current surplus: ~${months} months.` : ' Resolve deficit first.'}`;
     }
 
-    // ── Payday allocation (50/20/25/5 framework) ──────────────────────
+    // ── Payday allocation ────────────────────────────────────────────
     const alloc = {
       essentials: Math.round(income * 0.50),
       savings:    Math.round(income * 0.20),
       lifestyle:  Math.round(income * 0.25),
       buffer:     Math.max(0, income - Math.round(income * 0.50) - Math.round(income * 0.20) - Math.round(income * 0.25)),
     };
-    const ord = n => n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : `${n}th`;
 
-    return `You are Noa — Cleo's warmth meets JARVIS's precision. You are a sharp, witty, PROACTIVE personal finance coach who celebrates wins and faces problems head-on — never robotic, never vague.
-${name ? `\nYou are speaking with ${name}. Use their name occasionally — never robotically.` : ''}
+    // ── Savings rate vs UK average (no demographic label) ───────────
+    const srLabel = savingsRate >= 25 ? 'strong — well above the UK average of ~8%'
+      : savingsRate >= 15 ? 'above the UK average of ~8%'
+      : savingsRate >= 8  ? 'around the UK average of ~8%'
+      : savingsRate >= 0  ? 'below the UK average of ~8% — room to improve'
+      : 'negative — expenses exceed income';
 
-MEMORY: You have perfect memory of everything the user has told you. Never contradict previous statements. If the user said their payday is on the 7th, always remember it is the 7th. Never ask for information they have already provided.
+    return `You are Noa — a sharp, warm personal finance coach. Speak like a trusted friend with CFO-level knowledge. Be proactive, specific, never vague.
+${name ? `You are speaking with ${name}. Use their name occasionally — never robotically.` : ''}
 
-VOCABULARY: "Well done", "On it", "Here's the situation", "Good news", "One thing to watch". Rotate naturally — never all in one message.
+ABSOLUTE RULES:
+• Only state facts the user has explicitly told you. Never invent demographics, age, or lifestyle details.
+• Never say "top X% of your age group" — you do not know their age. Say "well above the UK average" instead.
+• Every response must use at least one specific £ figure from the user's actual data.
+• Maximum 2–3 sentences. Direct and actionable. No padding, no hedging.
+• You have perfect memory of everything the user told you. Never ask for information already provided.
+• You are Noa — never say "As an AI" or "As a language model".
 
-══ FINANCIAL SNAPSHOT ══
-• Monthly income:    £${income.toFixed(0)} / annual £${(income * 12).toLocaleString('en-GB')}
+══ WHAT THE USER TOLD NOA (treat as ground truth) ══
+• Name:            ${name || 'not provided'}
+• Monthly income:  £${income.toFixed(0)} take-home after tax / annual £${(income * 12).toLocaleString('en-GB')}
+• Payday:          ${ord(payday)} of each month (${paydayStatus})
+• Fixed costs:     ${d.expenseDetails || (expenses > 0 ? `£${expenses.toFixed(0)}/month total` : 'not specified')}
+• Spending habits: ${d.lifestyleSpend || 'not specified'}
+• Total debt:      ${debt > 0 ? `£${debt.toLocaleString('en-GB')}` : 'none'}${debts.length > 0 ? ` (${debts.map(db => `${db.name} £${db.amount.toLocaleString('en-GB')}${db.rate > 0 ? ` @ ${db.rate}%` : ''}`).join(', ')})` : ''}
+• Financial goal:  ${goal || 'not set'}
+• Current savings: ${savings > 0 ? `£${savings.toLocaleString('en-GB')}` : 'none stated'}
+${goals.length > 0 ? `• Savings goals:   ${goals.map(g => `${g.name} £${g.target.toLocaleString('en-GB')}`).join(', ')}` : ''}
+${insights.length > 0 ? `• Prior insights:  ${insights.slice(0, 3).join(' | ')}` : ''}
+
+══ COMPUTED FACTS (derived from user's data — quote these exactly) ══
 • Monthly expenses:  £${expenses.toFixed(0)} / annual £${(expenses * 12).toLocaleString('en-GB')}
 • Monthly surplus:   £${surplus.toFixed(0)}${surplus < 0 ? ' ⚠ DEFICIT' : ` / annual £${(surplus * 12).toLocaleString('en-GB')}`}
-• Total debt:        ${debt > 0 ? `£${debt.toLocaleString('en-GB')}` : 'none'}${debts.length > 0 ? `\n• Debt breakdown:    ${debts.map(d => `${d.name} £${d.amount.toLocaleString('en-GB')}${d.rate > 0 ? ` @ ${d.rate}%` : ''}`).join(', ')}` : ''}
-• Payday:            ${ord(payday)} of month (${paydayStatus})
-• Goal:              ${goal || 'not set'}
-${goals.length > 0 ? `• Savings goals:     ${goals.map(g => `${g.name} £${g.target.toLocaleString('en-GB')}`).join(', ')}` : ''}
-${insights.length > 0 ? `• Prior insights:    ${insights.slice(0, 3).join(' | ')}` : ''}${paydayAlert}
+• IN MY POCKET:      £${inMyPocket}/day safe to spend (surplus ÷ ${daysLeft} days left this month)
+• Savings rate:      ${savingsRate}% of income — ${srLabel}
+• Current Baby Step: ${babyStepLabel}${paydayAlert}
 
-══ COMPUTED METRICS — QUOTE THESE EXACTLY ══
-• IN MY POCKET:      £${inMyPocket}/day safe to spend (£${surplus.toFixed(0)} surplus ÷ ${daysLeft} days left this month)
-• Annual trajectory: ${surplus >= 0 ? `+£${(surplus * 12).toLocaleString('en-GB')}` : `−£${(Math.abs(surplus) * 12).toLocaleString('en-GB')}`}
-• Current Baby Step: ${babyStepLabel}
-
-══ PAYDAY ROUTINE — use when user mentions payday or "money just arrived" ══
-When income lands on the ${ord(payday)}, allocate in this exact order:
-  1. ESSENTIALS    (50%) £${alloc.essentials.toLocaleString('en-GB')}/month — rent, food, transport, utilities, direct debits
-  2. SAVINGS FIRST (20%) £${alloc.savings.toLocaleString('en-GB')}/month — emergency fund pot / ISA / pension top-up
-  3. LIFESTYLE     (25%) £${alloc.lifestyle.toLocaleString('en-GB')}/month — dining, entertainment, clothes, hobbies
-  4. BUFFER         (5%) £${alloc.buffer.toLocaleString('en-GB')}/month — unexpected costs, small treats
-Quote exact £ amounts when explaining this — never just percentages.
+══ PAYDAY ROUTINE — use when user mentions payday ══
+When income lands on the ${ord(payday)}, allocate in order:
+  1. ESSENTIALS    (50%) £${alloc.essentials.toLocaleString('en-GB')}/month — rent, food, transport, utilities
+  2. SAVINGS FIRST (20%) £${alloc.savings.toLocaleString('en-GB')}/month — emergency fund / ISA / pension
+  3. LIFESTYLE     (25%) £${alloc.lifestyle.toLocaleString('en-GB')}/month — dining, entertainment, hobbies
+  4. BUFFER         (5%) £${alloc.buffer.toLocaleString('en-GB')}/month — unexpected costs
+Always quote exact £ amounts, not just percentages.
 
 ══ BABY STEPS UK FRAMEWORK ══
-Step 1: Build £1,000 emergency fund (do this before debt overpayments)
-Step 2: Pay all non-mortgage debt, smallest balance first (debt snowball)
-Step 3: Build 3–6 months expenses (£${Math.round(expenses * 3).toLocaleString('en-GB')}–£${Math.round(expenses * 6).toLocaleString('en-GB')}) as full emergency fund
-Step 4: Invest 15% of income (£${Math.round(income * 0.15).toLocaleString('en-GB')}/month) into pension + Stocks & Shares ISA
-Step 5: Save for specific goals using named pots
-→ This user is currently on STEP ${babyStep}
+Step 1: £1,000 emergency fund first
+Step 2: Clear non-mortgage debt (smallest balance first — snowball method)
+Step 3: 3–6 months expenses as emergency fund (£${Math.round(expenses * 3).toLocaleString('en-GB')}–£${Math.round(expenses * 6).toLocaleString('en-GB')})
+Step 4: Invest 15% of income (£${Math.round(income * 0.15).toLocaleString('en-GB')}/month) — pension + ISA
+Step 5: Specific goal-based saving
+→ This user is on STEP ${babyStep}
 
-══ UK PEER BENCHMARKS — 22–35 age group (ONS / Money Charity UK data) ══
-Reference these naturally and specifically when comparing performance. Never mention other users — only benchmarks.
-• Avg savings rate (22–35):  8% of take-home pay
-• Avg lifestyle spend:       35% of take-home (dining, clothes, entertainment)
-• Avg consumer debt:         £6,500 (credit cards, personal loans)
-• Avg monthly savings:       £250/month
-• Emergency fund adequacy:   62% of this age group have < 1 month saved
-• ISA ownership:             38% have any ISA; only 14% hold Stocks & Shares ISA
-
-THIS USER'S POSITION vs PEERS:
-• Savings rate: ${savingsRate}% vs avg 8% → ${savingsRate >= 30 ? 'top 5% of savers their age — exceptional' : savingsRate >= 20 ? 'top 15% — well above average' : savingsRate >= 15 ? 'top 25% — comfortably above average' : savingsRate >= 8 ? 'above the peer average' : 'below the 8% peer average — there is clear room to improve'}
-• Lifestyle spend ratio: ${income > 0 ? Math.round((expenses / income) * 100) : 0}% of income vs avg 35% peer benchmark
-Use these comparisons warmly — celebrate above-average, encourage below-average without shaming.
-
-══ FINANCIAL EDUCATION — weave in naturally, never lecture ══
-• Compound interest: "£100/month at 7% for 30 years = £121,000. Starting 10 years later roughly halves that outcome."
-• Pound cost averaging: "A fixed monthly investment buys more shares when prices fall — you never need to time the market."
-• True cost of debt: "A £3,000 credit card at 24% APR costs £720/year in interest — £60/month for nothing."
-• Emergency fund first: "Investing before you have a buffer means selling at a loss when life happens."
-• ISA advantage: "A Stocks & Shares ISA shelters all growth from tax — on £20k growing to £60k, that's £40k you keep entirely."
+══ UK BENCHMARKS (context only — do not apply demographic labels without knowing the user's age) ══
+• UK average savings rate: ~8% of take-home pay
+• UK average consumer debt: ~£6,500
+• ISA: £20,000/year tax-free allowance — all growth sheltered from Capital Gains Tax
+• Pension: 20% tax relief added automatically (40% for higher-rate taxpayers)
 
 ══ COACHING RULES ══
-1. Maximum 2 sentences — sharp, actionable, memorable.
-2. Always use exact £ amounts. For savings/goals, show both monthly AND annual figures.
-3. If payday ≤ 3 days away, proactively lead with the Payday Routine — don't wait to be asked.
-4. When user asks what they can afford or spend, answer with the In My Pocket figure: £${inMyPocket}/day.
-5. Reference the user's Baby Step (Step ${babyStep}) when giving savings, debt, or investment advice.
-6. Never repeat what the user just said. Celebrate wins warmly; tackle problems directly.
-7. You are Noa — never say "As an AI" or "As a language model".
-8. Always end with a specific action or a sharp question that moves them forward.
-9. End any financial advice with: ⚖️ Guidance only — not FCA-regulated advice.`;
+1. Use only the user's actual £ figures. Never invent hypothetical numbers.
+2. When user asks what they can afford, use IN MY POCKET: £${inMyPocket}/day.
+3. Reference Baby Step ${babyStep} when giving savings, debt, or investment advice.
+4. If payday ≤ 3 days away, lead with the Payday Routine allocation.
+5. End financial advice with: ⚖️ Guidance only — not FCA-regulated advice.`;
   }
 
   function saveSettings() {
@@ -838,9 +833,8 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
   ];
 
   // ── Chat overlay state ───────────────────────────────────────────
-  const visibleCards = cards.slice(-2);
-  const opacityMap   = { 0: [], 1: [1], 2: [0.42, 1] };
-  const cardOpacities = opacityMap[Math.min(visibleCards.length, 2)] || [0.42, 1];
+  const lastNoaCard  = [...cards].reverse().find(c => c.type === 'vela') || null;
+  const lastUserCard = [...cards].reverse().find(c => c.type === 'user') || null;
 
   return (
     <div style={{ position: 'relative', height: containerH, background: BG, overflow: 'hidden', fontFamily: 'inherit' }}>
@@ -1132,18 +1126,23 @@ Use these comparisons warmly — celebrate above-average, encourage below-averag
           </div>
         </div>
 
-        {/* Cards */}
+        {/* Message display — Noa's last response as large centered text */}
         <div style={{
           position: 'absolute', top: '52%', bottom: 72, left: 0, right: 0,
-          display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
-          padding: '0 16px 8px', overflowY: 'hidden',
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          justifyContent: 'center', padding: '0 28px', overflow: 'hidden',
         }}>
-          {visibleCards.map((c, idx) => (
-            <GlassCard
-              key={c.id} card={c} opacity={cardOpacities[idx] ?? 1}
-              onSpeak={c.type === 'vela' ? () => { unlockAudio(); speak(c.text); } : null}
-            />
-          ))}
+          {lastUserCard && (
+            <div style={{
+              fontSize: 13, color: 'rgba(232,221,208,0.26)', marginBottom: 20,
+              textAlign: 'center', maxWidth: 300, fontStyle: 'italic', lineHeight: 1.5,
+            }}>
+              {lastUserCard.text.length > 65 ? lastUserCard.text.slice(0, 65) + '…' : lastUserCard.text}
+            </div>
+          )}
+          {lastNoaCard && (
+            <NoaMessage key={lastNoaCard.id} text={lastNoaCard.text} />
+          )}
         </div>
 
         {/* Input bar */}
@@ -1686,54 +1685,38 @@ function MetricPill({ label, value, color, badge, badgeColor }) {
   );
 }
 
-function GlassCard({ card, opacity = 1, onSpeak }) {
-  const isUser = card.type === 'user';
-  const sentences = splitSentences(card.text);
-  const [visibleCount, setVisibleCount] = useState(isUser ? sentences.length : 1);
-
+function NoaMessage({ text }) {
+  const sentences = splitSentences(text);
+  const [visibleCount, setVisibleCount] = useState(1);
   useEffect(() => {
-    if (isUser || sentences.length <= 1) return;
+    setVisibleCount(1);
+    if (sentences.length <= 1) return;
     let count = 1;
     const id = setInterval(() => {
       count++;
       setVisibleCount(count);
       if (count >= sentences.length) clearInterval(id);
-    }, 400);
+    }, 500);
     return () => clearInterval(id);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
+  }, [text]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
-    <div style={{
-      position: 'relative',
-      background: isUser ? 'rgba(200,184,154,0.08)' : 'rgba(232,221,208,0.05)',
-      border: `1px solid ${isUser ? 'rgba(200,184,154,0.26)' : 'rgba(232,221,208,0.1)'}`,
-      borderRadius: 20, padding: '14px 18px', marginBottom: 10,
-      backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-      animation: 'cardIn 0.35s ease-out', opacity, transition: 'opacity 0.5s ease',
-    }}>
-      {!isUser && onSpeak && (
-        <button
-          onClick={onSpeak}
-          style={{ position: 'absolute', top: 8, right: 10, background: 'none', border: 'none', color: 'rgba(232,221,208,0.28)', fontSize: 13, cursor: 'pointer', padding: 4, lineHeight: 1 }}
-        >🔊</button>
-      )}
-      <div style={{ fontSize: 10, color: isUser ? 'rgba(200,184,154,0.65)' : '#A89880', marginBottom: 6, letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: 500 }}>
-        {isUser ? 'You' : 'Noa'}
-      </div>
-      {isUser ? (
-        <div style={{ fontSize: 17, fontWeight: 300, color: '#E8DDD0', lineHeight: 1.7, letterSpacing: '0.01em', whiteSpace: 'pre-wrap' }}>
-          {card.text}
-        </div>
-      ) : (
-        <div style={{ fontSize: 17, fontWeight: 300, color: '#E8DDD0', lineHeight: 1.7, letterSpacing: '0.01em', whiteSpace: 'pre-wrap', paddingRight: onSpeak ? 22 : 0 }}>
-          {sentences.slice(0, visibleCount).map((s, i) => (
-            <span key={i} style={{ animation: 'sentenceIn 0.6s ease-out', display: 'inline' }}>{s} </span>
-          ))}
-        </div>
-      )}
+    <div style={{ textAlign: 'center', maxWidth: 340, width: '100%' }}>
+      <div style={{ fontSize: 10, color: '#A89880', letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: 500, marginBottom: 14 }}>Noa</div>
+      {sentences.slice(0, visibleCount).map((s, i) => (
+        <div key={i} style={{
+          fontSize: i === 0 ? 19 : 17,
+          fontWeight: 300,
+          color: '#E8DDD0',
+          lineHeight: 1.65,
+          letterSpacing: '0.01em',
+          marginBottom: i < sentences.slice(0, visibleCount).length - 1 ? 10 : 0,
+          animation: 'sentenceIn 0.6s ease-out',
+        }}>{s}</div>
+      ))}
     </div>
   );
 }
+
 
 function WaveBars({ color }) {
   const delays = [0, 0.12, 0.24, 0.1, 0.2, 0.08, 0.18, 0.06, 0.16];
