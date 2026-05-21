@@ -30,7 +30,11 @@ const K = {
 
 export const getPin              = ()    => localStorage.getItem(K.PIN);
 export const setPin              = (p)   => localStorage.setItem(K.PIN, p);
-export const isReady             = ()    => !!getPin() && localStorage.getItem(K.READY) === '1';
+export const isReady             = ()    => {
+  const name = localStorage.getItem(K.USER_NAME);
+  const data = getData();
+  return !!(name && data?.income);
+};
 export const markReady           = ()    => localStorage.setItem(K.READY, '1');
 export const isOnboardingDone    = ()    => localStorage.getItem(K.ONBOARDING_DONE) === '1';
 export const markOnboardingDone  = ()    => localStorage.setItem(K.ONBOARDING_DONE, '1');
