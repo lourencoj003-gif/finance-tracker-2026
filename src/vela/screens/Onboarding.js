@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { parseAmount, parseDebt } from '../scoring';
-import { saveData, saveInsights, markReady, markOnboardingDone } from '../storage';
+import { saveData, saveInsights, markReady, markOnboardingDone, setUserName } from '../storage';
 import { speak as voiceSpeak, stopSpeaking } from '../voice';
 import Orb from '../Orb';
 
@@ -169,7 +169,7 @@ export default function Onboarding({ onDone }) {
     setInput('');
 
     const nd = { ...data };
-    if      (step === 0) { nd.name = val; localStorage.setItem('vela_name', val); localStorage.setItem('userName', val); }
+    if      (step === 0) { nd.name = val; setUserName(val); }
     else if (step === 1) { nd.income = parseAmount(val); }
     else if (step === 2) { nd.payday = parsePayday(val); }
     else if (step === 3) { nd.expenses = parseAmount(val); nd.expenseDetails = val; }

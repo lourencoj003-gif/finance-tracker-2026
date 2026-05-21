@@ -30,14 +30,17 @@ const K = {
 
 export const getPin              = ()    => localStorage.getItem(K.PIN);
 export const setPin              = (p)   => localStorage.setItem(K.PIN, p);
-export const isReady             = ()    => {
-  const name = localStorage.getItem(K.USER_NAME);
-  const data = getData();
-  return !!(name && data?.income);
-};
-export const markReady           = ()    => localStorage.setItem(K.READY, '1');
+export const getUserName         = ()    => localStorage.getItem(K.USER_NAME);
+export const setUserName         = (n)   => { localStorage.setItem(K.USER_NAME, n); localStorage.setItem(K.NAME, n); };
 export const isOnboardingDone    = ()    => localStorage.getItem(K.ONBOARDING_DONE) === '1';
 export const markOnboardingDone  = ()    => localStorage.setItem(K.ONBOARDING_DONE, '1');
+export const markReady           = ()    => localStorage.setItem(K.READY, '1');
+export const isReady             = ()    => {
+  if (!isOnboardingDone()) return false;
+  const name = getUserName();
+  const data = getData();
+  return !!(name && data && typeof data.income === 'number');
+};
 export const getData           = ()    => { const r = localStorage.getItem(K.DATA);     return r ? JSON.parse(r) : null; };
 export const saveData          = (d)   => localStorage.setItem(K.DATA, JSON.stringify(d));
 export const getInsights       = ()    => { const r = localStorage.getItem(K.INSIGHTS); return r ? JSON.parse(r) : null; };
