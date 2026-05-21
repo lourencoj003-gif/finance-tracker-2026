@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
+import { speak as voiceSpeak, stopSpeaking } from '../voice';
 
 const GOLD   = '#C9A96E';
 const GREEN  = '#7CAE9E';
@@ -52,10 +53,6 @@ function buildSteps(income) {
   ];
 }
 
-function splitSentences(text) {
-  return (text.match(/[^.!?]+[.!?]*/g) || [text]).map(s => s.trim()).filter(Boolean);
-}
-
 export default function PaydayCeremony({ income, onComplete }) {
   const [phase, setPhase]           = useState('intro'); // 'intro' | 'steps' | 'done'
   const [stepIdx, setStepIdx]       = useState(0);
@@ -63,8 +60,7 @@ export default function PaydayCeremony({ income, onComplete }) {
   const [confirming, setConfirming] = useState(false);
   const [confirmed, setConfirmed]   = useState([false, false, false, false]);
 
-  const audioRef = useRef(false);
-  const steps    = buildSteps(income);
+  const steps = buildSteps(income);
 
   useEffect(() => {
     if (document.getElementById('vela-ceremony-kf')) return;
@@ -75,53 +71,15 @@ export default function PaydayCeremony({ income, onComplete }) {
     return () => el.remove();
   }, []);
 
-  // ── Self-contained speech (needs its own iOS unlock) ──────────────
-  function speakLine(text, onEnd) {
-    if (!window.speechSynthesis) { onEnd?.(); return; }
-    if (!audioRef.current) {
-      audioRef.current = true;
-      const silent = new SpeechSynthesisUtterance('');
-      silent.volume = 0;
-      window.speechSynthesis.speak(silent);
-    }
-    window.speechSynthesis.cancel();
-    const clean     = text.replace(/[\u{1F000}-\u{1FFFF}|\u{2600}-\u{27FF}|\u{2300}-\u{23FF}|\u{2B00}-\u{2BFF}|\u{1F300}-\u{1F9FF}|\u{FE00}-\u{FE0F}]/gu, '').trim();
-    const sentences = splitSentences(clean);
-    const fire = () => {
-      const voices   = window.speechSynthesis.getVoices();
-      const PRIORITY = ['Samantha', 'Karen', 'Moira', 'Victoria', 'Tessa'];
-      const voice    = PRIORITY.reduce((f, n) => f || voices.find(v => v.name.includes(n)), null)
-                    || voices.find(v => v.lang === 'en-GB')
-                    || voices.find(v => v.lang.startsWith('en'))
-                    || null;
-      let i = 0;
-      const next = () => {
-        if (i >= sentences.length) { onEnd?.(); return; }
-        const u   = new SpeechSynthesisUtterance(sentences[i++]);
-        u.rate    = 0.90;
-        u.pitch   = 1.05;
-        u.volume  = 1;
-        if (voice) u.voice = voice;
-        u.onend   = () => setTimeout(next, i < sentences.length ? 160 : 0);
-        u.onerror = () => onEnd?.();
-        window.speechSynthesis.speak(u);
-      };
-      setTimeout(next, 350);
-    };
-    window.speechSynthesis.getVoices().length > 0
-      ? fire()
-      : (window.speechSynthesis.onvoiceschanged = () => { fire(); window.speechSynthesis.onvoiceschanged = null; });
-  }
+  useEffect(() => stopSpeaking, []);
 
   // ── Orb tap starts the ceremony ────────────────────────────────────
   function handleOrbTap() {
     if (phase !== 'intro') return;
-    speakLine(
-      'Your salary has arrived. Ready to put it to work.',
-      () => setTimeout(() => setPhase('steps'), 500)
-    );
-    // Fallback: transition even if speech is silent
-    setTimeout(() => setPhase(p => p === 'intro' ? 'steps' : p), 4200);
+    voiceSpeak('Your salary has arrived. Ready to put it to work.', {
+      onEnd: () => setTimeout(() => setPhase('steps'), 500),
+    });
+    setTimeout(() => setPhase(p => p === 'intro' ? 'steps' : p), 6000);
   }
 
   // ── Confirm a step ─────────────────────────────────────────────────
@@ -138,7 +96,7 @@ export default function PaydayCeremony({ income, onComplete }) {
         setStepKey(k => k + 1);
       } else {
         setPhase('done');
-        setTimeout(() => speakLine('Your money has a plan.', () => {}), 600);
+        setTimeout(() => voiceSpeak('Your money has a plan.'), 600);
         setTimeout(onComplete, 7000);
       }
     }, 720);
