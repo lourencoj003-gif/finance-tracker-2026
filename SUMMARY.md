@@ -1,112 +1,128 @@
 # SUMMARY — Noa Agent Session Log
 
-## Session: 2026-05-21
+## Session: 2026-05-21 (latest)
 
 ### What was done this session
 
-#### 1. api/speak.js — ElevenLabs env var fix (CRITICAL)
-- Removed `REACT_APP_` prefix from `process.env.REACT_APP_ELEVENLABS_API_KEY` — this prefix is compile-time only and does NOT work in Vercel serverless functions
-- Changed to `process.env.ELEVENLABS_API_KEY` (serverless-compatible)
-- Hardcoded voice ID fallback `XvfwInXiPC6BcAjGWhmS` so ElevenLabs works even without `ELEVENLABS_VOICE_ID` env var set
-- **Impact:** ElevenLabs voice was silently failing in production because the API key env var was never available server-side
+#### 1. storage.js — Fix clearAll() missing keys (BUG FIX)
+- `clearAll()` was silently failing to wipe 7 localStorage keys on "Reset Noa"
+- Added to K object: `noaHistory`, `vela_name`, `userName`, `vela_walkthrough_seen`, `vela_tap_hint_seen`, `vela_intro_seen`, `vela_prev_score`
+- **Impact:** Old chat history, user name, and walkthrough state were persisting after reset — new users who hit "Reset Noa" were leaking a prior user's conversation into their session
 
-#### 2. PaydayCeremony.js — Replaced browser TTS with voice.js
-- Removed inline `speakLine()` function (was using raw `speechSynthesis`)
-- Removed `audioRef` (no longer needed)
-- Removed unused `splitSentences` helper
-- Added `import { speak as voiceSpeak, stopSpeaking }` from voice.js
-- Added `useEffect(() => stopSpeaking, [])` cleanup on unmount
-- Both speech calls now route through ElevenLabs via voice.js
+#### 2. VelaCore.js — Personalised post-onboarding walkthrough (VISION.md #7)
+- Noa now speaks a personalised ElevenLabs welcome the moment the user lands on the dashboard for the first time (800ms after mount)
+  - Positive surplus + debt: "Your numbers are in, [name] — £X/month surplus alongside £Y debt. I know exactly where to start."
+  - Positive surplus, no debt: "Welcome [name] — £X every month to build wealth with. Let me show you how to make every pound count."
+  - Deficit: "Welcome [name]. Your expenses currently exceed your income by £X/month. That's the first thing we fix together."
+  - No income set: "I'm Noa, your personal financial navigator. I'm ready to help whenever you are."
+- All 3 walkthrough tooltip steps now reference the user's actual data:
+  - Step 1: Exact surplus/deficit amount OR debt total if in Debt Destruction Mode
+  - Step 2: Actual Vela Score with qualitative label
+  - Step 3: User's first name in the invitation
+- Auto-advance timer increased 2800ms → 3500ms to give time to read personalised text
+- `walkthroughSpokenRef` prevents the welcome from re-firing if component re-renders
 
 #### Files changed this session
-- `api/speak.js`
-- `src/vela/screens/PaydayCeremony.js`
+- `src/vela/storage.js`
+- `src/vela/screens/VelaCore.js`
 
 ---
 
 ## What was done in prior sessions (accumulated context)
 
+### Session: 2026-05-21 (earlier)
+
+#### api/speak.js — ElevenLabs env var fix (CRITICAL)
+- Removed `REACT_APP_` prefix — serverless functions don't see compile-time env vars
+- Hardcoded voice ID fallback `XvfwInXiPC6BcAjGWhmS`
+
+#### PaydayCeremony.js — Replaced browser TTS with voice.js
+- Both speech calls now route through ElevenLabs via voice.js
+
 ### Voice infrastructure
 - `api/speak.js` — ElevenLabs TTS proxy (model: `eleven_turbo_v2`, voice: `XvfwInXiPC6BcAjGWhmS`)
-- `src/vela/voice.js` — module-level singleton audio management, `speak()` + `stopSpeaking()`, falls back to browser TTS if ElevenLabs unavailable
+- `src/vela/voice.js` — module-level singleton audio management, `speak()` + `stopSpeaking()`, falls back to browser TTS
 
 ### Living Planet Orb (`src/vela/Orb.js`)
-- Fully rewritten with 9 CSS keyframes: planetSpin, ringCW, ringCCW, planetBreath, glowPulse, bandA, bandB, speakRipple, particleOrbit
+- Fully rewritten with 9 CSS keyframes
 - 6 states: idle, listening, thinking, speaking, payday, debt
 - All layers: glow aura, 3 atmosphere rings, speak ripples, 6 orbiting particles, planet body
 
 ### Chat UI (`src/vela/screens/VelaCore.js`)
-- Replaced scrollable GlassCard stack with clean centered text display
+- Clean centered text display (no scroll)
 - `NoaMessage` component: sentence-by-sentence fade-in with 500ms stagger
-- Only shows last Noa message + last user echo — no history scroll
-- iOS keyboard awareness via `window.visualViewport`
+- Only shows last Noa message + last user echo
 
 ### Memory — full onboarding injection
 - All 8 onboarding fields injected into every API call via `buildPrompt()`
-- Full conversation history sent to API (30-message cap, stored in localStorage)
-- `loadHistory()` / `saveHistory()` functions in VelaCore.js
+- Full conversation history (30-message cap)
+- `loadHistory()` / `saveHistory()` functions
 
 ### System prompt (`api/chat.js`)
-- Removed all demographic assumptions ("top X% of your age group" etc.)
-- Only references facts the user explicitly provided
-- Every response uses at least one specific £ figure from user's actual data
+- No demographic assumptions
+- Every response uses at least one specific £ figure
+- Baby Steps UK framework, payday routine, ISA/pension guidance
 
 ### Onboarding (`src/vela/screens/Onboarding.js`)
 - Full 8-question flow: name, income, payday, expenses, lifestyle, debt, goal, savings
 - All questions spoken via ElevenLabs
-- Orb expansion animation on completion before transitioning to home
+- Orb expansion animation on completion
 
 ### iOS fixes
 - `font-size: 16px !important` on inputs (prevents zoom)
-- `position: fixed` on html/body (prevents scroll)
+- `position: fixed` on html/body
 - `visualViewport` keyboard listener in App.js
 - `containerHeight = vpH ? '${vpH}px' : '100svh'`
 
 ### Payday ceremony (`src/vela/screens/PaydayCeremony.js`)
 - Gold orb, expanding rings, 4 allocation steps (50/20/25/5 split)
-- Step-by-step confirm flow with progress dots
-- Done phase with float animation
+- Triggers within 2 days of payday date, once per calendar month
 
-### Splash + Pin
-- ElevenLabs voice on splash sequence
-- PIN create/confirm/login with shake animation
-- Face ID / Touch ID enrolment after first PIN login (WebAuthn)
+---
+
+## VISION.md Priority Status
+
+1. ✅ ElevenLabs voice integration
+2. ✅ iOS keyboard and scroll fixes
+3. ✅ Chat UI redesign — no scroll, sentence by sentence
+4. ✅ Memory — inject all onboarding data every call
+5. ✅ System prompt intelligence upgrade
+6. ✅ Living planet orb Option A
+7. ✅ Personalised post-onboarding walkthrough
+8. ✅ Payday ceremony
+9. 🔲 Overall polish and consistency
 
 ---
 
 ## What still needs doing
 
-### App icons
+### Custom app icon
 - `public/manifest.json` still references default CRA `logo192.png` and `logo512.png`
-- Custom Noa icon not yet created
-- LOW priority — doesn't affect functionality
+- No custom Noa icon created yet
+- LOW priority — doesn't affect functionality but matters for PWA install UX
 
-### Pin.js — Face ID auto-trigger
-- Face ID is prompted after PIN login, not auto-triggered on mount
-- VISION.md mentions this but it's not in the explicit priority list
+### SmallOrb visual feedback
+- The 60px SmallOrb on the dashboard doesn't change appearance when Noa speaks
+- The full `Orb` component (with state-driven visuals) is only used in the chat overlay
+- Could pass `orbState` to SmallOrb so users see Noa "breathing" when she speaks during walkthrough
+- MEDIUM priority
+
+### Face ID auto-trigger on return visits
+- Face ID/Touch ID is enrolled after first PIN login, but not auto-triggered on subsequent visits
 - VERY LOW priority
-
-### Payday ceremony trigger
-- PaydayCeremony is built but needs to be checked that it triggers correctly on payday date
-- Check VelaCore.js for the payday detection logic
-
-### Overall polish
-- Verify all screens are consistent with design language (#111318 bg, #E8DDD0 text, #C9A96E gold)
-- Test full first-time user flow on actual iPhone
 
 ---
 
 ## Blockers
 
-None currently. Build passes cleanly (`npm run build` — 88.93 kB gzip).
+None. Build passes cleanly (`npm run build` — 89.41 kB gzip).
 
-**Action required by user:** Ensure `ELEVENLABS_API_KEY` is set in Vercel environment variables (Settings → Environment Variables). This is the only external dependency preventing ElevenLabs voice from working in production.
+**User action required:** Ensure `ELEVENLABS_API_KEY` is set in Vercel dashboard (Settings → Environment Variables). This is the only external dependency preventing ElevenLabs voice from working in production.
 
 ---
 
 ## Recommended next priority
 
-1. Verify `ELEVENLABS_API_KEY` is set in Vercel dashboard (user action required)
-2. Test full user flow on iPhone (install as PWA, go through onboarding, confirm Noa speaks in ElevenLabs voice)
-3. Custom app icon for manifest.json
-4. Payday ceremony trigger audit in VelaCore.js
+1. **Custom app icon** — create Noa-branded icons for manifest.json and public/ so the PWA looks polished on the iPhone home screen
+2. **SmallOrb orbState feedback** — pass `orbState` to SmallOrb so users see visual Noa feedback during the walkthrough welcome speech
+3. **Final iPhone test** — install as PWA, go through fresh onboarding, confirm walkthrough speaks with ElevenLabs voice and tooltips show personalised data
