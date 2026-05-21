@@ -13,14 +13,32 @@ const SENTENCES = [
 ];
 
 
+function unlockAudioContext() {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (AudioContext) {
+      const ac = new AudioContext();
+      const buf = ac.createBuffer(1, 1, 22050);
+      const src = ac.createBufferSource();
+      src.buffer = buf;
+      src.connect(ac.destination);
+      src.start(0);
+      setTimeout(() => ac.close(), 100);
+    }
+    const silent = new Audio();
+    silent.play().catch(() => {});
+  } catch (_) {}
+}
+
 export default function Splash({ onDone }) {
   const [visible,         setVisible]         = useState(false);
   const [lineLen,         setLineLen]          = useState(0);
   const [subtitle,        setSubtitle]         = useState('');
   const [subtitleOpacity, setSubtitleOpacity]  = useState(0);
-  const doneRef     = useRef(false);
-  const timersRef   = useRef([]);
-  const isFirstTime = !localStorage.getItem(INTRO_KEY);
+  const doneRef         = useRef(false);
+  const timersRef       = useRef([]);
+  const audioUnlocked   = useRef(false);
+  const isFirstTime     = !localStorage.getItem(INTRO_KEY);
 
   const finish = useCallback(() => {
     if (doneRef.current) return;
@@ -71,12 +89,18 @@ export default function Splash({ onDone }) {
 
   return (
     <div
-      onClick={isFirstTime ? finish : undefined}
+      onClick={() => {
+        if (!audioUnlocked.current) {
+          audioUnlocked.current = true;
+          unlockAudioContext();
+        }
+        if (isFirstTime) finish();
+      }}
       style={{
         position: 'fixed', inset: 0, background: t.bg,
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         opacity: visible ? 1 : 0, transition: 'opacity 0.7s ease',
-        cursor: isFirstTime ? 'pointer' : 'default',
+        cursor: 'pointer',
       }}
     >
       {/* ── Noa wordmark logo ── */}
@@ -147,17 +171,29 @@ export default function Splash({ onDone }) {
           padding: '0 36px',
           textAlign: 'center',
         }}>
-          <div style={{
-            fontSize: 17,
-            fontWeight: 400,
-            color: 'rgba(232,221,208,0.82)',
-            letterSpacing: '0.01em',
-            lineHeight: 1.45,
-            opacity: subtitleOpacity,
-            transition: 'opacity 0.55s ease',
-          }}>
-            {subtitle}
-          </div>
+          {subtitle ? (
+            <div style={{
+              fontSize: 17,
+              fontWeight: 400,
+              color: 'rgba(232,221,208,0.82)',
+              letterSpacing: '0.01em',
+              lineHeight: 1.45,
+              opacity: subtitleOpacity,
+              transition: 'opacity 0.55s ease',
+            }}>
+              {subtitle}
+            </div>
+          ) : lineLen === 1 ? (
+            <div style={{
+              fontSize: 11,
+              fontWeight: 500,
+              color: 'rgba(232,221,208,0.28)',
+              letterSpacing: '0.22em',
+              textTransform: 'uppercase',
+            }}>
+              Tap anywhere to continue
+            </div>
+          ) : null}
         </div>
       )}
     </div>

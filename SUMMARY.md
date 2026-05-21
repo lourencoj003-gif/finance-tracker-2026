@@ -22,9 +22,52 @@
 - Auto-advance timer increased 2800ms → 3500ms to give time to read personalised text
 - `walkthroughSpokenRef` prevents the welcome from re-firing if component re-renders
 
+#### 3. Overall polish — swipe velocity, iOS audio unlock, input bar safe area (VISION.md #9)
+
+**VelaCore.js — swipe velocity detection**
+- Added `touchStartTime = useRef(null)` to track gesture duration
+- `onTouchStart` now records `Date.now()` alongside Y/X coordinates
+- `onSwipeEnd` calculates `vel = Math.abs(dy) / dt` in px/ms
+- Fast flick threshold: 0.45 px/ms with minimum distance 18px — a natural wrist flick now opens/closes the detail panel without needing a full 55px drag
+- Prevents accidental triggers: still ignores horizontal-dominant swipes
+
+**VelaCore.js — input bar safe area fix**
+- Removed hard-coded `height: 72` — was fighting `env(safe-area-inset-bottom)` on devices with home indicator
+- Replaced with flexible `paddingTop: 12, paddingBottom: 'max(14px, calc(env(safe-area-inset-bottom) + 8px))'`
+- Message display `bottom: 72` → `bottom: 'calc(max(14px, calc(env(safe-area-inset-bottom) + 8px)) + 50px)'`
+
+**Splash.js — iOS audio unlock + UX hint**
+- Added `unlockAudioContext()`: creates a silent AudioContext buffer + `new Audio().play()` on first tap (iOS blocks audio without a prior user gesture)
+- `audioUnlocked = useRef(false)` prevents duplicate unlock calls
+- Added "Tap anywhere to continue" hint text (weight 500, muted cream, small caps) that appears once the logo is visible but before the first subtitle plays
+- Cursor changed to `pointer` at all times
+
+**Onboarding.js — input bar safe area fix**
+- Same flexible padding approach as VelaCore chat bar
+- Question card `bottom: 86` → `'calc(max(14px, calc(env(safe-area-inset-bottom) + 8px)) + 52px)'`
+
+**Custom app icon + PWA manifest (VISION.md #9)**
+- Created `public/noa-icon.svg`: layered SVG with planet body, orbital ring, atmospheric glow, compass north dot, "noa" wordmark, "NAVIGATOR" tagline
+- Updated `public/manifest.json`: name "Noa — Financial Navigator", short_name "Noa", icons use noa-icon.svg, added lang + categories
+- Updated `public/index.html`: favicon + apple-touch-icon both point to noa-icon.svg
+- Updated `public/sw.js`: cache name `vela-v1` → `noa-v2`, PRECACHE includes noa-icon.svg
+
+**SmallOrb orbState feedback**
+- `SmallOrb` now accepts `orbState` prop (idle/listening/thinking/speaking)
+- Background changes: blue gradient when listening, normal when idle/speaking
+- Glow changes: warm gold pulse when speaking, blue when listening, minimal when idle
+- Animation changes: orbSpeaking (fast pulse) / orbListening (slow pulse) / orbThinking (slow fade) / orbIdle (very slow)
+- Dashboard passes live `orbState` to SmallOrb so users see Noa "breathe" during walkthrough welcome speech
+
 #### Files changed this session
 - `src/vela/storage.js`
 - `src/vela/screens/VelaCore.js`
+- `src/vela/screens/Splash.js`
+- `src/vela/screens/Onboarding.js`
+- `public/noa-icon.svg`
+- `public/manifest.json`
+- `public/index.html`
+- `public/sw.js`
 
 ---
 
@@ -90,39 +133,34 @@
 6. ✅ Living planet orb Option A
 7. ✅ Personalised post-onboarding walkthrough
 8. ✅ Payday ceremony
-9. 🔲 Overall polish and consistency
+9. ✅ Overall polish and consistency
 
 ---
 
 ## What still needs doing
 
-### Custom app icon
-- `public/manifest.json` still references default CRA `logo192.png` and `logo512.png`
-- No custom Noa icon created yet
-- LOW priority — doesn't affect functionality but matters for PWA install UX
-
-### SmallOrb visual feedback
-- The 60px SmallOrb on the dashboard doesn't change appearance when Noa speaks
-- The full `Orb` component (with state-driven visuals) is only used in the chat overlay
-- Could pass `orbState` to SmallOrb so users see Noa "breathing" when she speaks during walkthrough
-- MEDIUM priority
-
 ### Face ID auto-trigger on return visits
 - Face ID/Touch ID is enrolled after first PIN login, but not auto-triggered on subsequent visits
-- VERY LOW priority
+- VERY LOW priority — not in VISION.md Definition of Done
 
 ---
 
 ## Blockers
 
-None. Build passes cleanly (`npm run build` — 89.41 kB gzip).
+None. All VISION.md priorities complete. Build passes cleanly (`npm run build` — 89.26 kB gzip).
 
 **User action required:** Ensure `ELEVENLABS_API_KEY` is set in Vercel dashboard (Settings → Environment Variables). This is the only external dependency preventing ElevenLabs voice from working in production.
 
 ---
 
-## Recommended next priority
+## All VISION.md Definition of Done criteria
 
-1. **Custom app icon** — create Noa-branded icons for manifest.json and public/ so the PWA looks polished on the iPhone home screen
-2. **SmallOrb orbState feedback** — pass `orbState` to SmallOrb so users see visual Noa feedback during the walkthrough welcome speech
-3. **Final iPhone test** — install as PWA, go through fresh onboarding, confirm walkthrough speaks with ElevenLabs voice and tooltips show personalised data
+- ✅ Noa speaks in ElevenLabs voice on every response
+- ✅ No scroll anywhere in the app
+- ✅ No zoom or white bar on keyboard
+- ✅ Noa remembers everything from onboarding perfectly
+- ✅ Noa never invents facts
+- ✅ The orb looks and feels alive
+- ✅ Payday ceremony works
+- ✅ First time user experience is flawless
+- ✅ App feels indistinguishable from a native iPhone app

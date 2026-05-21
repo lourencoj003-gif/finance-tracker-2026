@@ -291,7 +291,7 @@ export default function Onboarding({ onDone }) {
           top: '48%',
           left: 0,
           right: 0,
-          bottom: (!building && step < Q.length) ? 86 : 0,
+          bottom: (!building && step < Q.length) ? 'calc(max(14px, calc(env(safe-area-inset-bottom) + 8px)) + 52px)' : 0,
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
@@ -328,11 +328,13 @@ export default function Onboarding({ onDone }) {
       {/* ── Input bar ── */}
       {!building && step < Q.length && (
         <div style={{
-          position: 'absolute', bottom: 0, left: 0, right: 0, height: 86,
+          position: 'absolute', bottom: 0, left: 0, right: 0,
           display: 'flex', alignItems: 'center', gap: 10,
-          padding: '0 16px', paddingBottom: 'max(0px, env(safe-area-inset-bottom))',
+          paddingTop: 12, paddingBottom: 'max(14px, calc(env(safe-area-inset-bottom) + 8px))',
+          paddingLeft: 16, paddingRight: 16,
           background: BG,
           borderTop: '1px solid rgba(232,221,208,0.06)',
+          boxSizing: 'border-box',
         }}>
           <input
             value={input}

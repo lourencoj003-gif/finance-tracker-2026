@@ -274,6 +274,7 @@ export default function VelaCore({ onReset }) {
   const alertFiredRef    = useRef(false);
   const touchStartY      = useRef(null);
   const touchStartX      = useRef(null);
+  const touchStartTime   = useRef(null);
   const audioUnlockedRef = useRef(false);
   const hoursAwayRef          = useRef(0);
   const walkthroughSpokenRef  = useRef(false);
@@ -444,19 +445,24 @@ export default function VelaCore({ onReset }) {
 
   // ── Swipe handlers ───────────────────────────────────────────────
   function onTouchStart(e) {
-    touchStartY.current = e.touches[0].clientY;
-    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current    = e.touches[0].clientY;
+    touchStartX.current    = e.touches[0].clientX;
+    touchStartTime.current = Date.now();
   }
 
   function onSwipeEnd(e, isDetail) {
     if (touchStartY.current === null) return;
     const dy = touchStartY.current - e.changedTouches[0].clientY;
     const dx = Math.abs(touchStartX.current - e.changedTouches[0].clientX);
-    touchStartY.current = null;
-    touchStartX.current = null;
+    const dt = Math.max(1, Date.now() - (touchStartTime.current || Date.now()));
+    touchStartY.current    = null;
+    touchStartX.current    = null;
+    touchStartTime.current = null;
     if (dx > Math.abs(dy) * 0.9) return; // horizontal swipe — ignore
-    if (!isDetail && dy > 55 && !chatOpen) setDetailOpen(true);
-    if (isDetail  && dy < -55)             setDetailOpen(false);
+    const vel = Math.abs(dy) / dt; // px/ms
+    const isFastFlick = vel > 0.45;
+    if (!isDetail && !chatOpen && (dy > 55 || (isFastFlick && dy > 18))) setDetailOpen(true);
+    if (isDetail  && (dy < -55 || (isFastFlick && dy < -18)))             setDetailOpen(false);
   }
 
   // ── Audio unlock (iOS requires speech from a user gesture) ───────
@@ -1154,7 +1160,8 @@ Step 5: Specific goal-based saving
 
         {/* Message display — Noa's last response as large centered text */}
         <div style={{
-          position: 'absolute', top: '52%', bottom: 72, left: 0, right: 0,
+          position: 'absolute', top: '52%', left: 0, right: 0,
+          bottom: 'calc(max(14px, calc(env(safe-area-inset-bottom) + 8px)) + 50px)',
           display: 'flex', flexDirection: 'column', alignItems: 'center',
           justifyContent: 'center', padding: '0 28px', overflow: 'hidden',
         }}>
@@ -1173,11 +1180,13 @@ Step 5: Specific goal-based saving
 
         {/* Input bar */}
         <div style={{
-          position: 'absolute', bottom: 0, left: 0, right: 0, height: 72,
+          position: 'absolute', bottom: 0, left: 0, right: 0,
           display: 'flex', alignItems: 'center', gap: 10,
-          padding: '0 16px', paddingBottom: 'max(0px, env(safe-area-inset-bottom))',
+          paddingTop: 12, paddingBottom: 'max(14px, calc(env(safe-area-inset-bottom) + 8px))',
+          paddingLeft: 16, paddingRight: 16,
           background: BG,
           borderTop: '1px solid rgba(232,221,208,0.06)',
+          boxSizing: 'border-box',
         }}>
           <input
             value={input}
