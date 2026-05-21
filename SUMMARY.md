@@ -1,6 +1,40 @@
 # SUMMARY — Noa Agent Session Log
 
-## Session: 2026-05-21 (latest — ElevenLabs wiring)
+## Session: 2026-05-21 (latest — Orb visual upgrade)
+
+### What was done this session
+
+#### Orb.js — Remove red debt state, intensify speaking, always-alive idle
+
+**`debt` state removed entirely.** The orb never turns red. Financial mode (Debt Destruction, on track, etc.) is communicated exclusively through text and metric pills below the orb. The `DEBT_RED` colour is still used for debt numbers in the UI — just not for the orb itself.
+
+**`speaking` state overhauled:**
+- New `speakWave` keyframe: irregular asymmetric scale pulses (1→1.09→1.02→1.10→1.03→1) at 0.36s — far more dynamic than the simple `planetBreath` used before
+- New `glowSpeak` keyframe: glow aura pulses in sync with the wave at 0.38s, reaching 1.12× scale at peak — the orb visibly *radiates* when speaking
+- Rings enlarged: innermost ring now 3px solid, middle 2px, outer 1.5px. Scale increased from 1.12/1.28/1.55 → 1.18/1.40/1.68
+- Ring rotation speeds: inner 1.8s → 1.4s (much faster)
+- Ripple rings: 3 → **5 staggered ripples** at 0.36s intervals, expanding to 2.9× scale
+- Glow shadow: `0 0 100px 44px rgba(240,228,210,0.82), 0 0 200px 95px rgba(240,228,210,0.32)` — dramatically larger and brighter
+- Particle orbit speed: 2.5s → 2.2s
+
+**`idle` state — always breathing:**
+- `planetBreath` 4s → 3.8s (slightly faster — never looks frozen)
+- `glowPulse` 3.6s → 3.4s
+- Core spin 14s → 16s (slower surface drift for contrast with active states)
+
+**SmallOrb (dashboard orb) updated:**
+- `debtMode` prop removed entirely — orb stays warm cream regardless of financial state
+- Speaking glow updated to match new intensified palette: `rgba(240,228,210,0.82)` 
+- Idle animation timing aligned to 3.8s (matches full Orb idle)
+
+**VelaCore.js:**
+- `<Orb state={debtMode && orbState === 'idle' ? 'debt' : orbState}>` → `<Orb state={orbState}>`
+- `<SmallOrb debtMode={debtMode} ...>` → `<SmallOrb ...>` (prop removed)
+- Spend alert dot now shows regardless of debt mode (was previously hidden in debt mode)
+
+---
+
+## Session: 2026-05-21 (ElevenLabs wiring)
 
 ### What was done this session
 

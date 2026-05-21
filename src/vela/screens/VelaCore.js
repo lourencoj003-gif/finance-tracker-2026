@@ -925,7 +925,7 @@ Step 5: Specific goal-based saving
             onClick={() => { if (showEveningDot) { setEveningPhase('ask'); setEveningNote(''); setEveningCheckOpen(true); } }}
             style={{ cursor: showEveningDot ? 'pointer' : 'default' }}
           >
-            <SmallOrb alert={spendAlert} debtMode={debtMode} eveningDot={showEveningDot} orbState={orbState} />
+            <SmallOrb alert={spendAlert} eveningDot={showEveningDot} orbState={orbState} />
           </div>
           {debtMode ? (
             <>
@@ -1119,10 +1119,10 @@ Step 5: Specific goal-based saving
           <div style={{ position: 'relative' }}>
             <Orb
               size={140}
-              state={debtMode && orbState === 'idle' ? 'debt' : orbState}
+              state={orbState}
               onTap={() => isListening ? stopListening() : startListening()}
             />
-            {spendAlert && orbState === 'idle' && !debtMode && (
+            {spendAlert && orbState === 'idle' && (
               <div style={{
                 position: 'absolute', top: 8, right: 8, width: 14, height: 14,
                 borderRadius: '50%', background: RED, border: `2px solid ${BG}`,
@@ -1695,32 +1695,28 @@ function DetailLabel({ children }) {
 
 // ── Shared sub-components ───────────────────────────────────────────
 
-function SmallOrb({ alert, debtMode, eveningDot, orbState = 'idle' }) {
+function SmallOrb({ alert, eveningDot, orbState = 'idle' }) {
   const isSpeaking  = orbState === 'speaking';
   const isListening = orbState === 'listening';
   const isThinking  = orbState === 'thinking';
 
-  const bg = debtMode
-    ? `radial-gradient(circle at 35% 35%, #f08080, ${DEBT_RED} 55%, #7a1010)`
-    : isListening
-      ? `radial-gradient(circle at 35% 35%, #c8e0ff, #5890d8 55%, #103060)`
-      : `radial-gradient(circle at 35% 35%, #d8cebe, ${PURPLE} 55%, #7a6a52)`;
+  const bg = isListening
+    ? `radial-gradient(circle at 35% 35%, #c8e0ff, #5890d8 55%, #103060)`
+    : `radial-gradient(circle at 35% 35%, #d8cebe, ${PURPLE} 55%, #7a6a52)`;
 
-  const glow = debtMode
-    ? '0 0 18px 6px rgba(226,75,74,0.42)'
-    : isSpeaking
-      ? '0 0 30px 10px rgba(200,184,154,0.72), 0 0 60px 22px rgba(200,184,154,0.28)'
-      : isListening
-        ? '0 0 28px 10px rgba(88,144,216,0.6)'
-        : '0 0 18px 6px rgba(200,184,154,0.32)';
+  const glow = isSpeaking
+    ? '0 0 32px 12px rgba(240,228,210,0.82), 0 0 64px 26px rgba(240,228,210,0.32)'
+    : isListening
+      ? '0 0 28px 10px rgba(88,144,216,0.6)'
+      : '0 0 18px 6px rgba(200,184,154,0.32)';
 
   const anim = isSpeaking
-    ? 'orbSpeaking 0.42s ease-in-out infinite'
+    ? 'orbSpeaking 0.38s ease-in-out infinite'
     : isListening
       ? 'orbListening 0.9s ease-in-out infinite'
       : isThinking
         ? 'orbThinking 2.2s ease-in-out infinite'
-        : 'orbIdle 3s ease-in-out infinite';
+        : 'orbIdle 3.8s ease-in-out infinite';
 
   return (
     <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -1730,7 +1726,7 @@ function SmallOrb({ alert, debtMode, eveningDot, orbState = 'idle' }) {
         animation: anim,
         transition: 'background 0.6s ease, box-shadow 0.5s ease',
       }} />
-      {alert && !debtMode && !eveningDot && (
+      {alert && !eveningDot && (
         <div style={{
           position: 'absolute', top: 1, right: 1,
           width: 12, height: 12, borderRadius: '50%',

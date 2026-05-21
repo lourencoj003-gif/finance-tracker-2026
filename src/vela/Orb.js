@@ -17,9 +17,22 @@ const KEYFRAMES = `
     0%, 100% { transform: scale(1); }
     50%       { transform: scale(1.045); }
   }
+  @keyframes speakWave {
+    0%   { transform: scale(1);    }
+    18%  { transform: scale(1.09); }
+    36%  { transform: scale(1.02); }
+    54%  { transform: scale(1.10); }
+    72%  { transform: scale(1.03); }
+    100% { transform: scale(1);    }
+  }
   @keyframes glowPulse {
     0%, 100% { opacity: 0.72; transform: scale(1); }
     50%       { opacity: 1;    transform: scale(1.07); }
+  }
+  @keyframes glowSpeak {
+    0%, 100% { opacity: 0.85; transform: scale(1); }
+    30%       { opacity: 1;    transform: scale(1.12); }
+    60%       { opacity: 0.9;  transform: scale(1.06); }
   }
   @keyframes bandA {
     0%   { transform: translateX(-18%) rotate(-7deg); }
@@ -30,8 +43,8 @@ const KEYFRAMES = `
     100% { transform: translateX(-12%) rotate(2deg); }
   }
   @keyframes speakRipple {
-    0%   { transform: scale(1);   opacity: 0.85; }
-    100% { transform: scale(2.8); opacity: 0; }
+    0%   { transform: scale(1);   opacity: 0.8; }
+    100% { transform: scale(2.9); opacity: 0; }
   }
   @keyframes particleOrbit {
     from { transform: rotate(calc(var(--pr) * 1deg)) translateX(calc(var(--r) * 1px)) rotate(calc(var(--pr) * -1deg)); }
@@ -41,22 +54,22 @@ const KEYFRAMES = `
 
 const STATE_CFG = {
   idle: {
-    glowColor:  'rgba(200,184,154,0.4)',
-    glowAnim:   'glowPulse 3.6s ease-in-out infinite',
+    glowColor:  'rgba(200,184,154,0.38)',
+    glowAnim:   'glowPulse 3.4s ease-in-out infinite',
     rings: [
-      { scale: 1.46, border: '1px dashed rgba(200,184,154,0.28)', dir: 'ringCW',  dur: '34s', op: 0.58 },
-      { scale: 1.23, border: '1px solid rgba(200,184,154,0.38)',  dir: 'ringCCW', dur: '24s', op: 0.68 },
-      { scale: 1.09, border: '1.5px dotted rgba(200,184,154,0.44)', dir: 'ringCW', dur: '16s', op: 0.52 },
+      { scale: 1.46, border: '1px dashed rgba(200,184,154,0.26)', dir: 'ringCW',  dur: '36s', op: 0.55 },
+      { scale: 1.23, border: '1px solid rgba(200,184,154,0.36)',  dir: 'ringCCW', dur: '25s', op: 0.65 },
+      { scale: 1.09, border: '1.5px dotted rgba(200,184,154,0.42)', dir: 'ringCW', dur: '17s', op: 0.5 },
     ],
     core:     'conic-gradient(from 180deg, #8a7a62, #C8B89A, #a08870, #6a5c48, #C8B89A)',
-    coreAnim: 'planetSpin 14s linear infinite',
+    coreAnim: 'planetSpin 16s linear infinite',
     sphere:   'radial-gradient(circle at 32% 28%, rgba(240,232,220,0.92) 0%, #C8B89A 42%, #8a7a62 70%, #2d2318 100%)',
-    band1: 'rgba(180,162,134,0.2)', bandADur: '20s',
-    band2: 'rgba(158,140,114,0.14)', bandBDur: '26s',
-    bodyAnim:  'planetBreath 4s ease-in-out infinite',
-    particle:  '#C8B89A', pOrbitDur: '11s', pOp: 0.65,
-    glowShadow: '0 0 44px 14px rgba(200,184,154,0.36), 0 0 90px 38px rgba(200,184,154,0.11)',
-    ripple: false,
+    band1: 'rgba(180,162,134,0.18)', bandADur: '22s',
+    band2: 'rgba(158,140,114,0.13)', bandBDur: '28s',
+    bodyAnim:  'planetBreath 3.8s ease-in-out infinite',
+    particle:  '#C8B89A', pOrbitDur: '12s', pOp: 0.6,
+    glowShadow: '0 0 44px 14px rgba(200,184,154,0.34), 0 0 90px 38px rgba(200,184,154,0.10)',
+    ripple: false, rippleCount: 0,
   },
   listening: {
     glowColor:  'rgba(88,152,220,0.5)',
@@ -74,7 +87,7 @@ const STATE_CFG = {
     bodyAnim:  'planetBreath 0.85s ease-in-out infinite',
     particle:  '#8cbce8', pOrbitDur: '4s', pOp: 1,
     glowShadow: '0 0 72px 28px rgba(88,152,220,0.64), 0 0 155px 68px rgba(88,152,220,0.22)',
-    ripple: false,
+    ripple: false, rippleCount: 0,
   },
   thinking: {
     glowColor:  'rgba(124,174,158,0.38)',
@@ -92,25 +105,25 @@ const STATE_CFG = {
     bodyAnim:  'planetBreath 2.2s ease-in-out infinite',
     particle:  '#7CAE9E', pOrbitDur: '7s', pOp: 0.7,
     glowShadow: '0 0 36px 11px rgba(124,174,158,0.35), 0 0 72px 28px rgba(124,174,158,0.1)',
-    ripple: false,
+    ripple: false, rippleCount: 0,
   },
   speaking: {
-    glowColor:  'rgba(232,221,208,0.65)',
-    glowAnim:   'glowPulse 0.44s ease-in-out infinite',
+    glowColor:  'rgba(240,228,210,0.72)',
+    glowAnim:   'glowSpeak 0.38s ease-in-out infinite',
     rings: [
-      { scale: 1.55, border: '1.5px solid rgba(232,221,208,0.62)', dir: 'ringCW',  dur: '5.5s', op: 0.82 },
-      { scale: 1.28, border: '2px solid rgba(232,221,208,0.78)',   dir: 'ringCCW', dur: '3.8s', op: 0.92 },
-      { scale: 1.12, border: '2.5px solid rgba(232,221,208,0.96)', dir: 'ringCW',  dur: '2.4s', op: 1 },
+      { scale: 1.68, border: '1.5px solid rgba(240,228,210,0.52)', dir: 'ringCW',  dur: '4.5s', op: 0.78 },
+      { scale: 1.40, border: '2px solid rgba(240,228,210,0.74)',   dir: 'ringCCW', dur: '3.0s', op: 0.90 },
+      { scale: 1.18, border: '3px solid rgba(240,228,210,0.98)',   dir: 'ringCW',  dur: '1.8s', op: 1 },
     ],
     core:     'conic-gradient(from 270deg, #d8cebe, #F0E8DC, #C8B89A, #a09080, #d8cebe)',
-    coreAnim: 'planetSpin 1.8s linear infinite',
-    sphere:   'radial-gradient(circle at 32% 28%, rgba(255,252,248,0.98) 0%, #E8DDD0 30%, #C8B89A 58%, #5a4a38 100%)',
-    band1: 'rgba(225,215,200,0.34)', bandADur: '5s',
-    band2: 'rgba(210,200,185,0.26)', bandBDur: '7s',
-    bodyAnim:  'planetBreath 0.42s ease-in-out infinite',
-    particle:  '#E8DDD0', pOrbitDur: '2.5s', pOp: 1,
-    glowShadow: '0 0 82px 34px rgba(232,221,208,0.74), 0 0 175px 78px rgba(232,221,208,0.27)',
-    ripple: true,
+    coreAnim: 'planetSpin 1.4s linear infinite',
+    sphere:   'radial-gradient(circle at 32% 28%, rgba(255,252,248,0.98) 0%, #EDE0D0 28%, #C8B89A 55%, #5a4a38 100%)',
+    band1: 'rgba(235,222,205,0.42)', bandADur: '4s',
+    band2: 'rgba(220,205,188,0.32)', bandBDur: '5.5s',
+    bodyAnim:  'speakWave 0.36s ease-in-out infinite',
+    particle:  '#F0E8DC', pOrbitDur: '2.2s', pOp: 1,
+    glowShadow: '0 0 100px 44px rgba(240,228,210,0.82), 0 0 200px 95px rgba(240,228,210,0.32)',
+    ripple: true, rippleCount: 5,
   },
   payday: {
     glowColor:  'rgba(201,169,110,0.58)',
@@ -128,25 +141,7 @@ const STATE_CFG = {
     bodyAnim:  'planetBreath 2.4s ease-in-out infinite',
     particle:  '#C9A96E', pOrbitDur: '6s', pOp: 1,
     glowShadow: '0 0 66px 24px rgba(201,169,110,0.66), 0 0 148px 60px rgba(201,169,110,0.22)',
-    ripple: false,
-  },
-  debt: {
-    glowColor:  'rgba(226,75,74,0.52)',
-    glowAnim:   'glowPulse 3.2s ease-in-out infinite',
-    rings: [
-      { scale: 1.44, border: '1px dashed rgba(226,75,74,0.34)',   dir: 'ringCW',  dur: '22s', op: 0.48 },
-      { scale: 1.2,  border: '1px solid rgba(226,75,74,0.5)',     dir: 'ringCCW', dur: '16s', op: 0.58 },
-      { scale: 1.08, border: '1.5px solid rgba(226,75,74,0.62)', dir: 'ringCW',  dur: '10s', op: 0.54 },
-    ],
-    core:     'conic-gradient(from 180deg, #7a1a1a, #E24B4A, #a02020, #4a0808, #E24B4A)',
-    coreAnim: 'planetSpin 7s linear infinite',
-    sphere:   'radial-gradient(circle at 32% 28%, rgba(255,185,185,0.9) 0%, #E24B4A 38%, #8a1a1a 70%, #2a0505 100%)',
-    band1: 'rgba(200,60,60,0.24)', bandADur: '22s',
-    band2: 'rgba(172,40,40,0.17)', bandBDur: '28s',
-    bodyAnim:  'planetBreath 3.4s ease-in-out infinite',
-    particle:  '#e85858', pOrbitDur: '9s', pOp: 0.72,
-    glowShadow: '0 0 50px 17px rgba(226,75,74,0.55), 0 0 115px 48px rgba(226,75,74,0.16)',
-    ripple: false,
+    ripple: false, rippleCount: 0,
   },
 };
 
@@ -172,6 +167,7 @@ export default function Orb({ size = 140, state = 'idle', onTap }) {
 
   const cfg = STATE_CFG[state] || STATE_CFG.idle;
   const r   = Math.round(size * 0.5);
+  const rippleCount = cfg.rippleCount || 0;
 
   return (
     <div
@@ -207,14 +203,14 @@ export default function Orb({ size = 140, state = 'idle', onTap }) {
         }} />
       ))}
 
-      {/* Speak ripples */}
-      {cfg.ripple && [0, 1, 2].map(i => (
+      {/* Speak ripples — staggered outward waves */}
+      {cfg.ripple && Array.from({ length: rippleCount }, (_, i) => (
         <div key={`rip${i}`} style={{
           position: 'absolute',
           width: size, height: size,
           borderRadius: '50%',
-          border: '1.5px solid rgba(232,221,208,0.55)',
-          animation: `speakRipple 2.1s ease-out ${i * 0.7}s infinite`,
+          border: '1.5px solid rgba(240,228,210,0.5)',
+          animation: `speakRipple 1.8s ease-out ${(i * 0.36)}s infinite`,
           pointerEvents: 'none', zIndex: 2,
         }} />
       ))}
