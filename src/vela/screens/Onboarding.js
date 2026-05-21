@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { parseAmount, parseDebt } from '../scoring';
-import { saveData, saveInsights, markReady } from '../storage';
+import { saveData, saveInsights, markReady, markOnboardingDone } from '../storage';
 import { speak as voiceSpeak, stopSpeaking } from '../voice';
 import Orb from '../Orb';
 
@@ -234,6 +234,7 @@ export default function Onboarding({ onDone }) {
     saveData(d);
     saveInsights(insights.slice(0, 3));
     markReady();
+    markOnboardingDone();
 
     const elapsed = Date.now() - started;
     await new Promise(r => setTimeout(r, Math.max(0, 1800 - elapsed)));

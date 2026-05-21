@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
-import { getPin, setPin, clearAll, getBiometricEnabled, setBiometricEnabled, getBiometricCred, setBiometricCred, clearBiometric } from '../storage';
+import { getPin, setPin, clearAll, getBiometricEnabled, setBiometricEnabled, getBiometricCred, setBiometricCred, clearBiometric, isOnboardingDone } from '../storage';
 import { t } from '../theme';
 
 const PIN_LENGTH = 4;
 
-export default function Pin({ onSuccess, onForgot }) {
-  const existing              = getPin();
-  const [phase, setPhase]     = useState(existing ? 'login' : 'create');
+export default function Pin({ onSuccess, onForgot, onBrandNew }) {
+  const [phase, setPhase]     = useState(() => getPin() ? 'login' : 'create');
   const [digits, setDigits]   = useState([]);
   const [temp, setTemp]       = useState('');
   const [error, setError]     = useState('');
@@ -16,6 +15,14 @@ export default function Pin({ onSuccess, onForgot }) {
   const [biometricEnabled, setBiometricEnabledState]  = useState(getBiometricEnabled);
   const [showBioPrompt, setShowBioPrompt]             = useState(false);
   const [bioError, setBioError]                       = useState('');
+
+  useEffect(() => {
+    if (!getPin() && !isOnboardingDone()) {
+      onBrandNew?.();
+      return;
+    }
+    setPhase(getPin() ? 'login' : 'create');
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!window.PublicKeyCredential?.isUserVerifyingPlatformAuthenticatorAvailable) return;
@@ -131,11 +138,15 @@ export default function Pin({ onSuccess, onForgot }) {
     clearAll();
     clearBiometric();
     setBiometricEnabledState(false);
+    setPhase('create');
+    setDigits([]);
+    setTemp('');
+    setError('');
     onForgot();
   }
 
   const titles = { login: 'Welcome back', create: 'Create your PIN', confirm: 'Confirm your PIN' };
-  const subs   = { login: 'Enter your 4-digit PIN', create: 'Choose a 4-digit PIN to protect your data', confirm: 'Enter your PIN one more time' };
+  const subs   = { login: 'Enter your 4-digit PIN', create: 'Set up a 4-digit PIN to protect your data', confirm: 'Enter your PIN one more time' };
 
   return (
     <div style={{ position: 'relative', height: '100vh', background: t.bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', boxSizing: 'border-box' }}>

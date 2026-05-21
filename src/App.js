@@ -28,6 +28,7 @@ export default function App() {
   const afterPin        = useCallback(() => setScreen(isReady() ? S.VELA : S.ONBOARD), []);
   const afterOnboarding = useCallback(() => setScreen(S.VELA), []);
   const goReset         = useCallback(() => setScreen(S.PIN), []);
+  const goSplash        = useCallback(() => setScreen(S.SPLASH), []);
 
   const containerHeight = vpHeight ? `${vpHeight}px` : '100svh';
 
@@ -47,7 +48,7 @@ export default function App() {
       boxSizing: 'border-box',
     }}>
       {screen === S.SPLASH  && <Splash     onDone={afterSplash} />}
-      {screen === S.PIN     && <Pin        onSuccess={afterPin} onForgot={goReset} />}
+      {screen === S.PIN     && <Pin        onSuccess={afterPin} onForgot={goReset} onBrandNew={goSplash} />}
       {screen === S.ONBOARD && <Onboarding onDone={afterOnboarding} />}
       {screen === S.VELA    && <VelaCore   onReset={goReset} />}
     </div>
