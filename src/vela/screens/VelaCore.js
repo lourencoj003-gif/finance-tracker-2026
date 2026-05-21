@@ -274,7 +274,8 @@ export default function VelaCore({ onReset }) {
   const touchStartY      = useRef(null);
   const touchStartX      = useRef(null);
   const audioUnlockedRef = useRef(false);
-  const hoursAwayRef     = useRef(0);
+  const hoursAwayRef          = useRef(0);
+  const walkthroughSpokenRef  = useRef(false);
 
   function setOrbState(s) { orbRef.current = s; _setOrbState(s); }
 
@@ -291,6 +292,29 @@ export default function VelaCore({ onReset }) {
 
   useEffect(() => {
     if (!walkthrough) return;
+    if (tooltipStep === 0 && !walkthroughSpokenRef.current) {
+      walkthroughSpokenRef.current = true;
+      const name = localStorage.getItem('vela_name') || '';
+      const hi   = name ? `, ${name}` : '';
+      const d    = getData() || {};
+      const inc  = d.income  || 0;
+      const exp  = d.expenses || 0;
+      const dbt  = d.debt    || 0;
+      const surp = inc - exp;
+      let msg;
+      if (inc === 0) {
+        msg = `I'm Noa, your personal financial navigator. I'm ready to help whenever you are.`;
+      } else if (dbt > 0 && surp > 0) {
+        msg = `Your numbers are in${hi} — £${surp.toFixed(0)} monthly surplus alongside £${dbt.toLocaleString('en-GB')} in debt. I know exactly where to start.`;
+      } else if (dbt > 0) {
+        msg = `Welcome${hi}. £${dbt.toLocaleString('en-GB')} in debt is the first thing we attack together. I have a plan.`;
+      } else if (surp > 0) {
+        msg = `Welcome${hi} — £${surp.toFixed(0)} every month to build wealth with. Let me show you how to make every pound count.`;
+      } else {
+        msg = `Welcome${hi}. Your expenses currently exceed your income by £${Math.abs(surp).toFixed(0)}/month. That's the first thing we fix together.`;
+      }
+      setTimeout(() => speak(msg), 800);
+    }
     const tid = setTimeout(() => {
       setTooltipStep(s => {
         const next = s + 1;
@@ -300,9 +324,9 @@ export default function VelaCore({ onReset }) {
         }
         return next;
       });
-    }, 2800);
+    }, 3500);
     return () => clearTimeout(tid);
-  }, [walkthrough, tooltipStep]);
+  }, [walkthrough, tooltipStep]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!document.getElementById('vela-kf')) {
@@ -1334,10 +1358,24 @@ Step 5: Specific goal-based saving
           WALKTHROUGH TOOLTIP OVERLAY
       ══════════════════════════════════════════ */}
       {walkthrough && tooltipStep < 3 && (() => {
+        const wtName = localStorage.getItem('vela_name') || '';
         const tips = [
-          { text: 'This is your financial position', top: '51%' },
-          { text: 'Your key health indicators',      top: '74%' },
-          { text: 'Tap here anytime to talk to me',  top: '87%' },
+          {
+            text: debtMode
+              ? `Debt Destruction Mode — £${totalDebt.toLocaleString('en-GB')} to clear`
+              : surplus >= 0
+                ? `Your £${surplus.toFixed(0)}/month surplus — your wealth engine`
+                : `£${Math.abs(surplus).toFixed(0)}/month shortfall — first thing we tackle`,
+            top: '51%',
+          },
+          {
+            text: `Vela Score ${velaScore} — ${velaScore >= 70 ? 'strong foundation' : velaScore >= 50 ? 'solid progress' : 'room to grow'}`,
+            top: '74%',
+          },
+          {
+            text: wtName ? `${wtName}, tap here anytime — I'm always ready` : "Tap here anytime — I'm always ready",
+            top: '87%',
+          },
         ];
         const tip = tips[tooltipStep];
         return (

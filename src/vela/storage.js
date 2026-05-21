@@ -18,6 +18,13 @@ const K = {
   EXPENSE_LOG:  'vela_expense_log',
   EVENING_DATE: 'vela_evening_date',
   EVENING_LOG:  'vela_evening_log',
+  HISTORY:      'noaHistory',
+  NAME:         'vela_name',
+  USER_NAME:    'userName',
+  WALKTHROUGH:  'vela_walkthrough_seen',
+  TAP_HINT:     'vela_tap_hint_seen',
+  INTRO_SEEN:   'vela_intro_seen',
+  PREV_SCORE:   'vela_prev_score',
 };
 
 export const getPin            = ()    => localStorage.getItem(K.PIN);
