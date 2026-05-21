@@ -251,9 +251,10 @@ export default function VelaCore({ onReset }) {
   const [eveningAnswered, setEveningAnswered]   = useState(() => getEveningDate() === new Date().toISOString().slice(0, 10));
   const [eveningPhase, setEveningPhase]         = useState('ask');
   const [eveningNote, setEveningNote]           = useState('');
-  const [tapHintVisible, setTapHintVisible] = useState(() => !localStorage.getItem('vela_tap_hint_seen'));
-  const [walkthrough, setWalkthrough] = useState(() => !localStorage.getItem('vela_walkthrough_seen'));
-  const [tooltipStep, setTooltipStep] = useState(0);
+  const [tapHintVisible, setTapHintVisible]   = useState(() => !localStorage.getItem('vela_tap_hint_seen'));
+  const [walkthrough, setWalkthrough]         = useState(() => !localStorage.getItem('vela_walkthrough_seen'));
+  const [tooltipStep, setTooltipStep]         = useState(0);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [challengeData, setChallengeData]   = useState(() => {
     const stored = getChallenge();
     const weekId = getISOWeek();
@@ -740,6 +741,7 @@ Step 5: Specific goal-based saving
     const sav = Math.max(0, parseFloat(settingSavings) || 0);
     saveData({ ...getData(), payday: pd, savings: sav });
     setShowSettings(false);
+    setShowResetConfirm(false);
   }
 
   // ── Evening check-in handlers ────────────────────────────────────
@@ -917,7 +919,7 @@ Step 5: Specific goal-based saving
             onClick={() => { if (showEveningDot) { setEveningPhase('ask'); setEveningNote(''); setEveningCheckOpen(true); } }}
             style={{ cursor: showEveningDot ? 'pointer' : 'default' }}
           >
-            <SmallOrb alert={spendAlert} debtMode={debtMode} eveningDot={showEveningDot} />
+            <SmallOrb alert={spendAlert} debtMode={debtMode} eveningDot={showEveningDot} orbState={orbState} />
           </div>
           {debtMode ? (
             <>
@@ -1296,7 +1298,7 @@ Step 5: Specific goal-based saving
 
       {showSettings && (
         <div
-          onClick={e => e.target === e.currentTarget && setShowSettings(false)}
+          onClick={e => { if (e.target === e.currentTarget) { setShowSettings(false); setShowResetConfirm(false); } }}
           style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.78)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, zIndex: 50 }}
         >
           <div style={{
@@ -1340,16 +1342,36 @@ Step 5: Specific goal-based saving
               <Toggle on={voiceOn} onToggle={() => setVoiceOn(v => !v)} />
             </div>
             <SettingsBtn onClick={saveSettings} color={PURPLE} text="Save" />
-            <SettingsBtn
-              onClick={() => { clearAll(); onReset(); }}
-              color="rgba(255,80,80,0.18)"
-              border="rgba(255,80,80,0.28)"
-              textColor="#E24B4A"
-              text="Reset Noa"
-            />
-            <button onClick={() => setShowSettings(false)} style={{ width: '100%', padding: 12, background: 'none', border: 'none', color: 'rgba(232,221,208,0.3)', fontSize: 14, cursor: 'pointer', marginTop: 4 }}>
-              Cancel
-            </button>
+            {showResetConfirm ? (
+              <>
+                <div style={{ fontSize: 13, color: '#E24B4A', textAlign: 'center', marginBottom: 12, lineHeight: 1.5 }}>
+                  This will delete all your data — income, goals, chat history, everything. Are you sure?
+                </div>
+                <SettingsBtn
+                  onClick={() => { stopSpeaking(); clearAll(); onReset(); }}
+                  color="rgba(226,75,74,0.22)"
+                  border="rgba(226,75,74,0.5)"
+                  textColor="#E24B4A"
+                  text="Yes, reset everything"
+                />
+                <button onClick={() => setShowResetConfirm(false)} style={{ width: '100%', padding: 12, background: 'none', border: 'none', color: 'rgba(232,221,208,0.36)', fontSize: 14, cursor: 'pointer' }}>
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <>
+                <SettingsBtn
+                  onClick={() => setShowResetConfirm(true)}
+                  color="rgba(255,80,80,0.1)"
+                  border="rgba(255,80,80,0.2)"
+                  textColor="rgba(226,75,74,0.7)"
+                  text="Reset Noa"
+                />
+                <button onClick={() => setShowSettings(false)} style={{ width: '100%', padding: 12, background: 'none', border: 'none', color: 'rgba(232,221,208,0.3)', fontSize: 14, cursor: 'pointer', marginTop: 4 }}>
+                  Cancel
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -1664,20 +1686,40 @@ function DetailLabel({ children }) {
 
 // ── Shared sub-components ───────────────────────────────────────────
 
-function SmallOrb({ alert, debtMode, eveningDot }) {
-  const bg  = debtMode
+function SmallOrb({ alert, debtMode, eveningDot, orbState = 'idle' }) {
+  const isSpeaking  = orbState === 'speaking';
+  const isListening = orbState === 'listening';
+  const isThinking  = orbState === 'thinking';
+
+  const bg = debtMode
     ? `radial-gradient(circle at 35% 35%, #f08080, ${DEBT_RED} 55%, #7a1010)`
-    : `radial-gradient(circle at 35% 35%, #d8cebe, ${PURPLE} 55%, #7a6a52)`;
+    : isListening
+      ? `radial-gradient(circle at 35% 35%, #c8e0ff, #5890d8 55%, #103060)`
+      : `radial-gradient(circle at 35% 35%, #d8cebe, ${PURPLE} 55%, #7a6a52)`;
+
   const glow = debtMode
     ? '0 0 18px 6px rgba(226,75,74,0.42)'
-    : '0 0 18px 6px rgba(200,184,154,0.32)';
+    : isSpeaking
+      ? '0 0 30px 10px rgba(200,184,154,0.72), 0 0 60px 22px rgba(200,184,154,0.28)'
+      : isListening
+        ? '0 0 28px 10px rgba(88,144,216,0.6)'
+        : '0 0 18px 6px rgba(200,184,154,0.32)';
+
+  const anim = isSpeaking
+    ? 'orbSpeaking 0.42s ease-in-out infinite'
+    : isListening
+      ? 'orbListening 0.9s ease-in-out infinite'
+      : isThinking
+        ? 'orbThinking 2.2s ease-in-out infinite'
+        : 'orbIdle 3s ease-in-out infinite';
+
   return (
     <div style={{ position: 'relative', flexShrink: 0 }}>
       <div style={{
         width: 60, height: 60, borderRadius: '50%',
         background: bg, boxShadow: glow,
-        animation: 'orbIdle 3s ease-in-out infinite',
-        transition: 'background 0.8s ease, box-shadow 0.8s ease',
+        animation: anim,
+        transition: 'background 0.6s ease, box-shadow 0.5s ease',
       }} />
       {alert && !debtMode && !eveningDot && (
         <div style={{

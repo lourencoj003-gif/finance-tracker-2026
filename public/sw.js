@@ -1,7 +1,7 @@
-const CACHE = 'vela-v1';
+const CACHE = 'noa-v2';
 
 // Shell files guaranteed to exist at these paths
-const PRECACHE = ['/', '/index.html'];
+const PRECACHE = ['/', '/index.html', '/noa-icon.svg', '/manifest.json'];
 
 self.addEventListener('install', e => {
   e.waitUntil(

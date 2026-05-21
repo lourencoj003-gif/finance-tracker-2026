@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" fill="#111318"/>
+
+  <defs>
+    <radialGradient id="orb" cx="34%" cy="30%" r="70%">
+      <stop offset="0%"   stop-color="#ddd4c4"/>
+      <stop offset="40%"  stop-color="#C8B89A"/>
+      <stop offset="72%"  stop-color="#7a6850"/>
+      <stop offset="100%" stop-color="#1a1210"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#C8B89A" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#C8B89A" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Outer atmosphere glow -->
+  <circle cx="256" cy="196" r="156" fill="url(#glow)"/>
+
+  <!-- Orbital ring -->
+  <circle cx="256" cy="196" r="128" fill="none" stroke="#C8B89A" stroke-width="0.8" opacity="0.28"/>
+
+  <!-- Planet orb -->
+  <circle cx="256" cy="196" r="108" fill="url(#orb)"/>
+
+  <!-- Atmospheric band -->
+  <ellipse cx="256" cy="218" rx="97" ry="10" fill="#6a5c48" opacity="0.18"/>
+
+  <!-- Glass highlight -->
+  <ellipse cx="228" cy="168" rx="36" ry="22" fill="white" opacity="0.36"/>
+
+  <!-- Bottom rim light -->
+  <ellipse cx="278" cy="278" rx="16" ry="8" fill="white" opacity="0.09"/>
+
+  <!-- Compass north dot (sage green, matches Splash screen) -->
+  <circle cx="256" cy="60" r="5" fill="#7CAE9E" opacity="0.9"/>
+  <line x1="256" y1="66" x2="256" y2="80" stroke="#7CAE9E" stroke-width="1.5" opacity="0.45"/>
+
+  <!-- "noa" wordmark -->
+  <text x="256" y="386"
+    font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
+    font-size="94" font-weight="200"
+    fill="#E8DDD0" opacity="0.94"
+    text-anchor="middle" letter-spacing="10">noa</text>
+
+  <!-- Tagline (only visible at large size) -->
+  <text x="256" y="434"
+    font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
+    font-size="20" font-weight="500"
+    fill="#A89880" opacity="0.48"
+    text-anchor="middle" letter-spacing="6">NAVIGATOR</text>
+</svg>

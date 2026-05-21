@@ -2,30 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import { parseAmount, parseDebt } from '../scoring';
 import { saveData, saveInsights, markReady } from '../storage';
 import { speak as voiceSpeak, stopSpeaking } from '../voice';
+import Orb from '../Orb';
 
 const PURPLE = '#C8B89A';
 const BG     = '#111318';
 
 const KEYFRAMES = `
-  @keyframes orbIdle {
-    0%,100% { transform: scale(1);    filter: brightness(1); }
-    50%     { transform: scale(1.06); filter: brightness(1.14); }
-  }
-  @keyframes orbThinking {
-    0%,100% { transform: scale(1);    filter: brightness(0.85); }
-    50%     { transform: scale(1.04); filter: brightness(1.05); }
-  }
-  @keyframes orbSpeaking {
-    0%,100% { transform: scale(1); }
-    20%     { transform: scale(1.10); }
-    40%     { transform: scale(1.04); }
-    60%     { transform: scale(1.12); }
-    80%     { transform: scale(1.05); }
-  }
-  @keyframes ripple {
-    0%   { transform: scale(1);   opacity: 0.55; }
-    100% { transform: scale(2.6); opacity: 0; }
-  }
   @keyframes waveBar {
     0%,100% { transform: scaleY(0.22); }
     50%     { transform: scaleY(1); }
@@ -53,24 +35,6 @@ const KEYFRAMES = `
   }
   input::placeholder, textarea::placeholder { color: #A89880; opacity: 1; }
 `;
-
-const ORB_CFG = {
-  idle: {
-    bg:   `radial-gradient(circle at 35% 35%, #d8cebe, ${PURPLE} 55%, #7a6a52)`,
-    glow: `0 0 40px 12px rgba(200,184,154,0.42), 0 0 90px 35px rgba(200,184,154,0.14)`,
-    anim: 'orbIdle 3s ease-in-out infinite',
-  },
-  thinking: {
-    bg:   `radial-gradient(circle at 35% 35%, #b8a898, ${PURPLE} 55%, #5a4e3e)`,
-    glow: `0 0 28px 8px rgba(200,184,154,0.28), 0 0 60px 20px rgba(200,184,154,0.08)`,
-    anim: 'orbThinking 2.2s ease-in-out infinite',
-  },
-  speaking: {
-    bg:   `radial-gradient(circle at 35% 35%, #d8cebe, ${PURPLE} 55%, #8a7a62)`,
-    glow: `0 0 72px 28px rgba(200,184,154,0.82), 0 0 150px 65px rgba(200,184,154,0.32)`,
-    anim: 'orbSpeaking 0.42s ease-in-out infinite',
-  },
-};
 
 const Q = [
   {
@@ -282,7 +246,6 @@ export default function Onboarding({ onDone }) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
   }
 
-  const cfg = ORB_CFG[orbState] || ORB_CFG.idle;
   const containerH = vpH ? `${vpH}px` : '100dvh';
 
   return (
@@ -302,24 +265,8 @@ export default function Onboarding({ onDone }) {
       {/* ── Orb section ── */}
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '48%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20 }}>
 
-        {/* Orb */}
-        <div style={{ position: 'relative', width: 140, height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {orbState === 'speaking' && [0, 1, 2].map(i => (
-            <div key={i} style={{
-              position: 'absolute', width: '100%', height: '100%', borderRadius: '50%',
-              border: '1.5px solid rgba(200,184,154,0.48)',
-              animation: `ripple 1.9s ease-out ${i * 0.63}s infinite`,
-              pointerEvents: 'none',
-            }} />
-          ))}
-          <div style={{
-            width: 140, height: 140, borderRadius: '50%',
-            background: cfg.bg,
-            boxShadow: cfg.glow,
-            animation: cfg.anim,
-            transition: 'background 0.7s ease, box-shadow 0.7s ease',
-          }} />
-        </div>
+        {/* Living planet orb */}
+        <Orb size={140} state={orbState} />
 
         {/* Orb status */}
         <div style={{ minHeight: 30, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
