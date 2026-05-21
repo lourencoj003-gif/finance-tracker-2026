@@ -1,6 +1,33 @@
 # SUMMARY — Noa Agent Session Log
 
-## Session: 2026-05-21 (latest)
+## Session: 2026-05-21 (latest — ElevenLabs wiring)
+
+### What was done this session
+
+#### ElevenLabs TTS — env vars, voice ID, gitignore
+
+**`api/speak.js`** — updated to read `VITE_ELEVENLABS_API_KEY` (with fallback to legacy `ELEVENLABS_API_KEY`) and default voice updated to Rachel (`21m00Tcm4TlvDq8ikWAM`). Variable priority: `VITE_ELEVENLABS_VOICE_ID → ELEVENLABS_VOICE_ID → Rachel default`.
+
+**`.env`** — created (gitignored). Fill in `VITE_ELEVENLABS_API_KEY=<your_key>` before running locally with `vercel dev`. The key is used exclusively server-side by the Vercel function — it is never exposed to the browser.
+
+**`.env.example`** — committed reference showing required variable names without real values.
+
+**`.gitignore`** — added `.env` entry so the API key can never be accidentally committed.
+
+**Full TTS call chain (all wired end-to-end):**
+1. Noa generates a reply (Groq API via `api/chat.js`)
+2. `speak(text)` in VelaCore.js / Onboarding.js / PaydayCeremony.js calls `voiceSpeak()` from `voice.js`
+3. `voice.js` POSTs to `/api/speak` with the cleaned text
+4. `api/speak.js` proxies to ElevenLabs `text-to-speech/{voiceId}` with `eleven_turbo_v2` + Rachel voice
+5. Audio blob streams back, played via `new Audio(objectURL)`
+6. On failure (no key, ElevenLabs down): falls back to browser `speechSynthesis` (Samantha/Karen/Moira priority)
+7. iOS audio unlock: `AudioContext` + silent buffer fires on first Splash tap — unblocks ElevenLabs before any speech is attempted
+
+**Vercel dashboard action required:** Add `VITE_ELEVENLABS_API_KEY` in Settings → Environment Variables for production to speak.
+
+---
+
+## Session: 2026-05-21 (earlier — walkthrough & polish)
 
 ### What was done this session
 

@@ -8,8 +8,8 @@ export default async function handler(req, res) {
   const { text } = req.body;
   if (!text) return res.status(400).json({ error: 'text required' });
 
-  const apiKey  = process.env.ELEVENLABS_API_KEY;
-  const voiceId = process.env.ELEVENLABS_VOICE_ID || 'XvfwInXiPC6BcAjGWhmS';
+  const apiKey  = process.env.VITE_ELEVENLABS_API_KEY || process.env.ELEVENLABS_API_KEY;
+  const voiceId = process.env.VITE_ELEVENLABS_VOICE_ID || process.env.ELEVENLABS_VOICE_ID || '21m00Tcm4TlvDq8ikWAM';
 
   if (!apiKey) {
     return res.status(503).json({ error: 'ElevenLabs not configured' });
