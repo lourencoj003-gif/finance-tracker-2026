@@ -1,4 +1,4 @@
-const FALLBACK_VOICE_ID = '21m00Tcm4TlvDq8ikWAM'; // ElevenLabs Rachel — always available
+const RACHEL_VOICE_ID = '21m00Tcm4TlvDq8ikWAM'; // ElevenLabs Rachel — free-tier default
 
 async function callElevenLabs(text, apiKey, voiceId) {
   return fetch(
@@ -35,7 +35,7 @@ export default async function handler(req, res) {
   if (!text) return res.status(400).json({ error: 'text required' });
 
   const apiKey  = process.env.ELEVENLABS_API_KEY || process.env.VITE_ELEVENLABS_API_KEY;
-  const voiceId = process.env.ELEVENLABS_VOICE_ID || process.env.VITE_ELEVENLABS_VOICE_ID || 'XvfwInXiPC6BcAjGWhmS';
+  const voiceId = process.env.ELEVENLABS_VOICE_ID || process.env.VITE_ELEVENLABS_VOICE_ID || RACHEL_VOICE_ID;
 
   console.log('[api/speak] key:', apiKey ? apiKey.slice(0, 8) + '...' : 'MISSING', '| voice:', voiceId);
 
@@ -46,10 +46,10 @@ export default async function handler(req, res) {
   try {
     let elevenRes = await callElevenLabs(text, apiKey, voiceId);
 
-    // If the custom voice doesn't exist, automatically retry with Rachel (always available)
-    if (elevenRes.status === 404 && voiceId !== FALLBACK_VOICE_ID) {
-      console.log('[api/speak] custom voice not found, falling back to Rachel');
-      elevenRes = await callElevenLabs(text, apiKey, FALLBACK_VOICE_ID);
+    // If the configured voice doesn't exist, retry with Rachel (free-tier default)
+    if ((elevenRes.status === 404 || elevenRes.status === 401) && voiceId !== RACHEL_VOICE_ID) {
+      console.log('[api/speak] voice unavailable (%s), retrying with Rachel', elevenRes.status);
+      elevenRes = await callElevenLabs(text, apiKey, RACHEL_VOICE_ID);
     }
 
     if (!elevenRes.ok) {
