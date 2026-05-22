@@ -9,6 +9,7 @@ const S = { SPLASH: 'splash', PIN: 'pin', ONBOARD: 'onboard', VELA: 'vela' };
 
 export default function App() {
   const [screen, setScreen] = useState(S.SPLASH);
+  const [hidden, setHidden]  = useState(false);
   const [vpHeight, setVpHeight] = useState(
     window.visualViewport ? Math.round(window.visualViewport.height) : null
   );
@@ -24,11 +25,17 @@ export default function App() {
     return () => vv.removeEventListener('resize', onResize);
   }, []);
 
+  useEffect(() => {
+    const onVis = () => setHidden(document.visibilityState === 'hidden');
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, []);
+
   const afterSplash     = useCallback(() => setScreen(S.PIN), []);
   const afterPin        = useCallback(() => setScreen(isReady() ? S.VELA : S.ONBOARD), []);
-  const afterOnboarding = useCallback(() => setScreen(S.VELA), []);
+  const afterOnboarding = useCallback(() => setScreen(S.PIN), []);
+  const goOnboard       = useCallback(() => setScreen(S.ONBOARD), []);
   const goReset         = useCallback(() => setScreen(S.PIN), []);
-  const goSplash        = useCallback(() => setScreen(S.SPLASH), []);
 
   const containerHeight = vpHeight ? `${vpHeight}px` : '100svh';
 
@@ -48,9 +55,23 @@ export default function App() {
       boxSizing: 'border-box',
     }}>
       {screen === S.SPLASH  && <Splash     onDone={afterSplash} />}
-      {screen === S.PIN     && <Pin        onSuccess={afterPin} onForgot={goReset} onBrandNew={goSplash} />}
+      {screen === S.PIN     && <Pin        onSuccess={afterPin} onForgot={goReset} onBrandNew={goOnboard} />}
       {screen === S.ONBOARD && <Onboarding onDone={afterOnboarding} />}
       {screen === S.VELA    && <VelaCore   onReset={goReset} />}
+
+      {hidden && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: '#111318',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center', gap: 12,
+        }}>
+          <div style={{ fontSize: 42, fontWeight: 300, color: '#E8DDD0', letterSpacing: '0.3em' }}>noa</div>
+          <div style={{ fontSize: 7, fontWeight: 500, color: '#A89880', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
+            Your Financial Navigator
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -45,6 +45,7 @@ export async function speak(text, { onStart, onEnd, onError } = {}) {
   const clean = cleanText(text);
   if (!clean) { if (onEnd) onEnd(); return; }
   if (onStart) onStart();
+  console.log('[voice] calling /api/speak, text length:', clean.length);
   try {
     const res = await fetch('/api/speak', {
       method: 'POST',

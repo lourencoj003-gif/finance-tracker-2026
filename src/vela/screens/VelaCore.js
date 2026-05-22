@@ -925,7 +925,7 @@ Step 5: Specific goal-based saving
             onClick={() => { if (showEveningDot) { setEveningPhase('ask'); setEveningNote(''); setEveningCheckOpen(true); } }}
             style={{ cursor: showEveningDot ? 'pointer' : 'default' }}
           >
-            <SmallOrb alert={spendAlert} eveningDot={showEveningDot} orbState={orbState} />
+            <SmallOrb alert={spendAlert} eveningDot={showEveningDot} orbState={chatOpen ? orbState : 'idle'} />
           </div>
           {debtMode ? (
             <>
