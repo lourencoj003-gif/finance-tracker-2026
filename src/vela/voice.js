@@ -1,11 +1,30 @@
 let currentAudio = null;
 
-const EMOJI_RE = /[\u{1F000}-\u{1FFFF}|\u{2600}-\u{27FF}|\u{2300}-\u{23FF}|\u{2B00}-\u{2BFF}|\u{1F300}-\u{1F9FF}|\u{FE00}-\u{FE0F}]/gu;
+const EMOJI_RE = /[\u{1F000}-\u{1FFFF}\u{2600}-\u{27FF}\u{2300}-\u{23FF}\u{2B00}-\u{2BFF}\u{1F300}-\u{1F9FF}\u{FE00}-\u{FE0F}\u{1FA00}-\u{1FFFF}]/gu;
 
+// cleanText — makes text natural for text-to-speech before sending to ElevenLabs.
+// Applied to every string before the ElevenLabs API call.
 function cleanText(t) {
   return t
+    // £ amounts → spoken form  e.g. "£1,500" → "1,500 pounds", "£50.00" → "50 pounds"
+    .replace(/£([\d,]+(?:\.\d+)?)/g, (_, n) => `${n} pounds`)
+    // Percentages → "X percent"
+    .replace(/([\d.]+)%/g, (_, n) => `${n} percent`)
+    // Slashes → natural pause (space)
+    .replace(/\s*\/\s*/g, ', ')
+    // Markdown bold/italic  **text**, __text__, *text*, _text_
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/__([^_]+)__/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
+    .replace(/_([^_]+)_/g, '$1')
+    // Markdown headings  ## Heading
+    .replace(/#{1,6}\s*/g, '')
+    // Markdown list markers  • · – —  (keep the following text)
+    .replace(/^[\s]*[•·\-–—]\s*/gm, '')
+    // Remaining emoji and misc symbols
     .replace(EMOJI_RE, '')
-    .replace(/[⚖️══]/g, '')
+    .replace(/[⚖️══►◄▸▹→←↑↓]/g, '')
+    // Collapse whitespace
     .replace(/\s+/g, ' ')
     .trim();
 }
