@@ -1,6 +1,48 @@
 # SUMMARY — Noa Agent Session Log
 
-## Session: 2026-05-22 (latest — 10-item audit pass)
+## Session: 2026-05-22 (latest — personality rewrite + TTS cleanText)
+
+### Changes
+
+#### Noa personality — `buildPrompt()` in `VelaCore.js`
+Replaced the personality/behaviour instructions entirely. Financial context injection (name, income, expenses, debt, savings, goals, transactions, Baby Steps, Payday Routine, UK benchmarks) is **unchanged**.
+
+New personality section:
+- **Voice and tone**: conversational and direct, short sentences, no corporate language, dry understated British wit (only when it fits naturally — never forced), warm but not gushing, confident with opinions
+- **Behaviour rules**: always use real £ figures, 2–3 sentence max, no filler phrases ("Great question", "Certainly", "Of course", "Absolutely", "I'd be happy to", "As an AI" all banned), never lecture or repeat, notice progress quietly ("Two weeks under budget. I noticed."), stay calm on bad finances ("It's not ideal. Here's what we do."), celebrate wins understated, end every response with one follow-up question
+- **Humour style**: observational and dry, always based on actual numbers. Examples in the prompt. Never jokes about serious financial stress.
+- **FCA compliance**: every response with financial recommendations ends with "Guidance only — not FCA-regulated advice." — brief, natural, not alarming
+
+#### TTS pre-processing — `cleanText()` in `voice.js`
+Extended `cleanText()` (applied to every string before the ElevenLabs API call) to produce natural spoken output:
+
+| Input pattern | Output |
+|--------------|--------|
+| `£1,500` | `1,500 pounds` |
+| `£50.00` | `50.00 pounds` |
+| `22%` | `22 percent` |
+| `income / expenses` | `income, expenses` |
+| `**bold**`, `__text__`, `*italic*` | plain text |
+| `## Heading` | plain text |
+| `• item` | plain text (bullet stripped) |
+| Emoji (☕ 🔥 💰 etc) | stripped |
+| Symbols (⚖️ ══ → ← ↑ ↓) | stripped |
+
+Also fixed a regex bug in `EMOJI_RE` — pipe `|` characters inside the character class were being treated as literal characters rather than range separators.
+
+All 7 transform cases pass smoke-test.
+
+**Build**: 93.85 kB gzip · compiled successfully · zero warnings
+
+---
+
+## Session: 2026-05-22 (previous — voice ID fix)
+
+Removed hardcoded `XvfwInXiPC6BcAjGWhmS` from `api/speak.js`. Voice ID now reads `ELEVENLABS_VOICE_ID` env var, falls back to Rachel (`21m00Tcm4TlvDq8ikWAM`). Retry on 401 (missing_permissions) as well as 404.
+
+---
+
+## Session: 2026-05-22 (previous — 10-item audit pass)
 
 ### ITEM 1 — Voice diagnostics ✅ (code fixed) / ⚠️ (env vars need resetting)
 
