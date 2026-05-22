@@ -1,27 +1,35 @@
 # SUMMARY — Noa Agent Session Log
 
-## Session: 2026-05-22 (latest — voice error surfacing + transaction logging)
+## Session: 2026-05-22 (latest — 3 bug fixes: savingsRate, voice env vars, settings name)
 
 ### What was done this session
 
-#### Voice fix — error surfacing + silent-fallback elimination
-- **Root cause**: `voice.js` was doing `throw new Error('speak API failed')` without reading the response body, so the actual ElevenLabs error (e.g. invalid API key, quota exceeded, bad voice ID) was silently discarded and the app fell through to browser TTS with no user-visible indication anything was wrong.
-- **`voice.js`**: When `/api/speak` returns a non-OK status, now reads the full response text before falling back — logs `[voice] /api/speak failed: <status> <body>` to console; calls new `onFail(msg)` callback with the first 160 chars of the error.
-- **`voice.js`**: `audio.play().catch()` now logs the actual play error; `catch (err)` block now logs `err.message` rather than swallowing silently.
-- **`api/speak.js`**: ElevenLabs error response now included in the JSON body returned to the client (`ElevenLabs <status>: <body>`) instead of the generic `'ElevenLabs request failed'` string — so `voice.js` can surface the real reason.
-- **`VelaCore.js`**: `speak()` now passes `onFail` callback to `voiceSpeak`; on failure shows a red toast at the top of the screen (`🔇 Voice API 401: ...`) for 8 seconds with a dismiss button. zIndex 200 so it appears above all overlays.
+#### BUG FIX 1 — savingsRate undefined inside buildPrompt()
+- `savingsRate` was used at lines 698–702 inside `buildPrompt()` but computed at line 802 at component scope — outside the function closure
+- This caused the system prompt to inject `undefined` for savings rate context, breaking Noa's financial awareness
+- Fix: added `const savingsRate = income > 0 ? Math.round((surplus / income) * 100) : 0;` inside `buildPrompt()` right after `surplus` is computed
+- Now Noa correctly reports savings rate percentage and UK average comparison in every chat response
 
-#### Transaction logging feature (completed)
-- **"+" button** on allocation strip header opens `LogTransactionModal` overlay (zIndex 60).
-- **Modal fields**: amount (numeric, decimal keyboard), category (Essentials / Lifestyle / Savings — highlighted toggle buttons), optional note, date (defaults to today).
-- **On save**: appends `{ amount, category, note?, date, ts }` to `vela_expense_log` via `saveExpenseLog` and updates `expenseLog` React state.
-- **Allocation strip** now shows actual spent vs budget: cells light up with category colour when spend exists, show `£{spent} / £{budget}`, turn amber at >80% and red at >100% of monthly allocation. Voice-logged expenses also update the strip in real time (`setExpenseLog` added to voice expense handler).
-- **`buildPrompt()`**: Last 7 days of transactions injected into Groq system prompt — grouped by category with £ amounts and % of monthly budget. Noa can now say things like "you've spent £340 on lifestyle this week, you're trending over budget."
+#### BUG FIX 2 — ElevenLabs voice broken on live Vercel URL
+- `api/speak.js` was reading `process.env.VITE_ELEVENLABS_API_KEY` first — but `VITE_` is a Vite convention, not applicable to Vercel serverless functions
+- Swapped to `process.env.ELEVENLABS_API_KEY || process.env.VITE_ELEVENLABS_API_KEY` — clean name first
+- Same fix applied to `ELEVENLABS_VOICE_ID`
+- Updated `.env.example` to use `ELEVENLABS_API_KEY` as primary name and added `GROQ_API_KEY` for completeness
+- **User action still required**: set `ELEVENLABS_API_KEY` in Vercel Dashboard → Settings → Environment Variables
+
+#### BUG FIX 3 — saveSettings() not updating userName correctly
+- `saveSettings()` was calling `localStorage.setItem('vela_name', settingName)` directly
+- But `getUserName()` reads from the `userName` key — so name changes in Settings were invisible to Noa
+- Fix: replaced with `setUserName(settingName)` from storage.js, which sets both `userName` and `vela_name` keys
+- Added `setUserName` to the imports from `../storage`
 
 #### Files changed
-- `src/vela/voice.js`
-- `api/speak.js`
-- `src/vela/screens/VelaCore.js`
+- `src/vela/screens/VelaCore.js` — 3 edits (import, buildPrompt, saveSettings)
+- `api/speak.js` — env var order swapped
+- `.env.example` — updated to clean env var names
+
+#### Build result
+- `npm run build` — Compiled successfully, 89.74 kB gzip, zero warnings
 
 ---
 
@@ -52,7 +60,7 @@
 
 ---
 
-## Session: 2026-05-22 (previous — all VISION.md bugs + features complete)
+## Session: 2026-05-22 (earlier — all VISION.md bugs + features complete)
 
 ### What was done this session
 
@@ -114,10 +122,10 @@
 | Feature | Status |
 |---------|--------|
 | 1 — Noa first introduction | ✅ Splash.js — wordmark + voice sentences, first-time only |
-| 2 — Dashboard financial plan | ✅ Allocation strip + insight added this session |
+| 2 — Dashboard financial plan | ✅ Allocation strip + insight added |
 | 3 — Payday ceremony | ✅ PaydayCeremony.js — triggers within 2 days of payday |
 | 4 — Voice expense logging | ✅ parseExpenseFromText in VelaCore.js |
-| 5 — Capacitor iOS | ✅ Set up this session |
+| 5 — Capacitor iOS | ✅ Set up |
 | 6 — PWA icons | ✅ PNG icons generated from SVG |
 | 7 — Screen blur | ✅ Visibility overlay added in App.js |
 | 8 — Streak system | ✅ 7/30/100-day milestones |

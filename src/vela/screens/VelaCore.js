@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getData, saveData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin, getGoals, saveGoals, getLastOpen, setLastOpen, getLastCeremonyYM, setLastCeremonyYM, getDebts, saveDebts, getChallenge, saveChallenge, getExpenseLog, saveExpenseLog, getEveningDate, setEveningDate, appendEveningLog, getUserName } from '../storage';
+import { getData, saveData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin, getGoals, saveGoals, getLastOpen, setLastOpen, getLastCeremonyYM, setLastCeremonyYM, getDebts, saveDebts, getChallenge, saveChallenge, getExpenseLog, saveExpenseLog, getEveningDate, setEveningDate, appendEveningLog, getUserName, setUserName } from '../storage';
 import PaydayCeremony from './PaydayCeremony';
 import Orb from '../Orb';
 import { speak as voiceSpeak, stopSpeaking } from '../voice';
@@ -648,6 +648,7 @@ export default function VelaCore({ onReset }) {
     const d       = getData() || {};
     const name    = getUserName() || d.name || '';
     const surplus = income - expenses;
+    const savingsRate = income > 0 ? Math.round((surplus / income) * 100) : 0;
     const ord     = n => n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : `${n}th`;
 
     // ── Temporal context ──────────────────────────────────────────────
@@ -792,7 +793,7 @@ Use this data for specific, proactive comments — e.g. "you've spent £${txTota
   }
 
   function saveSettings() {
-    localStorage.setItem('vela_name', settingName);
+    setUserName(settingName);
     const pd  = Math.min(31, Math.max(1, parseInt(settingPayday, 10) || 25));
     const sav = Math.max(0, parseFloat(settingSavings) || 0);
     saveData({ ...getData(), payday: pd, savings: sav });
