@@ -42,8 +42,8 @@ export default async function handler(req, res) {
 
     if (!elevenRes.ok) {
       const err = await elevenRes.text();
-      console.error('ElevenLabs error:', err);
-      return res.status(elevenRes.status).json({ error: 'ElevenLabs request failed' });
+      console.error('[api/speak] ElevenLabs error:', elevenRes.status, err);
+      return res.status(elevenRes.status).json({ error: `ElevenLabs ${elevenRes.status}: ${err}` });
     }
 
     const buffer = await elevenRes.arrayBuffer();

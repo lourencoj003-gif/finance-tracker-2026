@@ -1,6 +1,31 @@
 # SUMMARY — Noa Agent Session Log
 
-## Session: 2026-05-22 (latest — memory fix + chat UI redesign)
+## Session: 2026-05-22 (latest — voice error surfacing + transaction logging)
+
+### What was done this session
+
+#### Voice fix — error surfacing + silent-fallback elimination
+- **Root cause**: `voice.js` was doing `throw new Error('speak API failed')` without reading the response body, so the actual ElevenLabs error (e.g. invalid API key, quota exceeded, bad voice ID) was silently discarded and the app fell through to browser TTS with no user-visible indication anything was wrong.
+- **`voice.js`**: When `/api/speak` returns a non-OK status, now reads the full response text before falling back — logs `[voice] /api/speak failed: <status> <body>` to console; calls new `onFail(msg)` callback with the first 160 chars of the error.
+- **`voice.js`**: `audio.play().catch()` now logs the actual play error; `catch (err)` block now logs `err.message` rather than swallowing silently.
+- **`api/speak.js`**: ElevenLabs error response now included in the JSON body returned to the client (`ElevenLabs <status>: <body>`) instead of the generic `'ElevenLabs request failed'` string — so `voice.js` can surface the real reason.
+- **`VelaCore.js`**: `speak()` now passes `onFail` callback to `voiceSpeak`; on failure shows a red toast at the top of the screen (`🔇 Voice API 401: ...`) for 8 seconds with a dismiss button. zIndex 200 so it appears above all overlays.
+
+#### Transaction logging feature (completed)
+- **"+" button** on allocation strip header opens `LogTransactionModal` overlay (zIndex 60).
+- **Modal fields**: amount (numeric, decimal keyboard), category (Essentials / Lifestyle / Savings — highlighted toggle buttons), optional note, date (defaults to today).
+- **On save**: appends `{ amount, category, note?, date, ts }` to `vela_expense_log` via `saveExpenseLog` and updates `expenseLog` React state.
+- **Allocation strip** now shows actual spent vs budget: cells light up with category colour when spend exists, show `£{spent} / £{budget}`, turn amber at >80% and red at >100% of monthly allocation. Voice-logged expenses also update the strip in real time (`setExpenseLog` added to voice expense handler).
+- **`buildPrompt()`**: Last 7 days of transactions injected into Groq system prompt — grouped by category with £ amounts and % of monthly budget. Noa can now say things like "you've spent £340 on lifestyle this week, you're trending over budget."
+
+#### Files changed
+- `src/vela/voice.js`
+- `api/speak.js`
+- `src/vela/screens/VelaCore.js`
+
+---
+
+## Session: 2026-05-22 (previous — memory fix + chat UI redesign)
 
 ### What was done this session
 

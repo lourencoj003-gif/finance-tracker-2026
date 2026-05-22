@@ -40,7 +40,7 @@ function fallback(text, onEnd, onError) {
     : (window.speechSynthesis.onvoiceschanged = () => { fire(); window.speechSynthesis.onvoiceschanged = null; });
 }
 
-export async function speak(text, { onStart, onEnd, onError } = {}) {
+export async function speak(text, { onStart, onEnd, onError, onFail } = {}) {
   stopSpeaking();
   const clean = cleanText(text);
   if (!clean) { if (onEnd) onEnd(); return; }
@@ -52,7 +52,14 @@ export async function speak(text, { onStart, onEnd, onError } = {}) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: clean }),
     });
-    if (!res.ok) throw new Error('speak API failed');
+    if (!res.ok) {
+      let errBody = '';
+      try { errBody = await res.text(); } catch (_) {}
+      console.error('[voice] /api/speak failed:', res.status, errBody);
+      if (onFail) onFail(`Voice API ${res.status}: ${errBody.slice(0, 160)}`);
+      fallback(clean, onEnd, onError);
+      return;
+    }
     const blob = await res.blob();
     const url  = URL.createObjectURL(blob);
     const audio = new Audio(url);
@@ -67,8 +74,13 @@ export async function speak(text, { onStart, onEnd, onError } = {}) {
       if (currentAudio === audio) currentAudio = null;
       if (onError) onError(); else if (onEnd) onEnd();
     };
-    audio.play().catch(() => fallback(clean, onEnd, onError));
-  } catch {
+    audio.play().catch(playErr => {
+      console.error('[voice] audio.play() failed:', playErr?.message);
+      fallback(clean, onEnd, onError);
+    });
+  } catch (err) {
+    console.error('[voice] speak() threw:', err?.message);
+    if (onFail) onFail(`Voice error: ${err?.message || 'network failure'}`);
     fallback(clean, onEnd, onError);
   }
 }

@@ -256,6 +256,10 @@ export default function VelaCore({ onReset }) {
   const [freedomDays, setFreedomDays]     = useState(0);
   const [settingSavings, setSettingSavings] = useState(() => String((getData() || {}).savings || ''));
   const [debts, setDebts]                   = useState(() => getDebts());
+  const [expenseLog, setExpenseLog]         = useState(() => getExpenseLog());
+  const [showLogTx, setShowLogTx]           = useState(false);
+  const [txForm, setTxForm]                 = useState({ amount: '', category: 'essentials', note: '', date: new Date().toISOString().slice(0, 10) });
+  const [voiceError, setVoiceError]         = useState('');
   const [eveningCheckOpen, setEveningCheckOpen] = useState(false);
   const [eveningAnswered, setEveningAnswered]   = useState(() => getEveningDate() === new Date().toISOString().slice(0, 10));
   const [eveningPhase, setEveningPhase]         = useState('ask');
@@ -501,6 +505,10 @@ export default function VelaCore({ onReset }) {
       onStart: () => setOrbState('speaking'),
       onEnd:   () => setOrbState('idle'),
       onError: () => setOrbState('idle'),
+      onFail:  (msg) => {
+        setVoiceError(msg);
+        setTimeout(() => setVoiceError(''), 8000);
+      },
     });
   }
 
@@ -560,6 +568,7 @@ export default function VelaCore({ onReset }) {
       const thisMonth   = new Date().toISOString().slice(0, 7);
       const updatedLog  = [...log, expense];
       saveExpenseLog(updatedLog);
+      setExpenseLog(updatedLog);
       const monthTotal  = updatedLog
         .filter(e => e.date.startsWith(thisMonth))
         .reduce((s, e) => s + e.amount, 0);
@@ -694,6 +703,23 @@ export default function VelaCore({ onReset }) {
       buffer:     Math.max(0, income - Math.round(income * 0.50) - Math.round(income * 0.20) - Math.round(income * 0.25)),
     };
 
+    // ── Recent transactions (last 7 days) ───────────────────────────
+    const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+    const recentTx = getExpenseLog().filter(e => e.date >= sevenDaysAgo);
+    const txByCategory = recentTx.reduce((acc, e) => {
+      const cat = (e.category || 'essentials').toLowerCase();
+      const key = cat === 'lifestyle' ? 'Lifestyle' : cat === 'savings' ? 'Savings' : 'Essentials';
+      acc[key] = (acc[key] || 0) + e.amount;
+      return acc;
+    }, {});
+    const txTotal = recentTx.reduce((s, e) => s + e.amount, 0);
+    const txLines = Object.entries(txByCategory).map(([cat, amt]) => {
+      const budgetMap = { Essentials: alloc.essentials, Lifestyle: alloc.lifestyle, Savings: alloc.savings };
+      const bud = budgetMap[cat] || 0;
+      const pct = bud > 0 ? Math.round((amt / bud) * 100) : null;
+      return `• ${cat}: £${amt.toFixed(2)}${pct !== null ? ` (${pct}% of monthly £${bud} budget)` : ''}`;
+    });
+
     // ── Savings rate vs UK average (no demographic label) ───────────
     const srLabel = savingsRate >= 25 ? 'strong — well above the UK average of ~8%'
       : savingsRate >= 15 ? 'above the UK average of ~8%'
@@ -758,7 +784,11 @@ Step 5: Specific goal-based saving
 2. When user asks what they can afford, use IN MY POCKET: £${inMyPocket}/day.
 3. Reference Baby Step ${babyStep} when giving savings, debt, or investment advice.
 4. If payday ≤ 3 days away, lead with the Payday Routine allocation.
-5. End financial advice with: ⚖️ Guidance only — not FCA-regulated advice.`;
+5. End financial advice with: ⚖️ Guidance only — not FCA-regulated advice.${recentTx.length > 0 ? `
+
+══ RECENT TRANSACTIONS (last 7 days — ${recentTx.length} logged, £${txTotal.toFixed(2)} total) ══
+${txLines.join('\n')}
+Use this data for specific, proactive comments — e.g. "you've spent £${txTotal.toFixed(2)} this week."` : ''}`;
   }
 
   function saveSettings() {
@@ -833,6 +863,16 @@ Step 5: Specific goal-based saving
   const daysInMonthD = new Date(nowD.getFullYear(), nowD.getMonth() + 1, 0).getDate();
   const daysLeftD    = Math.max(1, daysInMonthD - nowD.getDate() + 1);
   const inMyPocket2  = surplus > 0 ? Math.floor(surplus / daysLeftD) : 0;
+
+  // Current-month spending by category from logged transactions
+  const thisMonthYM = new Date().toISOString().slice(0, 7);
+  const monthlySpent = expenseLog.reduce((acc, e) => {
+    if (!e.date || !e.date.startsWith(thisMonthYM)) return acc;
+    const cat = (e.category || 'essentials').toLowerCase();
+    const key = cat === 'lifestyle' ? 'lifestyle' : cat === 'savings' ? 'savings' : 'essentials';
+    acc[key] = (acc[key] || 0) + e.amount;
+    return acc;
+  }, { essentials: 0, lifestyle: 0, savings: 0 });
 
   // Days to next payday
   let nextPayD = new Date(nowD.getFullYear(), nowD.getMonth(), payday);
@@ -1009,24 +1049,46 @@ Step 5: Specific goal-based saving
           <MetricPill label="Pace" value={onTrack ? 'On Track' : 'Off Track'} color={onTrack ? GREEN : RED} />
         </div>
 
-        {/* Allocation breakdown */}
+        {/* Allocation breakdown + log transaction */}
         {income > 0 && (
-          <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
-            {[
-              { label: 'Essentials', amount: Math.round(income * 0.50), color: PURPLE },
-              { label: 'Lifestyle',  amount: Math.round(income * 0.25), color: BLUE   },
-              { label: 'Savings',    amount: Math.round(income * 0.20), color: GREEN  },
-            ].map(({ label, amount, color }) => (
-              <div key={label} style={{
-                flex: 1, background: 'rgba(232,221,208,0.04)',
-                border: '1px solid rgba(232,221,208,0.07)',
-                borderRadius: 12, padding: '8px 6px',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-              }}>
-                <div style={{ fontSize: 9, color: 'rgba(232,221,208,0.36)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>{label}</div>
-                <div style={{ fontSize: 13, fontWeight: 700, color, letterSpacing: '-0.3px' }}>£{amount.toLocaleString('en-GB')}</div>
-              </div>
-            ))}
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+              <div style={{ fontSize: 9, color: 'rgba(232,221,208,0.28)', letterSpacing: '0.8px', textTransform: 'uppercase' }}>Allocation</div>
+              <button
+                onClick={() => setShowLogTx(true)}
+                style={{ background: 'rgba(200,184,154,0.12)', border: '1px solid rgba(200,184,154,0.25)', borderRadius: 8, color: PURPLE, fontSize: 14, fontWeight: 700, padding: '1px 10px', cursor: 'pointer', lineHeight: 1.5 }}
+              >+</button>
+            </div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {[
+                { label: 'Essentials', key: 'essentials', budget: Math.round(income * 0.50), color: PURPLE, activeBg: 'rgba(200,184,154,0.14)' },
+                { label: 'Lifestyle',  key: 'lifestyle',  budget: Math.round(income * 0.25), color: BLUE,   activeBg: 'rgba(168,152,128,0.14)' },
+                { label: 'Savings',    key: 'savings',    budget: Math.round(income * 0.20), color: GREEN,  activeBg: 'rgba(124,174,158,0.14)' },
+              ].map(({ label, key, budget, color, activeBg }) => {
+                const spent = monthlySpent[key] || 0;
+                const pct = budget > 0 ? spent / budget : 0;
+                const valueColor = pct > 1 ? RED : pct > 0.8 ? AMBER : color;
+                return (
+                  <div key={label} style={{
+                    flex: 1, background: spent > 0 ? activeBg : 'rgba(232,221,208,0.04)',
+                    border: `1px solid ${spent > 0 ? `${color}33` : 'rgba(232,221,208,0.07)'}`,
+                    borderRadius: 12, padding: '8px 6px',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                    transition: 'all 0.2s',
+                  }}>
+                    <div style={{ fontSize: 9, color: 'rgba(232,221,208,0.36)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>{label}</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: valueColor, letterSpacing: '-0.3px', textAlign: 'center' }}>
+                      {spent > 0 ? `£${Math.round(spent)}` : `£${budget.toLocaleString('en-GB')}`}
+                    </div>
+                    {spent > 0 && (
+                      <div style={{ fontSize: 8, color: 'rgba(232,221,208,0.3)', textAlign: 'center' }}>
+                        / £{budget.toLocaleString('en-GB')}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
@@ -1442,6 +1504,116 @@ Step 5: Specific goal-based saving
               </>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════
+          LOG TRANSACTION MODAL
+      ══════════════════════════════════════════ */}
+      {showLogTx && (
+        <div
+          onClick={e => { if (e.target === e.currentTarget) setShowLogTx(false); }}
+          style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.82)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, zIndex: 60 }}
+        >
+          <div style={{
+            background: 'rgba(16,14,36,0.97)', border: '1px solid rgba(200,184,154,0.24)',
+            borderRadius: 26, padding: 28, width: '100%', maxWidth: 320,
+            animation: 'cardIn 0.28s ease-out',
+          }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#E8DDD0', marginBottom: 20 }}>Log a transaction</div>
+
+            <Label>Amount (£)</Label>
+            <input
+              type="number"
+              inputMode="decimal"
+              value={txForm.amount}
+              onChange={e => setTxForm(f => ({ ...f, amount: e.target.value }))}
+              placeholder="0.00"
+              style={{ width: '100%', background: 'rgba(232,221,208,0.07)', border: '1px solid rgba(232,221,208,0.11)', borderRadius: 12, padding: '11px 14px', color: '#E8DDD0', fontSize: 16, outline: 'none', fontFamily: 'inherit', marginBottom: 16, boxSizing: 'border-box' }}
+            />
+
+            <Label>Category</Label>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+              {[
+                { key: 'essentials', label: 'Essentials', color: PURPLE, activeBg: 'rgba(200,184,154,0.18)' },
+                { key: 'lifestyle',  label: 'Lifestyle',  color: BLUE,   activeBg: 'rgba(168,152,128,0.18)' },
+                { key: 'savings',    label: 'Savings',    color: GREEN,  activeBg: 'rgba(124,174,158,0.18)' },
+              ].map(({ key, label, color, activeBg }) => (
+                <button
+                  key={key}
+                  onClick={() => setTxForm(f => ({ ...f, category: key }))}
+                  style={{
+                    flex: 1, padding: '8px 4px', borderRadius: 10,
+                    border: `1px solid ${txForm.category === key ? color : 'rgba(232,221,208,0.1)'}`,
+                    background: txForm.category === key ? activeBg : 'rgba(232,221,208,0.04)',
+                    color: txForm.category === key ? color : 'rgba(232,221,208,0.4)',
+                    fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s', letterSpacing: '0.2px',
+                  }}
+                >{label}</button>
+              ))}
+            </div>
+
+            <Label>Note (optional)</Label>
+            <input
+              value={txForm.note}
+              onChange={e => setTxForm(f => ({ ...f, note: e.target.value }))}
+              placeholder="e.g. Coffee, petrol..."
+              style={{ width: '100%', background: 'rgba(232,221,208,0.07)', border: '1px solid rgba(232,221,208,0.11)', borderRadius: 12, padding: '11px 14px', color: '#E8DDD0', fontSize: 16, outline: 'none', fontFamily: 'inherit', marginBottom: 16, boxSizing: 'border-box' }}
+            />
+
+            <Label>Date</Label>
+            <input
+              type="date"
+              value={txForm.date}
+              onChange={e => setTxForm(f => ({ ...f, date: e.target.value }))}
+              style={{ width: '100%', background: 'rgba(232,221,208,0.07)', border: '1px solid rgba(232,221,208,0.11)', borderRadius: 12, padding: '11px 14px', color: '#E8DDD0', fontSize: 16, outline: 'none', fontFamily: 'inherit', marginBottom: 20, boxSizing: 'border-box' }}
+            />
+
+            <SettingsBtn
+              onClick={() => {
+                const amount = parseFloat(txForm.amount);
+                if (isNaN(amount) || amount <= 0) return;
+                const entry = {
+                  amount,
+                  category: txForm.category,
+                  date: txForm.date || new Date().toISOString().slice(0, 10),
+                  ts: Date.now(),
+                  ...(txForm.note.trim() ? { note: txForm.note.trim() } : {}),
+                };
+                const updated = [...expenseLog, entry];
+                saveExpenseLog(updated);
+                setExpenseLog(updated);
+                setShowLogTx(false);
+                setTxForm({ amount: '', category: 'essentials', note: '', date: new Date().toISOString().slice(0, 10) });
+              }}
+              color={PURPLE}
+              text="Log transaction"
+            />
+            <button onClick={() => setShowLogTx(false)} style={{ width: '100%', padding: 12, background: 'none', border: 'none', color: 'rgba(232,221,208,0.3)', fontSize: 14, cursor: 'pointer' }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════
+          VOICE ERROR TOAST
+      ══════════════════════════════════════════ */}
+      {voiceError && (
+        <div style={{
+          position: 'absolute', top: 'max(env(safe-area-inset-top), 12px)', left: 16, right: 16,
+          zIndex: 200, background: 'rgba(226,75,74,0.92)', borderRadius: 12,
+          padding: '10px 14px', animation: 'cardIn 0.25s ease-out',
+          display: 'flex', alignItems: 'flex-start', gap: 8,
+        }}>
+          <span style={{ fontSize: 14, flexShrink: 0, lineHeight: '1.4' }}>🔇</span>
+          <div style={{ fontSize: 11, color: '#fff', lineHeight: 1.45, wordBreak: 'break-word', flex: 1 }}>
+            {voiceError}
+          </div>
+          <button
+            onClick={() => setVoiceError('')}
+            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', fontSize: 16, cursor: 'pointer', padding: 0, lineHeight: 1, flexShrink: 0 }}
+          >×</button>
         </div>
       )}
 
