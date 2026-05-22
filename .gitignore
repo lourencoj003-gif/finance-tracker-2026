@@ -23,3 +23,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .vercel
+
+# Capacitor iOS — CocoaPods dependencies (regenerated via pod install)
+ios/App/Pods
+ios/App/App.xcworkspace/xcuserdata
