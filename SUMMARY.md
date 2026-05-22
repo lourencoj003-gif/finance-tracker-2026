@@ -1,6 +1,33 @@
 # SUMMARY — Noa Agent Session Log
 
-## Session: 2026-05-22 (latest — all VISION.md bugs + features complete)
+## Session: 2026-05-22 (latest — memory fix + chat UI redesign)
+
+### What was done this session
+
+#### Memory fix — financial context always injected
+- `getUserName` added to storage.js exports and imported in VelaCore.js
+- All `localStorage.getItem('vela_name')` calls replaced with `getUserName()` throughout VelaCore.js (5 call sites) — consistent with the storage abstraction layer
+- `cards` state now initialises from `loadHistory()` on mount — users who return to the chat see their previous conversation, not a blank screen
+- Greeting logic skips if `cards.length > 0` — no duplicate greeting on top of existing history
+- `buildPrompt()` already injected all onboarding data (name, income, payday, expenses, habits, debt, goal, savings) into every API call — confirmed working
+- Chat history persisted in `noaHistory` localStorage key (30-message cap) — context survives app restarts
+
+#### Chat UI redesign — full conversational bubble interface
+- **Layout**: replaced orb-top/centered-text layout with a three-section flex column: header (orb) · scrollable message list · input bar
+- **Header**: compact 80px orb centred between back (↓) and settings (⚙) buttons; orb state (idle/thinking/speaking/listening) always visible; status text (Thinking…/wave bars/Tap to speak) shown below orb
+- **Message bubbles**: `MessageBubble` component — Noa messages left-aligned with `rgba(232,221,208,0.06)` background and `3px 16px 16px 16px` radius; user messages right-aligned with `rgba(200,184,154,0.13)` background and `16px 3px 16px 16px` radius
+- **Fade-in animation**: `@keyframes msgIn` (opacity 0→1, translateY 8px→0, 0.28s ease-out) applied to every new bubble
+- **Auto-scroll**: `chatScrollRef` + `useEffect([cards])` scrolls to bottom on every new message
+- **Input bar**: mic button (🎤) added for discoverability alongside text input and send button; mic pulses with `micPulse` animation when recording; `WaveBars` updated to accept `small` prop for compact header display
+- **Removed**: `NoaMessage` component (sentence-by-sentence centered display), `splitSentences` helper, `lastNoaCard`/`lastUserCard` computed values — all replaced by the bubble approach
+- Build: 89.74 kB gzip, zero eslint warnings
+
+#### Files changed
+- `src/vela/screens/VelaCore.js`
+
+---
+
+## Session: 2026-05-22 (previous — all VISION.md bugs + features complete)
 
 ### What was done this session
 

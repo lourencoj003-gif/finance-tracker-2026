@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getData, saveData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin, getGoals, saveGoals, getLastOpen, setLastOpen, getLastCeremonyYM, setLastCeremonyYM, getDebts, saveDebts, getChallenge, saveChallenge, getExpenseLog, saveExpenseLog, getEveningDate, setEveningDate, appendEveningLog } from '../storage';
+import { getData, saveData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin, getGoals, saveGoals, getLastOpen, setLastOpen, getLastCeremonyYM, setLastCeremonyYM, getDebts, saveDebts, getChallenge, saveChallenge, getExpenseLog, saveExpenseLog, getEveningDate, setEveningDate, appendEveningLog, getUserName } from '../storage';
 import PaydayCeremony from './PaydayCeremony';
 import Orb from '../Orb';
 import { speak as voiceSpeak, stopSpeaking } from '../voice';
@@ -88,7 +88,12 @@ const KEYFRAMES = `
     from { opacity: 0; transform: translateY(3px); }
     to   { opacity: 1; transform: translateY(0); }
   }
+  @keyframes msgIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
   input::placeholder, textarea::placeholder { color: #A89880; opacity: 1; }
+  .chat-scroll::-webkit-scrollbar { display: none; }
 `;
 
 
@@ -159,9 +164,6 @@ function parseGoalFromText(text) {
   };
 }
 
-function splitSentences(text) {
-  return (text.match(/[^.!?]+[.!?]*/g) || [text]).map(s => s.trim()).filter(Boolean);
-}
 
 function parseExpenseFromText(text) {
   // "just spent £12 on coffee" | "spent 8 on lunch" | "£12 on coffee" | "I spent £50"
@@ -202,7 +204,7 @@ function daysLeftInWeek() {
 
 function getGreeting() {
   const h    = new Date().getHours();
-  const name = localStorage.getItem('vela_name') || '';
+  const name = getUserName() || '';
   const base = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
   return name ? `${base}, ${name}` : base;
 }
@@ -228,13 +230,20 @@ export default function VelaCore({ onReset }) {
   const [chatOpen, setChatOpen]           = useState(false);
   const [detailOpen, setDetailOpen]       = useState(false);
   const [orbState, _setOrbState]          = useState('idle');
-  const [cards, setCards]                 = useState([]);
+  const [cards, setCards]                 = useState(() => {
+    const h = loadHistory();
+    return h.map((msg, i) => ({
+      id: i,
+      type: msg.role === 'assistant' ? 'vela' : 'user',
+      text: msg.content,
+    }));
+  });
   const [input, setInput]                 = useState('');
   const [isListening, setIsListening]     = useState(false);
   const [transcript, setTranscript]       = useState('');
   const [showSettings, setShowSettings]   = useState(false);
   const [voiceOn, setVoiceOn]             = useState(true);
-  const [settingName, setSettingName]     = useState(() => localStorage.getItem('vela_name') || '');
+  const [settingName, setSettingName]     = useState(() => getUserName() || '');
   const [settingPayday, setSettingPayday] = useState(() => (getData() || {}).payday || 25);
   const [streak, setStreak]               = useState(0);
   const [spendAlert, setSpendAlert]       = useState(false);
@@ -278,10 +287,18 @@ export default function VelaCore({ onReset }) {
   const audioUnlockedRef = useRef(false);
   const hoursAwayRef          = useRef(0);
   const walkthroughSpokenRef  = useRef(false);
+  const chatScrollRef         = useRef(null);
 
   function setOrbState(s) { orbRef.current = s; _setOrbState(s); }
 
   useEffect(() => { voiceOnRef.current = voiceOn; }, [voiceOn]);
+
+  // Auto-scroll chat to bottom whenever a new message is added
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [cards]);
 
   useEffect(() => {
     if (!tapHintVisible) return;
@@ -296,7 +313,7 @@ export default function VelaCore({ onReset }) {
     if (!walkthrough) return;
     if (tooltipStep === 0 && !walkthroughSpokenRef.current) {
       walkthroughSpokenRef.current = true;
-      const name = localStorage.getItem('vela_name') || '';
+      const name = getUserName() || '';
       const hi   = name ? `, ${name}` : '';
       const d    = getData() || {};
       const inc  = d.income  || 0;
@@ -410,7 +427,8 @@ export default function VelaCore({ onReset }) {
   useEffect(() => {
     if (!chatOpen || greetedRef.current) return;
     greetedRef.current = true;
-    const name = localStorage.getItem('vela_name') || '';
+    if (cards.length > 0) return; // existing history visible — no duplicate greeting
+    const name = getUserName() || '';
     const hi   = name ? `, ${name}` : '';
     const surplus = income - expenses;
 
@@ -619,7 +637,7 @@ export default function VelaCore({ onReset }) {
 
   function buildPrompt() {
     const d       = getData() || {};
-    const name    = localStorage.getItem('vela_name') || d.name || '';
+    const name    = getUserName() || d.name || '';
     const surplus = income - expenses;
     const ord     = n => n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : `${n}th`;
 
@@ -758,7 +776,7 @@ Step 5: Specific goal-based saving
     appendEveningLog({ date: new Date().toISOString().slice(0, 10), stuck: true });
     setEveningAnswered(true);
     setEveningCheckOpen(false);
-    const name = localStorage.getItem('vela_name') || '';
+    const name = getUserName() || '';
     const msg  = `Well done${name ? `, ${name}` : ''}. Sticking to your budget today is exactly how wealth is built — one decision at a time.`;
     setCelebrateMsg('Budget kept today! Your discipline compounds.');
     setCelebrate(true);
@@ -865,10 +883,6 @@ Step 5: Specific goal-based saving
       color: surplus * 12 >= 2000 ? GREEN : surplus >= 0 ? AMBER : RED,
     },
   ];
-
-  // ── Chat overlay state ───────────────────────────────────────────
-  const lastNoaCard  = [...cards].reverse().find(c => c.type === 'vela') || null;
-  const lastUserCard = [...cards].reverse().find(c => c.type === 'user') || null;
 
   return (
     <div style={{ position: 'relative', height: containerH, background: BG, overflow: 'hidden', fontFamily: 'inherit' }}>
@@ -1119,100 +1133,121 @@ Step 5: Specific goal-based saving
       </div>
 
       {/* ══════════════════════════════════════════
-          CHAT OVERLAY — slides up from bottom
+          CHAT OVERLAY — full conversational UI
       ══════════════════════════════════════════ */}
       <div style={{
         position: 'absolute', inset: 0, zIndex: 20, background: BG,
         transform: chatOpen ? 'translateY(0)' : 'translateY(100%)',
         transition: SLIDE,
+        display: 'flex', flexDirection: 'column',
       }}>
 
-        <button
-          onClick={() => setChatOpen(false)}
-          style={{ position: 'absolute', top: 20, left: 18, zIndex: 30, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(232,221,208,0.36)', fontSize: 22, padding: 8, lineHeight: 1 }}
-          aria-label="Close chat"
-        >↓</button>
+        {/* ── Header: back · orb · settings ── */}
+        <div style={{
+          flexShrink: 0,
+          display: 'flex', alignItems: 'center',
+          paddingTop: 'max(env(safe-area-inset-top), 16px)',
+          paddingBottom: 10, paddingLeft: 4, paddingRight: 4,
+          borderBottom: '1px solid rgba(232,221,208,0.06)',
+          background: BG,
+        }}>
+          <button
+            onClick={() => setChatOpen(false)}
+            style={{ width: 48, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(232,221,208,0.36)', fontSize: 22, padding: 8, lineHeight: 1, flexShrink: 0 }}
+            aria-label="Close chat"
+          >↓</button>
 
-        <button
-          onClick={() => setShowSettings(true)}
-          style={{ position: 'absolute', top: 20, right: 18, zIndex: 30, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(232,221,208,0.26)', fontSize: 20, padding: 8, lineHeight: 1 }}
-          aria-label="Settings"
-        >⚙</button>
-
-        {/* Orb section */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '52%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
-          <div style={{ position: 'relative' }}>
-            <Orb
-              size={140}
-              state={orbState}
-              onTap={() => isListening ? stopListening() : startListening()}
-            />
-            {spendAlert && orbState === 'idle' && (
-              <div style={{
-                position: 'absolute', top: 8, right: 8, width: 14, height: 14,
-                borderRadius: '50%', background: RED, border: `2px solid ${BG}`,
-                boxShadow: '0 0 8px 3px rgba(226,75,74,0.55)',
-                animation: 'alertPulse 1.4s ease-in-out infinite',
-                pointerEvents: 'none',
-              }} />
-            )}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
+            <div style={{ position: 'relative' }}>
+              <Orb
+                size={80}
+                state={orbState}
+                onTap={() => isListening ? stopListening() : startListening()}
+              />
+              {spendAlert && orbState === 'idle' && (
+                <div style={{
+                  position: 'absolute', top: 4, right: 4, width: 10, height: 10,
+                  borderRadius: '50%', background: RED, border: `2px solid ${BG}`,
+                  animation: 'alertPulse 1.4s ease-in-out infinite',
+                  pointerEvents: 'none',
+                }} />
+              )}
+            </div>
+            <div style={{ minHeight: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {isListening && transcript ? (
+                <div style={{ color: 'rgba(232,221,208,0.6)', fontSize: 11, maxWidth: 200, textAlign: 'center', fontStyle: 'italic' }}>
+                  "{transcript}"
+                </div>
+              ) : isListening ? (
+                <WaveBars color={BLUE} small />
+              ) : orbState === 'speaking' ? (
+                <WaveBars color={PURPLE} small />
+              ) : orbState === 'thinking' ? (
+                <div style={{ color: 'rgba(232,221,208,0.4)', fontSize: 11, letterSpacing: '0.5px', animation: 'blink 1.6s ease-in-out infinite' }}>
+                  Thinking…
+                </div>
+              ) : (
+                <div style={{ color: 'rgba(232,221,208,0.18)', fontSize: 11, letterSpacing: '0.3px', opacity: tapHintVisible ? 1 : 0, transition: 'opacity 0.8s ease' }}>
+                  Tap to speak
+                </div>
+              )}
+            </div>
           </div>
 
-          <div style={{ minHeight: 36, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-            {isListening && transcript ? (
-              <div style={{ color: 'rgba(232,221,208,0.72)', fontSize: 14, maxWidth: 260, textAlign: 'center', fontStyle: 'italic', padding: '0 20px' }}>
-                "{transcript}"
-              </div>
-            ) : isListening ? (
-              <WaveBars color={BLUE} />
-            ) : orbState === 'speaking' ? (
-              <WaveBars color={PURPLE} />
-            ) : orbState === 'thinking' ? (
-              <div style={{ color: 'rgba(232,221,208,0.4)', fontSize: 13, letterSpacing: '0.5px', animation: 'blink 1.6s ease-in-out infinite' }}>
-                Thinking…
-              </div>
-            ) : (
-              <div style={{
-                color: 'rgba(232,221,208,0.18)', fontSize: 13, letterSpacing: '0.4px',
-                opacity: tapHintVisible ? 1 : 0,
-                transition: 'opacity 0.8s ease',
-              }}>
-                Tap to speak
-              </div>
-            )}
-          </div>
+          <button
+            onClick={() => setShowSettings(true)}
+            style={{ width: 48, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(232,221,208,0.26)', fontSize: 20, padding: 8, lineHeight: 1, flexShrink: 0 }}
+            aria-label="Settings"
+          >⚙</button>
         </div>
 
-        {/* Message display — Noa's last response as large centered text */}
-        <div style={{
-          position: 'absolute', top: '52%', left: 0, right: 0,
-          bottom: 'calc(max(14px, calc(env(safe-area-inset-bottom) + 8px)) + 50px)',
-          display: 'flex', flexDirection: 'column', alignItems: 'center',
-          justifyContent: 'center', padding: '0 28px', overflow: 'hidden',
-        }}>
-          {lastUserCard && (
-            <div style={{
-              fontSize: 13, color: 'rgba(232,221,208,0.26)', marginBottom: 20,
-              textAlign: 'center', maxWidth: 300, fontStyle: 'italic', lineHeight: 1.5,
-            }}>
-              {lastUserCard.text.length > 65 ? lastUserCard.text.slice(0, 65) + '…' : lastUserCard.text}
+        {/* ── Message list ── */}
+        <div
+          ref={chatScrollRef}
+          className="chat-scroll"
+          style={{
+            flex: 1, overflowY: 'auto', padding: '14px 14px 8px',
+            display: 'flex', flexDirection: 'column', gap: 10,
+            WebkitOverflowScrolling: 'touch',
+            scrollbarWidth: 'none', msOverflowStyle: 'none',
+          }}
+        >
+          {cards.length === 0 && (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 80 }}>
+              <div style={{ color: 'rgba(232,221,208,0.2)', fontSize: 13, textAlign: 'center', letterSpacing: '0.3px' }}>
+                Ask Noa anything
+              </div>
             </div>
           )}
-          {lastNoaCard && (
-            <NoaMessage key={lastNoaCard.id} text={lastNoaCard.text} />
-          )}
+          {cards.map(card => (
+            <MessageBubble key={card.id} type={card.type} text={card.text} />
+          ))}
         </div>
 
-        {/* Input bar */}
+        {/* ── Input bar ── */}
         <div style={{
-          position: 'absolute', bottom: 0, left: 0, right: 0,
-          display: 'flex', alignItems: 'center', gap: 10,
-          paddingTop: 12, paddingBottom: 'max(14px, calc(env(safe-area-inset-bottom) + 8px))',
-          paddingLeft: 16, paddingRight: 16,
+          flexShrink: 0,
+          display: 'flex', alignItems: 'center', gap: 8,
+          paddingTop: 10,
+          paddingBottom: 'max(14px, calc(env(safe-area-inset-bottom) + 8px))',
+          paddingLeft: 12, paddingRight: 12,
           background: BG,
           borderTop: '1px solid rgba(232,221,208,0.06)',
-          boxSizing: 'border-box',
         }}>
+          {speechSupported && (
+            <button
+              onPointerDown={() => isListening ? stopListening() : startListening()}
+              style={{
+                width: 40, height: 40, borderRadius: '50%', border: 'none', flexShrink: 0,
+                background: isListening ? 'rgba(168,152,128,0.22)' : 'rgba(232,221,208,0.06)',
+                color: isListening ? BLUE : 'rgba(232,221,208,0.3)',
+                fontSize: 17, cursor: 'pointer', transition: 'all 0.15s',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                animation: isListening ? 'micPulse 1s ease-in-out infinite' : 'none',
+              }}
+              aria-label="Voice input"
+            >🎤</button>
+          )}
           <input
             value={input}
             onChange={e => setInput(e.target.value)}
@@ -1223,7 +1258,7 @@ Step 5: Specific goal-based saving
               background: 'rgba(255,255,255,0.05)',
               border: '0.5px solid rgba(232,221,208,0.2)',
               borderRadius: 24,
-              padding: '14px 20px',
+              padding: '12px 18px',
               color: '#E8DDD0',
               WebkitTextFillColor: '#E8DDD0',
               fontSize: 16,
@@ -1236,7 +1271,7 @@ Step 5: Specific goal-based saving
           <button
             onClick={() => input.trim() && handleMessage(input)}
             style={{
-              width: 42, height: 42, borderRadius: '50%', border: 'none', flexShrink: 0,
+              width: 40, height: 40, borderRadius: '50%', border: 'none', flexShrink: 0,
               background: input.trim() ? 'rgba(200,184,154,0.22)' : 'rgba(232,221,208,0.05)',
               color: input.trim() ? PURPLE : 'rgba(232,221,208,0.18)',
               fontSize: 22, cursor: input.trim() ? 'pointer' : 'default',
@@ -1414,7 +1449,7 @@ Step 5: Specific goal-based saving
           WALKTHROUGH TOOLTIP OVERLAY
       ══════════════════════════════════════════ */}
       {walkthrough && tooltipStep < 3 && (() => {
-        const wtName = localStorage.getItem('vela_name') || '';
+        const wtName = getUserName() || '';
         const tips = [
           {
             text: debtMode
@@ -1795,46 +1830,42 @@ function MetricPill({ label, value, color, badge, badgeColor }) {
   );
 }
 
-function NoaMessage({ text }) {
-  const sentences = splitSentences(text);
-  const [visibleCount, setVisibleCount] = useState(1);
-  useEffect(() => {
-    setVisibleCount(1);
-    if (sentences.length <= 1) return;
-    let count = 1;
-    const id = setInterval(() => {
-      count++;
-      setVisibleCount(count);
-      if (count >= sentences.length) clearInterval(id);
-    }, 500);
-    return () => clearInterval(id);
-  }, [text]); // eslint-disable-line react-hooks/exhaustive-deps
+function MessageBubble({ type, text }) {
+  const isNoa = type === 'vela';
   return (
-    <div style={{ textAlign: 'center', maxWidth: 340, width: '100%' }}>
-      <div style={{ fontSize: 10, color: '#A89880', letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: 500, marginBottom: 14 }}>Noa</div>
-      {sentences.slice(0, visibleCount).map((s, i) => (
-        <div key={i} style={{
-          fontSize: i === 0 ? 19 : 17,
-          fontWeight: 300,
-          color: '#E8DDD0',
-          lineHeight: 1.65,
-          letterSpacing: '0.01em',
-          marginBottom: i < sentences.slice(0, visibleCount).length - 1 ? 10 : 0,
-          animation: 'sentenceIn 0.6s ease-out',
-        }}>{s}</div>
-      ))}
+    <div style={{
+      display: 'flex',
+      justifyContent: isNoa ? 'flex-start' : 'flex-end',
+      animation: 'msgIn 0.28s ease-out',
+    }}>
+      <div style={{
+        maxWidth: '82%',
+        padding: '10px 14px',
+        borderRadius: isNoa ? '3px 16px 16px 16px' : '16px 3px 16px 16px',
+        background: isNoa ? 'rgba(232,221,208,0.06)' : 'rgba(200,184,154,0.13)',
+        border: `1px solid ${isNoa ? 'rgba(232,221,208,0.09)' : 'rgba(200,184,154,0.22)'}`,
+        color: '#E8DDD0',
+        fontSize: 15,
+        fontWeight: isNoa ? 300 : 400,
+        lineHeight: 1.6,
+        letterSpacing: '0.01em',
+      }}>
+        {text}
+      </div>
     </div>
   );
 }
 
-
-function WaveBars({ color }) {
-  const delays = [0, 0.12, 0.24, 0.1, 0.2, 0.08, 0.18, 0.06, 0.16];
+function WaveBars({ color, small }) {
+  const delays = small
+    ? [0, 0.12, 0.18, 0.08, 0.15]
+    : [0, 0.12, 0.24, 0.1, 0.2, 0.08, 0.18, 0.06, 0.16];
+  const h = small ? 16 : 36;
   return (
-    <div style={{ display: 'flex', gap: 3.5, alignItems: 'center', height: 36 }}>
+    <div style={{ display: 'flex', gap: 3, alignItems: 'center', height: h }}>
       {delays.map((d, i) => (
         <div key={i} style={{
-          width: 3, height: 36, background: color, borderRadius: 2,
+          width: 2.5, height: h, background: color, borderRadius: 2,
           transformOrigin: 'center',
           animation: `waveBar 0.55s ease-in-out ${d}s infinite`,
           opacity: 0.85,
