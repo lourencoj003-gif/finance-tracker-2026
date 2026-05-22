@@ -361,8 +361,10 @@ export default function VelaCore({ onReset }) {
 
     const s = tickStreak();
     setStreak(s);
-    if (s === 7 || s === 30) {
-      const msg = s === 7 ? '🔥 7-day streak! You\'re building a real habit.' : '🔥 30 days straight! That\'s exceptional discipline.';
+    if (s === 7 || s === 30 || s === 100) {
+      const msg = s === 7 ? '🔥 7-day streak! You\'re building a real habit.'
+        : s === 30 ? '🔥 30 days straight! That\'s exceptional discipline.'
+        : '🔥 100 days. You are in the top 1% of people who actually do this.';
       setCelebrateMsg(msg);
       setCelebrate(true);
       setTimeout(() => setCelebrate(false), 2500);
