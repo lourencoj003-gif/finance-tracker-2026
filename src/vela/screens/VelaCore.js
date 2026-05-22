@@ -981,7 +981,7 @@ Step 5: Specific goal-based saving
         </div>
 
         {/* 3 metric pills */}
-        <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+        <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
           <MetricPill
             label="Vela Score"
             value={`${velaScore}`}
@@ -992,6 +992,27 @@ Step 5: Specific goal-based saving
           <MetricPill label="Savings" value={`${savingsRate}%`} color={savColor} />
           <MetricPill label="Pace" value={onTrack ? 'On Track' : 'Off Track'} color={onTrack ? GREEN : RED} />
         </div>
+
+        {/* Allocation breakdown */}
+        {income > 0 && (
+          <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+            {[
+              { label: 'Essentials', amount: Math.round(income * 0.50), color: PURPLE },
+              { label: 'Lifestyle',  amount: Math.round(income * 0.25), color: BLUE   },
+              { label: 'Savings',    amount: Math.round(income * 0.20), color: GREEN  },
+            ].map(({ label, amount, color }) => (
+              <div key={label} style={{
+                flex: 1, background: 'rgba(232,221,208,0.04)',
+                border: '1px solid rgba(232,221,208,0.07)',
+                borderRadius: 12, padding: '8px 6px',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+              }}>
+                <div style={{ fontSize: 9, color: 'rgba(232,221,208,0.36)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>{label}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color, letterSpacing: '-0.3px' }}>£{amount.toLocaleString('en-GB')}</div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Weekly Challenge card */}
         {!challengeData.completed && (
@@ -1051,14 +1072,16 @@ Step 5: Specific goal-based saving
           }}
         >Talk to Noa</button>
 
-        {/* Daily tip */}
+        {/* Noa insight or daily tip */}
         <div style={{
           display: 'flex', alignItems: 'flex-start', gap: 8, marginTop: 10,
           background: 'rgba(232,221,208,0.03)', border: '1px solid rgba(232,221,208,0.05)',
           borderRadius: 12, padding: '9px 12px',
         }}>
-          <span style={{ fontSize: 13, flexShrink: 0, lineHeight: '1.5' }}>💡</span>
-          <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.34)', lineHeight: 1.5 }}>{getDailyTip()}</div>
+          <span style={{ fontSize: 13, flexShrink: 0, lineHeight: '1.5' }}>{insights.length > 0 ? '✦' : '💡'}</span>
+          <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.34)', lineHeight: 1.5 }}>
+            {insights.length > 0 ? insights[0] : getDailyTip()}
+          </div>
         </div>
 
         {/* Swipe-up hint */}
