@@ -1,3 +1,29 @@
+const FALLBACK_VOICE_ID = '21m00Tcm4TlvDq8ikWAM'; // ElevenLabs Rachel — always available
+
+async function callElevenLabs(text, apiKey, voiceId) {
+  return fetch(
+    `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+    {
+      method: 'POST',
+      headers: {
+        'xi-api-key': apiKey,
+        'Content-Type': 'application/json',
+        Accept: 'audio/mpeg',
+      },
+      body: JSON.stringify({
+        text,
+        model_id: 'eleven_turbo_v2',
+        voice_settings: {
+          stability: 0.5,
+          similarity_boost: 0.75,
+          style: 0.3,
+          use_speaker_boost: true,
+        },
+      }),
+    }
+  );
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -18,27 +44,13 @@ export default async function handler(req, res) {
   }
 
   try {
-    const elevenRes = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
-      {
-        method: 'POST',
-        headers: {
-          'xi-api-key': apiKey,
-          'Content-Type': 'application/json',
-          'Accept': 'audio/mpeg',
-        },
-        body: JSON.stringify({
-          text,
-          model_id: 'eleven_turbo_v2',
-          voice_settings: {
-            stability: 0.5,
-            similarity_boost: 0.75,
-            style: 0.3,
-            use_speaker_boost: true,
-          },
-        }),
-      }
-    );
+    let elevenRes = await callElevenLabs(text, apiKey, voiceId);
+
+    // If the custom voice doesn't exist, automatically retry with Rachel (always available)
+    if (elevenRes.status === 404 && voiceId !== FALLBACK_VOICE_ID) {
+      console.log('[api/speak] custom voice not found, falling back to Rachel');
+      elevenRes = await callElevenLabs(text, apiKey, FALLBACK_VOICE_ID);
+    }
 
     if (!elevenRes.ok) {
       const err = await elevenRes.text();

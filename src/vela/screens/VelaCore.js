@@ -34,8 +34,12 @@ const CHALLENGES = [
 
 const KEYFRAMES = `
   @keyframes orbIdle {
-    0%,100% { transform: scale(1);    filter: brightness(1); }
-    50%     { transform: scale(1.06); filter: brightness(1.14); }
+    0%,100% { transform: scale(1);    filter: brightness(1);    box-shadow: 0 0 18px 6px rgba(200,184,154,0.28); }
+    50%     { transform: scale(1.08); filter: brightness(1.16); box-shadow: 0 0 28px 10px rgba(200,184,154,0.52); }
+  }
+  @keyframes orbBreathe {
+    0%,100% { transform: scale(1);    opacity: 1; }
+    50%     { transform: scale(1.08); opacity: 0.92; }
   }
   @keyframes orbListening {
     0%,100% { transform: scale(1); }
@@ -260,6 +264,7 @@ export default function VelaCore({ onReset }) {
   const [showLogTx, setShowLogTx]           = useState(false);
   const [txForm, setTxForm]                 = useState({ amount: '', category: 'essentials', note: '', date: new Date().toISOString().slice(0, 10) });
   const [voiceError, setVoiceError]         = useState('');
+  const [txError, setTxError]               = useState('');
   const [eveningCheckOpen, setEveningCheckOpen] = useState(false);
   const [eveningAnswered, setEveningAnswered]   = useState(() => getEveningDate() === new Date().toISOString().slice(0, 10));
   const [eveningPhase, setEveningPhase]         = useState('ask');
@@ -280,6 +285,10 @@ export default function VelaCore({ onReset }) {
     window.visualViewport ? Math.round(window.visualViewport.height) : null
   );
 
+  // PWA install prompt (ITEM 8)
+  const [showPwaBanner, setShowPwaBanner]   = useState(false);
+  const deferredInstallRef                   = useRef(null);
+
   const orbRef           = useRef('idle');
   const voiceOnRef       = useRef(true);
   const recognitionRef   = useRef(null);
@@ -296,6 +305,33 @@ export default function VelaCore({ onReset }) {
   function setOrbState(s) { orbRef.current = s; _setOrbState(s); }
 
   useEffect(() => { voiceOnRef.current = voiceOn; }, [voiceOn]);
+
+  // ── PWA install prompt — show once after 2nd visit ────────────────
+  useEffect(() => {
+    const dismissed = localStorage.getItem('noa_pwa_dismissed');
+    if (dismissed) return;
+
+    // Increment visit counter
+    const visits = parseInt(localStorage.getItem('noa_visit_count') || '0', 10) + 1;
+    localStorage.setItem('noa_visit_count', String(visits));
+
+    // Listen for browser-native install prompt (Android/Chrome)
+    const onInstallPrompt = (e) => {
+      e.preventDefault();
+      deferredInstallRef.current = e;
+      if (visits >= 2) setShowPwaBanner(true);
+    };
+    window.addEventListener('beforeinstallprompt', onInstallPrompt);
+
+    // On iOS Safari, beforeinstallprompt never fires — show guidance banner anyway
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    if (isIOS && !isStandalone && visits >= 2) {
+      setTimeout(() => setShowPwaBanner(true), 2000);
+    }
+
+    return () => window.removeEventListener('beforeinstallprompt', onInstallPrompt);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-scroll chat to bottom whenever a new message is added
   useEffect(() => {
@@ -489,13 +525,28 @@ export default function VelaCore({ onReset }) {
     if (isDetail  && (dy < -55 || (isFastFlick && dy < -18)))             setDetailOpen(false);
   }
 
-  // ── Audio unlock (iOS requires speech from a user gesture) ───────
+  // ── Audio unlock (iOS requires a user-gesture context for both
+  //    Web Audio API and HTMLAudioElement.play()) ─────────────────
   function unlockAudio() {
     if (audioUnlockedRef.current) return;
     audioUnlockedRef.current = true;
-    const u = new SpeechSynthesisUtterance('');
-    u.volume = 0;
-    window.speechSynthesis?.speak(u);
+    // Unlock SpeechSynthesis
+    try {
+      const u = new SpeechSynthesisUtterance('');
+      u.volume = 0;
+      window.speechSynthesis?.speak(u);
+    } catch (_) {}
+    // Unlock HTMLAudio (required for ElevenLabs blob playback on iOS Safari)
+    try {
+      const sil = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
+      sil.volume = 0;
+      sil.play().catch(() => {});
+    } catch (_) {}
+    // Unlock AudioContext
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) { const ctx = new AC(); ctx.resume().then(() => ctx.close()).catch(() => {}); }
+    } catch (_) {}
   }
 
   // ── Speech synthesis ─────────────────────────────────────────────
@@ -505,10 +556,8 @@ export default function VelaCore({ onReset }) {
       onStart: () => setOrbState('speaking'),
       onEnd:   () => setOrbState('idle'),
       onError: () => setOrbState('idle'),
-      onFail:  (msg) => {
-        setVoiceError(msg);
-        setTimeout(() => setVoiceError(''), 8000);
-      },
+      // ElevenLabs failures fall back to browser TTS silently — no user-visible toast
+      onFail:  (msg) => { console.warn('[voice] ElevenLabs unavailable, using browser TTS:', msg); setOrbState('idle'); },
     });
   }
 
@@ -618,23 +667,41 @@ export default function VelaCore({ onReset }) {
     pushCard('user', clean);
     setInput('');
     setOrbState('thinking');
+
+    // Show a natural "thinking" placeholder after 4 seconds if slow
+    const slowTimer = setTimeout(() => {
+      pushCard('vela', 'Give me a moment…');
+    }, 4000);
+
     try {
+      const controller = new AbortController();
+      const timeout    = setTimeout(() => controller.abort(), 15000);
       const res  = await fetch('/api/chat', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ financialContext: buildPrompt(), messages: history }),
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
+      clearTimeout(slowTimer);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
       history.push({ role: 'assistant', content: json.text });
       saveHistory(history);
       setOrbState('idle');
+      // Remove the "Give me a moment" placeholder if it was added
+      setCards(prev => prev.filter(c => c.text !== 'Give me a moment…'));
       pushCard('vela', json.text);
       speak(json.text);
-    } catch {
+    } catch (e) {
+      clearTimeout(slowTimer);
       saveHistory(history);
       setOrbState('idle');
-      const err = "I'm having trouble reaching my systems right now. Please try again.";
+      setCards(prev => prev.filter(c => c.text !== 'Give me a moment…'));
+      const isTimeout = e?.name === 'AbortError';
+      const err = isTimeout
+        ? "Give me a moment — my connection's a bit slow right now. Try again in a second."
+        : "Something's not quite right on my end. Give it a moment and try again.";
       pushCard('vela', err);
       speak(err);
     }
@@ -728,14 +795,26 @@ export default function VelaCore({ onReset }) {
       : savingsRate >= 0  ? 'below the UK average of ~8% — room to improve'
       : 'negative — expenses exceed income';
 
-    return `You are Noa — a sharp, warm personal finance coach. Speak like a trusted friend with CFO-level knowledge. Be proactive, specific, never vague.
-${name ? `You are speaking with ${name}. Use their name occasionally — never robotically.` : ''}
+    return `You are Noa — a sharp, warm personal financial navigator. Speak like the most brilliant friend the user has ever had — someone with CFO-level knowledge, zero patience for corporate waffle, and genuine investment in their success.
+${name ? `You are speaking with ${name}. Use their name occasionally — naturally, never robotically.` : ''}
+
+PERSONALITY (non-negotiable):
+• Direct — skip preamble entirely. Get to the point in sentence one.
+• Warm — you genuinely care. Not in a therapy way. In a "I'll tell you what no one else will" way.
+• Witty — clever angles on money stuff. Make them think "I never thought of it that way."
+• Has opinions — never neutral. You have a view and state it clearly.
+• Roasts gently when appropriate — "Third month in a row on that category — bold strategy."
+• Celebrates wins hard — make them feel genuinely brilliant.
+• Can chat about anything — respond like a friend would.
+
+NEVER SAY: "Great question", "Certainly", "Of course", "As an AI", "I should note", "it's important to remember", "I understand that", "absolutely". You are Noa — not a corporate chatbot.
 
 ABSOLUTE RULES:
 • Only state facts the user has explicitly told you. Never invent demographics, age, or lifestyle details.
 • Never say "top X% of your age group" — you do not know their age. Say "well above the UK average" instead.
-• Every response must use at least one specific £ figure from the user's actual data.
-• Maximum 2–3 sentences. Direct and actionable. No padding, no hedging.
+• Every financial response must use at least one specific £ figure from the user's actual data.
+• Maximum 2–3 sentences. Hard limit. No exceptions.
+• End with either a sharp action or a short punchy question that moves them forward.
 • You have perfect memory of everything the user told you. Never ask for information already provided.
 • You are Noa — never say "As an AI" or "As a language model".
 
@@ -793,7 +872,7 @@ Use this data for specific, proactive comments — e.g. "you've spent £${txTota
   }
 
   function saveSettings() {
-    setUserName(settingName);
+    if (settingName.trim()) setUserName(settingName.trim());
     const pd  = Math.min(31, Math.max(1, parseInt(settingPayday, 10) || 25));
     const sav = Math.max(0, parseFloat(settingSavings) || 0);
     saveData({ ...getData(), payday: pd, savings: sav });
@@ -1015,7 +1094,7 @@ Use this data for specific, proactive comments — e.g. "you've spent £${txTota
 
           {/* Forecast strip */}
           <div style={{
-            width: '100%', overflowX: 'auto', display: 'flex', gap: 8,
+            width: '100%', overflowX: 'auto', display: 'flex', gap: 8, alignSelf: 'stretch',
             scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch',
             paddingBottom: 2, marginTop: 8,
             scrollbarWidth: 'none', msOverflowStyle: 'none',
@@ -1037,8 +1116,8 @@ Use this data for specific, proactive comments — e.g. "you've spent £${txTota
           </div>
         </div>
 
-        {/* 3 metric pills */}
-        <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
+        {/* 3 metric pills — equal width, full row */}
+        <div style={{ display: 'flex', gap: 10, marginBottom: 10, width: '100%' }}>
           <MetricPill
             label="Vela Score"
             value={`${velaScore}`}
@@ -1524,11 +1603,12 @@ Use this data for specific, proactive comments — e.g. "you've spent £${txTota
             <div style={{ fontSize: 18, fontWeight: 700, color: '#E8DDD0', marginBottom: 20 }}>Log a transaction</div>
 
             <Label>Amount (£)</Label>
+            {txError && <div style={{ fontSize: 11, color: '#E24B4A', marginBottom: 6, letterSpacing: '0.1px' }}>{txError}</div>}
             <input
               type="number"
               inputMode="decimal"
               value={txForm.amount}
-              onChange={e => setTxForm(f => ({ ...f, amount: e.target.value }))}
+              onChange={e => { setTxForm(f => ({ ...f, amount: e.target.value })); if (txError) setTxError(''); }}
               placeholder="0.00"
               style={{ width: '100%', background: 'rgba(232,221,208,0.07)', border: '1px solid rgba(232,221,208,0.11)', borderRadius: 12, padding: '11px 14px', color: '#E8DDD0', fontSize: 16, outline: 'none', fontFamily: 'inherit', marginBottom: 16, boxSizing: 'border-box' }}
             />
@@ -1573,7 +1653,7 @@ Use this data for specific, proactive comments — e.g. "you've spent £${txTota
             <SettingsBtn
               onClick={() => {
                 const amount = parseFloat(txForm.amount);
-                if (isNaN(amount) || amount <= 0) return;
+                if (isNaN(amount) || amount <= 0) { setTxError('Enter a valid amount greater than £0'); return; }
                 const entry = {
                   amount,
                   category: txForm.category,
@@ -1585,15 +1665,59 @@ Use this data for specific, proactive comments — e.g. "you've spent £${txTota
                 saveExpenseLog(updated);
                 setExpenseLog(updated);
                 setShowLogTx(false);
+                setTxError('');
                 setTxForm({ amount: '', category: 'essentials', note: '', date: new Date().toISOString().slice(0, 10) });
               }}
               color={PURPLE}
               text="Log transaction"
             />
-            <button onClick={() => setShowLogTx(false)} style={{ width: '100%', padding: 12, background: 'none', border: 'none', color: 'rgba(232,221,208,0.3)', fontSize: 14, cursor: 'pointer' }}>
+            <button onClick={() => { setShowLogTx(false); setTxError(''); }} style={{ width: '100%', padding: 12, background: 'none', border: 'none', color: 'rgba(232,221,208,0.3)', fontSize: 14, cursor: 'pointer' }}>
               Cancel
             </button>
           </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════
+          PWA INSTALL BANNER — shown once after 2nd visit
+      ══════════════════════════════════════════ */}
+      {showPwaBanner && (
+        <div style={{
+          position: 'absolute',
+          bottom: 'max(env(safe-area-inset-bottom), 12px)',
+          left: 16, right: 16,
+          zIndex: 190,
+          background: 'rgba(26,22,44,0.97)',
+          border: '1px solid rgba(200,184,154,0.28)',
+          borderRadius: 16,
+          padding: '12px 14px',
+          display: 'flex', alignItems: 'center', gap: 10,
+          backdropFilter: 'blur(24px)',
+          WebkitBackdropFilter: 'blur(24px)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.45)',
+          animation: 'cardIn 0.35s ease-out',
+        }}>
+          <span style={{ fontSize: 20, flexShrink: 0 }}>📱</span>
+          <div style={{ flex: 1, fontSize: 13, color: 'rgba(232,221,208,0.78)', lineHeight: 1.45 }}>
+            Add Noa to your Home Screen for the full experience.
+          </div>
+          {deferredInstallRef.current ? (
+            <button
+              onClick={async () => {
+                deferredInstallRef.current.prompt();
+                const { outcome } = await deferredInstallRef.current.userChoice;
+                console.log('[pwa] install outcome:', outcome);
+                localStorage.setItem('noa_pwa_dismissed', '1');
+                setShowPwaBanner(false);
+              }}
+              style={{ flexShrink: 0, padding: '6px 12px', background: 'rgba(200,184,154,0.18)', border: '1px solid rgba(200,184,154,0.3)', borderRadius: 9, color: PURPLE, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+            >Install</button>
+          ) : null}
+          <button
+            onClick={() => { localStorage.setItem('noa_pwa_dismissed', '1'); setShowPwaBanner(false); }}
+            style={{ flexShrink: 0, background: 'none', border: 'none', color: 'rgba(232,221,208,0.32)', fontSize: 18, cursor: 'pointer', padding: 4, lineHeight: 1 }}
+            aria-label="Dismiss"
+          >×</button>
         </div>
       )}
 
@@ -1949,7 +2073,7 @@ function SmallOrb({ alert, eveningDot, orbState = 'idle' }) {
       ? 'orbListening 0.9s ease-in-out infinite'
       : isThinking
         ? 'orbThinking 2.2s ease-in-out infinite'
-        : 'orbIdle 3.8s ease-in-out infinite';
+        : 'orbIdle 3s ease-in-out infinite';
 
   return (
     <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -1985,7 +2109,7 @@ function MetricPill({ label, value, color, badge, badgeColor }) {
   const isLong = value.length > 5;
   return (
     <div style={{
-      flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      flex: '1 1 0%', minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       gap: 6, padding: '14px 6px',
       background: 'rgba(232,221,208,0.04)',
       border: '1px solid rgba(232,221,208,0.06)',

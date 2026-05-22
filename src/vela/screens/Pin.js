@@ -15,6 +15,7 @@ export default function Pin({ onSuccess, onForgot, onBrandNew }) {
   const [biometricEnabled, setBiometricEnabledState]  = useState(getBiometricEnabled);
   const [showBioPrompt, setShowBioPrompt]             = useState(false);
   const [bioError, setBioError]                       = useState('');
+  const [showResetWarn, setShowResetWarn]             = useState(false);
 
   useEffect(() => {
     if (!getPin() && !isOnboardingDone()) {
@@ -135,9 +136,14 @@ export default function Pin({ onSuccess, onForgot, onBrandNew }) {
   }
 
   function handleReset() {
+    setShowResetWarn(true);
+  }
+
+  function confirmReset() {
     clearAll();
     clearBiometric();
     setBiometricEnabledState(false);
+    setShowResetWarn(false);
     setPhase('create');
     setDigits([]);
     setTemp('');
@@ -202,6 +208,42 @@ export default function Pin({ onSuccess, onForgot, onBrandNew }) {
         >
           Forgot PIN? Reset Noa
         </button>
+      )}
+
+      {/* ── Reset confirmation modal ── */}
+      {showResetWarn && (
+        <div style={{
+          position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.88)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 32, zIndex: 30,
+        }}>
+          <div style={{
+            background: '#1a1d24', border: '1px solid rgba(226,75,74,0.38)',
+            borderRadius: 26, padding: 28, width: '100%', maxWidth: 300,
+            textAlign: 'center',
+          }}>
+            <div style={{ fontSize: 40, marginBottom: 14 }}>⚠️</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#E8DDD0', marginBottom: 10 }}>
+              Reset Noa?
+            </div>
+            <div style={{ fontSize: 13, color: 'rgba(232,221,208,0.52)', marginBottom: 28, lineHeight: 1.6 }}>
+              This will permanently delete your financial plan, goals, chat history, and all saved data.
+              There is no undo.
+            </div>
+            <button
+              onClick={confirmReset}
+              style={{ width: '100%', padding: 14, background: 'rgba(226,75,74,0.18)', border: '1px solid rgba(226,75,74,0.5)', borderRadius: 12, color: '#E24B4A', fontSize: 15, fontWeight: 700, cursor: 'pointer', marginBottom: 10 }}
+            >
+              Yes, delete everything
+            </button>
+            <button
+              onClick={() => setShowResetWarn(false)}
+              style={{ width: '100%', padding: 12, background: 'none', border: 'none', color: 'rgba(232,221,208,0.38)', fontSize: 14, cursor: 'pointer' }}
+            >
+              Cancel — keep my data
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Biometric enrolment prompt — shown after first successful PIN login */}

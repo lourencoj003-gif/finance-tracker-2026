@@ -114,6 +114,8 @@ function splitSentences(text) {
 export default function Onboarding({ onDone }) {
   const [step, setStep]         = useState(0);
   const [input, setInput]       = useState('');
+  const [inputError, setInputError] = useState('');
+  const [history, setHistory]   = useState([]); // stack of { step, data, input } for back navigation
   const [data, setData]         = useState({ name: '', income: 0, payday: 25, expenses: 0, expenseDetails: '', lifestyleSpend: '', debt: 0, goal: '', savings: 0 });
   const [building, setBuilding] = useState(false);
   const [orbState, setOrbState] = useState('idle');
@@ -163,9 +165,30 @@ export default function Onboarding({ onDone }) {
     });
   }
 
+  function goBack() {
+    if (step === 0 || history.length === 0) return;
+    stopSpeaking();
+    const prev = history[history.length - 1];
+    setHistory(h => h.slice(0, -1));
+    setStep(prev.step);
+    setData(prev.data);
+    setInput(prev.prevInput || '');
+    setInputError('');
+    const q = Q[prev.step].ask(prev.data);
+    setCurrentQ(q);
+    setCardKey(k => k + 1);
+  }
+
   function send() {
     const val = input.trim();
-    if (!val || building || step >= Q.length) return;
+    setInputError('');
+    if (!val) {
+      setInputError('Please enter a response to continue');
+      return;
+    }
+    if (building || step >= Q.length) return;
+    // Save state to history before advancing
+    setHistory(h => [...h, { step, data: { ...data }, prevInput: input }]);
     setInput('');
 
     const nd = { ...data };
@@ -252,8 +275,8 @@ export default function Onboarding({ onDone }) {
   return (
     <div style={{ position: 'relative', height: containerH, background: BG, overflow: 'hidden', fontFamily: 'inherit' }}>
 
-      {/* Progress dots */}
-      <div style={{ position: 'absolute', top: 32, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 7, zIndex: 5 }}>
+      {/* Progress dots + back button */}
+      <div style={{ position: 'absolute', top: 'max(env(safe-area-inset-top), 24px)', left: 0, right: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, zIndex: 5, paddingLeft: 52, paddingRight: 52 }}>
         {Q.map((_, i) => (
           <div key={i} style={{
             width: i < step ? 18 : 6, height: 6, borderRadius: 3,
@@ -262,6 +285,18 @@ export default function Onboarding({ onDone }) {
           }} />
         ))}
       </div>
+      {/* Back button — only visible when step > 0 and not building */}
+      {step > 0 && !building && (
+        <button
+          onClick={goBack}
+          style={{
+            position: 'absolute', top: 'max(env(safe-area-inset-top), 20px)', left: 16, zIndex: 10,
+            background: 'none', border: 'none', color: 'rgba(232,221,208,0.38)',
+            fontSize: 22, cursor: 'pointer', padding: 8, lineHeight: 1,
+          }}
+          aria-label="Back"
+        >‹</button>
+      )}
 
       {/* ── Orb section ── */}
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '48%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20 }}>
@@ -330,22 +365,28 @@ export default function Onboarding({ onDone }) {
       {!building && step < Q.length && (
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0,
-          display: 'flex', alignItems: 'center', gap: 10,
-          paddingTop: 12, paddingBottom: 'max(14px, calc(env(safe-area-inset-bottom) + 8px))',
+          display: 'flex', flexDirection: 'column', gap: 0,
+          paddingTop: 8, paddingBottom: 'max(14px, calc(env(safe-area-inset-bottom) + 8px))',
           paddingLeft: 16, paddingRight: 16,
           background: BG,
           borderTop: '1px solid rgba(232,221,208,0.06)',
           boxSizing: 'border-box',
         }}>
+          {inputError && (
+            <div style={{ fontSize: 11, color: '#E24B4A', textAlign: 'center', marginBottom: 6, letterSpacing: '0.1px' }}>
+              {inputError}
+            </div>
+          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <input
             value={input}
-            onChange={e => setInput(e.target.value)}
+            onChange={e => { setInput(e.target.value); if (inputError) setInputError(''); }}
             onKeyDown={onKey}
-            placeholder={Q[step]?.ph || ''}
+            placeholder={Q[step]?.ph || 'Type your answer…'}
             style={{
               flex: 1,
               background: 'rgba(255,255,255,0.05)',
-              border: '0.5px solid rgba(232,221,208,0.2)',
+              border: inputError ? '0.5px solid rgba(226,75,74,0.5)' : '0.5px solid rgba(232,221,208,0.2)',
               borderRadius: 24,
               padding: '14px 20px',
               color: '#E8DDD0',
@@ -361,10 +402,11 @@ export default function Onboarding({ onDone }) {
             width: 44, height: 44, borderRadius: '50%', border: 'none', flexShrink: 0,
             background: input.trim() ? 'rgba(200,184,154,0.22)' : 'rgba(232,221,208,0.05)',
             color: input.trim() ? PURPLE : 'rgba(232,221,208,0.18)',
-            fontSize: 22, cursor: input.trim() ? 'pointer' : 'default',
+            fontSize: 22, cursor: 'pointer',
             transition: 'all 0.15s',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>›</button>
+          </div>
         </div>
       )}
 

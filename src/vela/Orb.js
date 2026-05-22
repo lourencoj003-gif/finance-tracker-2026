@@ -54,8 +54,8 @@ const KEYFRAMES = `
 
 const STATE_CFG = {
   idle: {
-    glowColor:  'rgba(200,184,154,0.38)',
-    glowAnim:   'glowPulse 3.4s ease-in-out infinite',
+    glowColor:  'rgba(200,184,154,0.42)',
+    glowAnim:   'glowPulse 3s ease-in-out infinite',
     rings: [
       { scale: 1.46, border: '1px dashed rgba(200,184,154,0.26)', dir: 'ringCW',  dur: '36s', op: 0.55 },
       { scale: 1.23, border: '1px solid rgba(200,184,154,0.36)',  dir: 'ringCCW', dur: '25s', op: 0.65 },
@@ -66,7 +66,7 @@ const STATE_CFG = {
     sphere:   'radial-gradient(circle at 32% 28%, rgba(240,232,220,0.92) 0%, #C8B89A 42%, #8a7a62 70%, #2d2318 100%)',
     band1: 'rgba(180,162,134,0.18)', bandADur: '22s',
     band2: 'rgba(158,140,114,0.13)', bandBDur: '28s',
-    bodyAnim:  'planetBreath 3.8s ease-in-out infinite',
+    bodyAnim:  'planetBreath 3s ease-in-out infinite',
     particle:  '#C8B89A', pOrbitDur: '12s', pOp: 0.6,
     glowShadow: '0 0 44px 14px rgba(200,184,154,0.34), 0 0 90px 38px rgba(200,184,154,0.10)',
     ripple: false, rippleCount: 0,
