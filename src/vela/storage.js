@@ -26,6 +26,10 @@ const K = {
   TAP_HINT:     'vela_tap_hint_seen',
   INTRO_SEEN:   'vela_intro_seen',
   PREV_SCORE:   'vela_prev_score',
+  DAILY_INSIGHT: 'noa_daily_insight',
+  NOTIF_PREFS:   'noa_notif_prefs',
+  NOTIF_LAST:    'noa_notif_last',
+  PUSH_SUB:      'noa_push_sub',
 };
 
 export const getPin              = ()    => localStorage.getItem(K.PIN);
@@ -101,3 +105,19 @@ export const appendEveningLog = (entry) => {
 };
 
 export const clearAll  = ()    => Object.values(K).forEach(k => localStorage.removeItem(k));
+
+// Daily AI insight — one Groq-generated sentence, cached per calendar day
+export const getDailyInsight  = ()    => { const r = localStorage.getItem(K.DAILY_INSIGHT); return r ? JSON.parse(r) : null; };
+export const saveDailyInsight = (obj) => localStorage.setItem(K.DAILY_INSIGHT, JSON.stringify(obj));
+
+// Notification preferences — which types the user wants
+export const getNotifPrefs  = ()    => { const r = localStorage.getItem(K.NOTIF_PREFS); return r ? JSON.parse(r) : { morning: true, payday: true, streak: true, weekly: true }; };
+export const saveNotifPrefs = (p)   => localStorage.setItem(K.NOTIF_PREFS, JSON.stringify(p));
+
+// Notification last-sent log — { morning: 'YYYY-MM-DD', streak: 'YYYY-MM-DD', ... }
+export const getNotifLast  = ()    => { const r = localStorage.getItem(K.NOTIF_LAST); return r ? JSON.parse(r) : {}; };
+export const saveNotifLast = (d)   => localStorage.setItem(K.NOTIF_LAST, JSON.stringify(d));
+
+// Push subscription endpoint (stored for reference; server sends pushes using this)
+export const getPushSub  = ()    => { const r = localStorage.getItem(K.PUSH_SUB); return r ? JSON.parse(r) : null; };
+export const savePushSub = (sub) => localStorage.setItem(K.PUSH_SUB, JSON.stringify(sub));

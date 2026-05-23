@@ -122,6 +122,9 @@ export default function Onboarding({ onDone }) {
   const [currentQ, setCurrentQ] = useState('');
   const [cardKey, setCardKey]   = useState(0);
   const [expanding, setExpanding] = useState(false);
+  const [finaleMsg, setFinaleMsg] = useState('');    // Feature 4 — personalised 3-sentence portrait
+  const [showFinale, setShowFinale] = useState(false);
+  const finaleSpokenRef = useRef(false);
   const [vpH, setVpH]           = useState(
     window.visualViewport ? Math.round(window.visualViewport.height) : null
   );
@@ -164,6 +167,29 @@ export default function Onboarding({ onDone }) {
       onEnd:   () => setOrbState(buildingRef.current ? 'thinking' : 'idle'),
     });
   }
+
+  // Feature 4 — speak the finale portrait, then auto-proceed to dashboard
+  useEffect(() => {
+    if (!showFinale || !finaleMsg || finaleSpokenRef.current) return;
+    finaleSpokenRef.current = true;
+    setOrbState('speaking');
+    voiceSpeak(finaleMsg, {
+      onStart: () => setOrbState('speaking'),
+      onEnd: () => {
+        setOrbState('idle');
+        setTimeout(() => { setExpanding(true); setTimeout(onDone, 1600); }, 800);
+      },
+      onError: () => {
+        setOrbState('idle');
+        setTimeout(() => { setExpanding(true); setTimeout(onDone, 1600); }, 800);
+      },
+    });
+    // Fallback: always proceed after 8 seconds regardless
+    const fallback = setTimeout(() => {
+      if (!expanding) { setExpanding(true); setTimeout(onDone, 1600); }
+    }, 8000);
+    return () => clearTimeout(fallback);
+  }, [showFinale]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function goBack() {
     if (step === 0 || history.length === 0) return;
@@ -229,9 +255,11 @@ export default function Onboarding({ onDone }) {
 
   async function buildPlan(d) {
     const { income, expenses, debt, goal } = d;
-    const surplus = income - expenses;
-    const started = Date.now();
+    const surplus  = income - expenses;
+    const name     = d.name || '';
+    const started  = Date.now();
 
+    // ── Step 1: Groq insights (JSON array) ──────────────────────────
     const sysPrompt = `You are Noa, a personal finance coach. Respond with exactly 3 short financial insights as a JSON array. Each must be under 28 words, start with an action verb, and reference a specific £ amount. Format: ["insight1","insight2","insight3"] — nothing else.`;
     const userMsg   = `Monthly income: £${income}. Monthly expenses: £${expenses}. Surplus: £${surplus.toFixed(0)}. Total debt: £${debt}. Goal: ${goal}. Savings: £${d.savings || 0}.`;
 
@@ -259,11 +287,43 @@ export default function Onboarding({ onDone }) {
     markReady();
     markOnboardingDone();
 
-    const elapsed = Date.now() - started;
-    await new Promise(r => setTimeout(r, Math.max(0, 1800 - elapsed)));
+    // ── Step 2: Feature 4 — personalised 3-sentence financial portrait ──
+    const savingsRate = income > 0 ? Math.round((surplus / income) * 100) : 0;
+    const finalePrompt = `You are Noa — a sharp, warm personal financial navigator. Write EXACTLY 3 sentences as a spoken financial portrait for this specific user. Structure: (1) an observation about what you see in their numbers right now — be specific with £ amounts; (2) an honest but warm assessment of their position — acknowledge what's good AND what's challenging; (3) a forward-looking promise of what's possible in the next 90 days if they focus. Use first person ("Here's what I see..."). Address them by name if provided. Under 70 words total. Dry, confident, warm. No FCA disclaimer needed here.`;
+    const finaleUser = `Name: ${name || 'not given'}. Income: £${income}/month. Expenses: £${expenses}/month. Surplus: £${surplus.toFixed(0)}/month (${savingsRate}% savings rate). Debt: £${debt}. Goal: ${goal || 'not set'}. Savings: £${d.savings || 0}.`;
 
-    setExpanding(true);
-    setTimeout(onDone, 1600);
+    let portrait = '';
+    try {
+      const res2 = await Promise.race([
+        fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ financialContext: finalePrompt, messages: [{ role: 'user', content: finaleUser }] }),
+        }),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 9000)),
+      ]);
+      const json2 = await res2.json();
+      portrait = (json2.text || '').trim();
+    } catch {}
+
+    // Fallback portrait if Groq fails
+    if (!portrait) {
+      if (surplus > 0 && debt === 0) {
+        portrait = `Here's what I see${name ? `, ${name}` : ''}. £${income.toLocaleString('en-GB')} coming in, £${expenses.toLocaleString('en-GB')} going out — £${surplus.toFixed(0)} a month to work with. That's a solid position. In 90 days, with the right structure, you could have a proper emergency fund and a savings habit that actually sticks.`;
+      } else if (surplus > 0 && debt > 0) {
+        portrait = `Here's what I see${name ? `, ${name}` : ''}. £${surplus.toFixed(0)} monthly surplus alongside £${debt.toLocaleString('en-GB')} in debt — the surplus is the weapon. The debt is the first target. In 90 days of focused overpayment, you'll see that number drop meaningfully. Let's get to work.`;
+      } else {
+        portrait = `Here's what I see${name ? `, ${name}` : ''}. Your expenses are currently outpacing your income by £${Math.abs(surplus).toFixed(0)} a month. That's the first thing we fix — and it's fixable. In 90 days, with small targeted cuts, we can close that gap and start building something real.`;
+      }
+    }
+
+    setFinaleMsg(portrait);
+
+    const elapsed = Date.now() - started;
+    await new Promise(r => setTimeout(r, Math.max(0, 1200 - elapsed)));
+
+    // Show the finale screen — speak, then proceed after speech or 6s max
+    setShowFinale(true);
   }
 
   function onKey(e) {
@@ -407,6 +467,46 @@ export default function Onboarding({ onDone }) {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>›</button>
           </div>
+        </div>
+      )}
+
+      {/* ── Feature 4: Finale — Noa's personalised financial portrait ── */}
+      {showFinale && !expanding && (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 150, background: BG,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          padding: '0 28px',
+          animation: 'expandFadeIn 0.6s ease-out',
+        }}>
+          <Orb size={100} state={orbState} />
+          <div style={{ height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 20 }}>
+            {orbState === 'speaking' ? (
+              <WaveBars />
+            ) : (
+              <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.28)', letterSpacing: '0.4px' }}>Noa</div>
+            )}
+          </div>
+          {finaleMsg && (
+            <div style={{
+              marginTop: 28,
+              fontSize: 17, color: '#E8DDD0', lineHeight: 1.72, fontWeight: 300,
+              textAlign: 'center', letterSpacing: '0.01em',
+              animation: 'sentenceIn 0.8s ease-out',
+              maxWidth: 340,
+            }}>
+              <AnimatedText key="finale" text={finaleMsg} />
+            </div>
+          )}
+          <button
+            onClick={() => { setExpanding(true); setTimeout(onDone, 1600); }}
+            style={{
+              marginTop: 36, padding: '13px 32px',
+              background: 'rgba(200,184,154,0.12)',
+              border: '1px solid rgba(200,184,154,0.3)',
+              borderRadius: 14, color: PURPLE, fontSize: 15, fontWeight: 600,
+              cursor: 'pointer', letterSpacing: '0.05em',
+            }}
+          >Let's get to work</button>
         </div>
       )}
 

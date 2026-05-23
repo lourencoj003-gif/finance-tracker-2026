@@ -1,4 +1,4 @@
-const CACHE = 'noa-v2';
+const CACHE = 'noa-v3';
 
 // Shell files guaranteed to exist at these paths
 const PRECACHE = ['/', '/index.html', '/noa-icon.svg', '/manifest.json'];
@@ -43,6 +43,55 @@ self.addEventListener('fetch', e => {
           return caches.match('/index.html');
         }
       });
+    })
+  );
+});
+
+// ── Push Notifications ────────────────────────────────────────────────
+
+// Receive a push from the server and display as a notification
+self.addEventListener('push', event => {
+  let data = {};
+  try { data = event.data?.json() || {}; } catch (_) {}
+  const title = data.title || 'Noa';
+  const options = {
+    body:    data.body  || '',
+    icon:    '/apple-touch-icon.png',
+    badge:   '/apple-touch-icon.png',
+    vibrate: [180, 80, 180],
+    tag:     data.tag   || 'noa-push',
+    data:    { url: data.url || '/' },
+    requireInteraction: false,
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+// Notification click → open or focus the app
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const target = event.notification.data?.url || '/';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      const existing = list.find(c => c.url.includes(self.location.origin));
+      if (existing) { existing.focus(); return; }
+      clients.openWindow(target);
+    })
+  );
+});
+
+// Triggered directly from the main thread (for client-side scheduled notifications)
+// The main app posts: { type: 'SHOW_NOTIFICATION', title, body, tag }
+self.addEventListener('message', event => {
+  if (event.data?.type !== 'SHOW_NOTIFICATION') return;
+  const { title = 'Noa', body = '', tag = 'noa-local' } = event.data;
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      icon:    '/apple-touch-icon.png',
+      badge:   '/apple-touch-icon.png',
+      vibrate: [180, 80, 180],
+      tag,
+      data:    { url: '/' },
     })
   );
 });

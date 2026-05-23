@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
-import { getData, saveData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin, getGoals, saveGoals, getLastOpen, setLastOpen, getLastCeremonyYM, setLastCeremonyYM, getDebts, saveDebts, getChallenge, saveChallenge, getExpenseLog, saveExpenseLog, getEveningDate, setEveningDate, appendEveningLog, getUserName, setUserName } from '../storage';
-import PaydayCeremony from './PaydayCeremony';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { getData, saveData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin, getGoals, saveGoals, getLastOpen, setLastOpen, getLastCeremonyYM, setLastCeremonyYM, getDebts, saveDebts, getChallenge, saveChallenge, getExpenseLog, saveExpenseLog, getEveningDate, setEveningDate, appendEveningLog, getUserName, setUserName, getDailyInsight, saveDailyInsight, getNotifPrefs, saveNotifPrefs, getNotifLast, saveNotifLast, savePushSub } from '../storage';
 import Orb from '../Orb';
 import { speak as voiceSpeak, stopSpeaking } from '../voice';
+
+const PaydayCeremony = lazy(() => import('./PaydayCeremony'));
 
 const HISTORY_KEY = 'noaHistory';
 const MAX_HISTORY = 30;
@@ -201,6 +202,24 @@ function getISOWeek() {
   return `${yr}-W${String(wk).padStart(2, '0')}`;
 }
 
+// Lightweight prompt used for the daily insight fetch — doesn't need component state
+function buildInsightPrompt() {
+  const d    = getData() || {};
+  const name = getUserName() || d.name || '';
+  const { income = 0, expenses = 0, debt = 0, savings = 0, payday = 25 } = d;
+  const surplus = income - expenses;
+  const now = new Date();
+  let nextPay = new Date(now.getFullYear(), now.getMonth(), payday);
+  if (nextPay <= now) {
+    const nm = now.getMonth() + 1;
+    const ny = nm > 11 ? now.getFullYear() + 1 : now.getFullYear();
+    nextPay  = new Date(ny, nm > 11 ? 0 : nm, Math.min(payday, new Date(ny, (nm > 11 ? 0 : nm) + 1, 0).getDate()));
+  }
+  const daysToPayday = Math.ceil((nextPay - now) / 86400000);
+  const streak       = parseInt(localStorage.getItem('vela_streak_count') || '0', 10);
+  return `You are Noa — a sharp, dry, warm personal financial navigator. Speak in first person about the user, max 22 words.\n\nUser data: name=${name || 'unknown'}, income=£${income}/month, expenses=£${expenses}/month, surplus=£${surplus}/month, debt=£${debt}, savings=£${savings}, payday in ${daysToPayday} day${daysToPayday === 1 ? '' : 's'}, streak=${streak} days.\n\nExamples of the style:\n- "Payday in 3 days. You have £163 left. Manageable — if you avoid anything with a menu."\n- "You've hit your savings target 3 weeks running. That's not luck, that's a habit."\n- "Your surplus this month is £${surplus.toFixed(0)}. That's £${(surplus * 12).toFixed(0)} a year if you protect it."`;
+}
+
 function daysLeftInWeek() {
   const day = new Date().getDay();
   return day === 0 ? 0 : 7 - day;
@@ -289,6 +308,27 @@ export default function VelaCore({ onReset }) {
   const [showPwaBanner, setShowPwaBanner]   = useState(false);
   const deferredInstallRef                   = useRef(null);
 
+  // Feature 1 — Daily proactive insight
+  const [dailyInsight, setDailyInsight]       = useState('');
+  const [insightLoading, setInsightLoading]   = useState(false);
+  const insightSpokenRef                       = useRef(false);
+
+  // Feature 2 — Living transaction feed
+  const [txComment, setTxComment]             = useState('');
+  const [txCommentLoading, setTxCommentLoading] = useState(false);
+
+  // Feature 3 — Tappable metric explanations
+  const [activeMetric, setActiveMetric]       = useState(null);
+
+  // Feature 5 — Monthly Noa narrative
+  const [monthlyNarrative, setMonthlyNarrative]   = useState('');
+  const [narrativeLoading, setNarrativeLoading]   = useState(false);
+
+  // Feature 7 — Notification preferences
+  const [notifPerms, setNotifPerms]           = useState(() => ('Notification' in window ? Notification.permission : 'default'));
+  const [notifPrefs, setNotifPrefsState]      = useState(() => getNotifPrefs());
+  const swRegRef                               = useRef(null);
+
   const orbRef           = useRef('idle');
   const voiceOnRef       = useRef(true);
   const recognitionRef   = useRef(null);
@@ -339,6 +379,66 @@ export default function VelaCore({ onReset }) {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
   }, [cards]);
+
+  // Feature 1 — Daily proactive insight: fetch once per day, auto-speak on load
+  useEffect(() => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const cached   = getDailyInsight();
+    if (cached && cached.date === todayStr && cached.text) {
+      setDailyInsight(cached.text);
+      // Auto-speak cached insight after a short delay (on each session open)
+      const tid = setTimeout(() => {
+        if (!insightSpokenRef.current) {
+          insightSpokenRef.current = true;
+          speak(cached.text);
+        }
+      }, 1400);
+      return () => clearTimeout(tid);
+    }
+    // No fresh insight — fetch from Groq
+    const d   = getData() || {};
+    if (!d.income) return; // no data yet, skip
+    setInsightLoading(true);
+    const controller = new AbortController();
+    const timeout    = setTimeout(() => controller.abort(), 12000);
+    const insightPrompt = `${buildInsightPrompt()}\n\nGenerate exactly one sharp, dry, personalised Noa-voice sentence about this user's financial situation right now. Reference actual numbers — payday countdown, budget status, savings progress, or streak. Under 22 words. No quotes, no greeting, no FCA disclaimer. Just the sentence.`;
+    fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ financialContext: insightPrompt, messages: [{ role: 'user', content: 'Give me my daily financial insight.' }] }),
+      signal: controller.signal,
+    })
+      .then(r => r.json())
+      .then(json => {
+        clearTimeout(timeout);
+        const text = (json.text || '').trim().replace(/^["']|["']$/g, '');
+        if (text) {
+          setDailyInsight(text);
+          saveDailyInsight({ date: todayStr, text });
+          setTimeout(() => {
+            if (!insightSpokenRef.current) {
+              insightSpokenRef.current = true;
+              speak(text);
+            }
+          }, 1400);
+        }
+      })
+      .catch(() => { clearTimeout(timeout); })
+      .finally(() => setInsightLoading(false));
+    return () => { clearTimeout(timeout); controller.abort(); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Feature 7 — Service worker registration + push notification scheduling
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => {
+        swRegRef.current = reg;
+        // Check scheduled client-side notifications on app open
+        checkScheduledNotifications(reg);
+      })
+      .catch(err => console.warn('[sw] registration failed:', err));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!tapHintVisible) return;
@@ -885,8 +985,168 @@ Use this data for specific, proactive comments — e.g. "you've spent £${txTota
     const pd  = Math.min(31, Math.max(1, parseInt(settingPayday, 10) || 25));
     const sav = Math.max(0, parseFloat(settingSavings) || 0);
     saveData({ ...getData(), payday: pd, savings: sav });
+    saveNotifPrefs(notifPrefs);
     setShowSettings(false);
     setShowResetConfirm(false);
+  }
+
+  // Feature 7 — Check client-side scheduled notifications on app open
+  function checkScheduledNotifications(reg) {
+    const prefs = getNotifPrefs();
+    if (!prefs.morning && !prefs.streak && !prefs.weekly) return;
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    const today = new Date().toISOString().slice(0, 10);
+    const last  = getNotifLast();
+    const h     = new Date().getHours();
+    const d     = getData() || {};
+    const name  = getUserName() || '';
+    const { income = 0, expenses = 0, payday = 25, debt: dbt = 0 } = d;
+    const surplus = income - expenses;
+    const sk = parseInt(localStorage.getItem('vela_streak_count') || '0', 10);
+    let now2 = new Date();
+    let nextPay2 = new Date(now2.getFullYear(), now2.getMonth(), payday);
+    if (nextPay2 <= now2) { const nm = now2.getMonth() + 1; const ny = nm > 11 ? now2.getFullYear() + 1 : now2.getFullYear(); nextPay2 = new Date(ny, nm > 11 ? 0 : nm, payday); }
+    const dtpay = Math.ceil((nextPay2 - now2) / 86400000);
+
+    // Morning nudge — once per day, if past 9am
+    if (prefs.morning && last.morning !== today && h >= 9 && income > 0) {
+      let body;
+      if (dtpay <= 2)          body = `Payday in ${dtpay} day${dtpay === 1 ? '' : 's'}${name ? `, ${name}` : ''}. Make sure it goes somewhere useful before it disappears.`;
+      else if (sk >= 7)        body = `Day ${sk} of your streak${name ? `, ${name}` : ''}. £${surplus.toFixed(0)} monthly surplus on track.`;
+      else if (surplus > 0)    body = `£${surplus.toFixed(0)} surplus this month${name ? `, ${name}` : ''}. ${dtpay} days to payday — hold the line.`;
+      else                     body = `Watch your spend today${name ? `, ${name}` : ''}. Budget is tight this month.`;
+      sendLocalNotif(reg, 'Noa', body, 'noa-morning');
+      saveNotifLast({ ...last, morning: today });
+    }
+    // Streak at risk — if past 7pm and user is on a streak
+    if (prefs.streak && last.streak !== today && h >= 19 && sk >= 3) {
+      const body = `Your ${sk}-day streak is still going${name ? `, ${name}` : ''}. Don't let today break it.`;
+      sendLocalNotif(reg, 'Noa', body, 'noa-streak');
+      saveNotifLast({ ...getNotifLast(), streak: today });
+    }
+    // Weekly summary — Sunday 6pm+
+    if (prefs.weekly && new Date().getDay() === 0 && last.weekly !== today && h >= 18 && income > 0) {
+      const velaScore = calcVelaScore({ income, expenses, debt: dbt, streak: sk });
+      const body = `Week done${name ? `, ${name}` : ''}. VELA score ${velaScore}, surplus £${surplus.toFixed(0)}/month, streak at ${sk} days. Full picture inside.`;
+      sendLocalNotif(reg, 'Noa', body, 'noa-weekly');
+      saveNotifLast({ ...getNotifLast(), weekly: today });
+    }
+  }
+
+  function sendLocalNotif(reg, title, body, tag) {
+    if (reg?.active) {
+      reg.active.postMessage({ type: 'SHOW_NOTIFICATION', title, body, tag });
+    } else if (Notification.permission === 'granted') {
+      new Notification(title, { body, icon: '/apple-touch-icon.png', tag });
+    }
+  }
+
+  async function requestNotifPermission() {
+    if (!('Notification' in window)) return;
+    const perm = await Notification.requestPermission();
+    setNotifPerms(perm);
+    if (perm === 'granted' && 'serviceWorker' in navigator && 'PushManager' in window) {
+      try {
+        const reg = swRegRef.current || await navigator.serviceWorker.ready;
+        // Try to create a push subscription (requires VAPID public key in env)
+        // If VAPID key not set, this step is skipped gracefully
+        const vapidKey = process.env.REACT_APP_VAPID_PUBLIC_KEY;
+        if (vapidKey) {
+          const sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(vapidKey),
+          });
+          savePushSub(sub.toJSON());
+          console.log('[push] subscribed:', sub.endpoint.slice(0, 40));
+        }
+      } catch (e) { console.warn('[push] subscription failed:', e?.message); }
+    }
+  }
+
+  function urlBase64ToUint8Array(b64) {
+    const padding = '='.repeat((4 - b64.length % 4) % 4);
+    const base64  = (b64 + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw     = window.atob(base64);
+    return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+  }
+
+  // Feature 2 — Call Groq after a transaction is logged, get Noa's comment
+  async function fetchTxComment(entry, updatedLog) {
+    setTxComment('');
+    setTxCommentLoading(true);
+    const thisMonthTotal = updatedLog
+      .filter(e => e.date && e.date.startsWith(new Date().toISOString().slice(0, 7)))
+      .reduce((s, e) => s + e.amount, 0);
+    const catBudget = entry.category === 'lifestyle' ? Math.round(income * 0.25) : entry.category === 'savings' ? Math.round(income * 0.20) : Math.round(income * 0.50);
+    const catSpent  = updatedLog
+      .filter(e => e.date && e.date.startsWith(new Date().toISOString().slice(0, 7)) && (e.category || 'essentials') === entry.category)
+      .reduce((s, e) => s + e.amount, 0);
+    const catPct = catBudget > 0 ? Math.round((catSpent / catBudget) * 100) : 0;
+
+    const txPrompt = `${buildPrompt()}\n\nThe user just logged a transaction: £${entry.amount.toFixed(2)} in ${entry.category}${entry.note ? ` (${entry.note})` : ''}. Category total this month: £${catSpent.toFixed(0)} of £${catBudget} budget (${catPct}%). Total logged this month across all categories: £${thisMonthTotal.toFixed(2)}.\n\nRespond with exactly one Noa-voice sentence commenting on this transaction in context. Dry, specific, uses actual percentages and amounts. No FCA disclaimer needed here — it's just a transaction comment. No greeting.`;
+
+    try {
+      const controller = new AbortController();
+      const timeout    = setTimeout(() => controller.abort(), 10000);
+      const res  = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ financialContext: txPrompt, messages: [{ role: 'user', content: `I just spent £${entry.amount.toFixed(2)} on ${entry.category}.` }] }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      const json = await res.json();
+      const comment = (json.text || '').trim();
+      setTxComment(comment);
+      if (comment) speak(comment);
+    } catch { setTxComment(''); }
+    finally { setTxCommentLoading(false); }
+  }
+
+  // Feature 5 — Monthly Noa narrative
+  async function fetchMonthlyNarrative() {
+    if (narrativeLoading) return;
+    setNarrativeLoading(true);
+    setMonthlyNarrative('');
+    const thisMonthSpend = expenseLog
+      .filter(e => e.date && e.date.startsWith(new Date().toISOString().slice(0, 7)))
+      .reduce((s, e) => s + e.amount, 0);
+    const txCount = expenseLog.filter(e => e.date && e.date.startsWith(new Date().toISOString().slice(0, 7))).length;
+    const velaScoreNow = calcVelaScore({ income, expenses, debt, streak });
+    const narrativePrompt = `${buildPrompt()}\n\nGenerate a 3-4 sentence Noa-voice monthly narrative for this user. Current VELA score: ${velaScoreNow}. Structure: (1) what happened this month — logged spend £${thisMonthSpend.toFixed(0)} across ${txCount} transactions, surplus position; (2) what improved or what to watch; (3) what next month looks like if the trend continues. Use dry, specific language with actual £ numbers. End with: "Guidance only — not FCA-regulated advice."`;
+
+    try {
+      const controller = new AbortController();
+      const timeout    = setTimeout(() => controller.abort(), 12000);
+      const res  = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ financialContext: narrativePrompt, messages: [{ role: 'user', content: 'How did I do this month?' }] }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      const json = await res.json();
+      setMonthlyNarrative((json.text || '').trim());
+      if (json.text) speak(json.text);
+    } catch { setMonthlyNarrative('Something went wrong getting your monthly review. Try again in a moment.'); }
+    finally { setNarrativeLoading(false); }
+  }
+
+  // Feature 3 — Template-based metric explanations (no Groq — instant)
+  function getMetricExplanation(metric) {
+    const velaScore  = calcVelaScore({ income, expenses, debt, streak });
+    const sr         = income > 0 ? Math.round(((income - expenses) / income) * 100) : 0;
+    switch (metric) {
+      case 'score':
+        return `Your Vela Score is ${velaScore}. ${velaScore >= 70 ? `Strong — most users sit around 65. You're in the top third.` : velaScore >= 50 ? `Solid progress. Above average. The debt and streak components are the quickest to improve.` : `Room to grow. Clear debt and keep the streak — those two moves alone add 20+ points.`}`;
+      case 'savings':
+        return `You're saving ${sr >= 0 ? sr : 0}% of your income — £${Math.max(0, income - expenses).toFixed(0)} per month. UK average is 8%. ${sr >= 25 ? `Well above average — you're building real wealth.` : sr >= 8 ? `Around the UK average. Push to 20% when you can.` : sr >= 0 ? `Below the UK average of 8%. The goal is 20% — even £${Math.round(income * 0.05).toFixed(0)}/month more makes a meaningful difference.` : `Expenses exceed income this month. That's the first thing to fix.`}`;
+      case 'pace':
+        return surplus >= 0
+          ? `On track means your spending puts you inside budget by month end, with a £${surplus.toFixed(0)} projected surplus. It can shift fast — watch the lifestyle column.`
+          : `Off track: your spend currently projects a £${Math.abs(surplus).toFixed(0)} shortfall this month. Payday in ${daysToNextPay} day${daysToNextPay === 1 ? '' : 's'} — tighten up until then.`;
+      default: return '';
+    }
   }
 
   // ── Evening check-in handlers ────────────────────────────────────
@@ -1125,26 +1385,75 @@ Use this data for specific, proactive comments — e.g. "you've spent £${txTota
           </div>
         </div>
 
-        {/* 3 metric pills — equal width, full row */}
-        <div style={{ display: 'flex', gap: 10, marginBottom: 10, width: '100%' }}>
+        {/* 3 metric pills — equal width, full row, tappable (Feature 3) */}
+        <div style={{ display: 'flex', gap: 10, marginBottom: activeMetric ? 0 : 10, width: '100%' }}>
           <MetricPill
             label="Vela Score"
             value={`${velaScore}`}
             color={velaScoreColor}
             badge={scoreDelta !== 0 ? `${scoreDelta > 0 ? '↑' : '↓'}${Math.abs(scoreDelta)}` : null}
             badgeColor={scoreDelta >= 0 ? GREEN : RED}
+            active={activeMetric === 'score'}
+            onTap={() => {
+              const m = activeMetric === 'score' ? null : 'score';
+              setActiveMetric(m);
+              if (m) { const ex = getMetricExplanation('score'); speak(ex); }
+            }}
           />
-          <MetricPill label="Savings" value={`${savingsRate}%`} color={savColor} />
-          <MetricPill label="Pace" value={onTrack ? 'On Track' : 'Off Track'} color={onTrack ? GREEN : RED} />
+          <MetricPill
+            label="Savings"
+            value={`${savingsRate}%`}
+            color={savColor}
+            active={activeMetric === 'savings'}
+            onTap={() => {
+              const m = activeMetric === 'savings' ? null : 'savings';
+              setActiveMetric(m);
+              if (m) { const ex = getMetricExplanation('savings'); speak(ex); }
+            }}
+          />
+          <MetricPill
+            label="Pace"
+            value={onTrack ? 'On Track' : 'Off Track'}
+            color={onTrack ? GREEN : RED}
+            active={activeMetric === 'pace'}
+            onTap={() => {
+              const m = activeMetric === 'pace' ? null : 'pace';
+              setActiveMetric(m);
+              if (m) { const ex = getMetricExplanation('pace'); speak(ex); }
+            }}
+          />
         </div>
+
+        {/* Metric explanation card (Feature 3) */}
+        {activeMetric && (
+          <div style={{
+            marginBottom: 10, padding: '10px 14px',
+            background: 'rgba(232,221,208,0.04)',
+            border: '1px solid rgba(232,221,208,0.08)',
+            borderRadius: 12,
+            animation: 'cardIn 0.22s ease-out',
+          }}>
+            <div style={{ fontSize: 12, color: 'rgba(232,221,208,0.62)', lineHeight: 1.55 }}>
+              {getMetricExplanation(activeMetric)}
+            </div>
+          </div>
+        )}
 
         {/* Allocation breakdown + log transaction */}
         {income > 0 && (
           <div style={{ marginBottom: 10 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
-              <div style={{ fontSize: 9, color: 'rgba(232,221,208,0.28)', letterSpacing: '0.8px', textTransform: 'uppercase' }}>Allocation</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ fontSize: 9, color: 'rgba(232,221,208,0.28)', letterSpacing: '0.8px', textTransform: 'uppercase' }}>Allocation</div>
+                {/* Feature 5 — Monthly narrative button */}
+                <button
+                  onClick={fetchMonthlyNarrative}
+                  disabled={narrativeLoading}
+                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 10, color: narrativeLoading ? 'rgba(232,221,208,0.22)' : 'rgba(232,221,208,0.38)', letterSpacing: '0.3px', lineHeight: 1 }}
+                >{narrativeLoading ? '…' : 'How did I do?'}</button>
+              </div>
               <button
-                onClick={() => setShowLogTx(true)}
+                onClick={() => { setTxComment(''); setShowLogTx(true); }}
                 style={{ background: 'rgba(200,184,154,0.12)', border: '1px solid rgba(200,184,154,0.25)', borderRadius: 8, color: PURPLE, fontSize: 14, fontWeight: 700, padding: '1px 10px', cursor: 'pointer', lineHeight: 1.5 }}
               >+</button>
             </div>
@@ -1178,6 +1487,46 @@ Use this data for specific, proactive comments — e.g. "you've spent £${txTota
                 );
               })}
             </div>
+          </div>
+        )}
+
+        {/* Feature 2 — Noa's transaction comment */}
+        {(txCommentLoading || txComment) && (
+          <div style={{
+            marginBottom: 10, display: 'flex', alignItems: 'flex-start', gap: 8,
+            background: 'rgba(200,184,154,0.07)',
+            border: '1px solid rgba(200,184,154,0.15)',
+            borderRadius: 12, padding: '9px 12px',
+            animation: 'cardIn 0.3s ease-out',
+          }}>
+            <span style={{ fontSize: 13, flexShrink: 0, lineHeight: '1.5' }}>✦</span>
+            {txCommentLoading
+              ? <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.3)', lineHeight: 1.5, animation: 'blink 1.6s ease-in-out infinite' }}>Noa is thinking…</div>
+              : <div style={{ fontSize: 12, color: 'rgba(232,221,208,0.62)', lineHeight: 1.55 }}>{txComment}</div>
+            }
+          </div>
+        )}
+
+        {/* Feature 5 — Monthly Noa narrative */}
+        {(narrativeLoading || monthlyNarrative) && (
+          <div style={{
+            marginBottom: 10, padding: '11px 14px',
+            background: 'rgba(200,184,154,0.06)',
+            border: '1px solid rgba(200,184,154,0.14)',
+            borderRadius: 14,
+            animation: 'cardIn 0.3s ease-out',
+          }}>
+            {narrativeLoading
+              ? <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.28)', animation: 'blink 1.6s ease-in-out infinite' }}>Building your monthly review…</div>
+              : <>
+                  <div style={{ fontSize: 10, color: 'rgba(232,221,208,0.32)', letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: 6 }}>This Month</div>
+                  <div style={{ fontSize: 12, color: 'rgba(232,221,208,0.62)', lineHeight: 1.6 }}>{monthlyNarrative}</div>
+                  <button
+                    onClick={() => setMonthlyNarrative('')}
+                    style={{ background: 'none', border: 'none', padding: 0, marginTop: 6, fontSize: 10, color: 'rgba(232,221,208,0.28)', cursor: 'pointer' }}
+                  >dismiss</button>
+                </>
+            }
           </div>
         )}
 
@@ -1239,16 +1588,20 @@ Use this data for specific, proactive comments — e.g. "you've spent £${txTota
           }}
         >Talk to Noa</button>
 
-        {/* Noa insight or daily tip */}
+        {/* Feature 1 — Daily proactive insight */}
         <div style={{
           display: 'flex', alignItems: 'flex-start', gap: 8, marginTop: 10,
           background: 'rgba(232,221,208,0.03)', border: '1px solid rgba(232,221,208,0.05)',
           borderRadius: 12, padding: '9px 12px',
+          minHeight: 38,
         }}>
-          <span style={{ fontSize: 13, flexShrink: 0, lineHeight: '1.5' }}>{insights.length > 0 ? '✦' : '💡'}</span>
-          <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.34)', lineHeight: 1.5 }}>
-            {insights.length > 0 ? insights[0] : getDailyTip()}
-          </div>
+          <span style={{ fontSize: 13, flexShrink: 0, lineHeight: '1.5' }}>✦</span>
+          {insightLoading
+            ? <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.22)', lineHeight: 1.5, animation: 'blink 1.6s ease-in-out infinite' }}>Noa is thinking…</div>
+            : <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.38)', lineHeight: 1.5 }}>
+                {dailyInsight || (insights.length > 0 ? insights[0] : getDailyTip())}
+              </div>
+          }
         </div>
 
         {/* Swipe-up hint */}
@@ -1433,13 +1786,15 @@ Use this data for specific, proactive comments — e.g. "you've spent £${txTota
       </div>
 
       {/* ══════════════════════════════════════════
-          PAYDAY CEREMONY
+          PAYDAY CEREMONY (lazy-loaded for performance)
       ══════════════════════════════════════════ */}
       {showCeremony && (
-        <PaydayCeremony
-          income={income}
-          onComplete={() => { setLastCeremonyYM(); setShowCeremony(false); }}
-        />
+        <Suspense fallback={null}>
+          <PaydayCeremony
+            income={income}
+            onComplete={() => { setLastCeremonyYM(); setShowCeremony(false); }}
+          />
+        </Suspense>
       )}
 
       {/* ══════════════════════════════════════════
@@ -1554,13 +1909,54 @@ Use this data for specific, proactive comments — e.g. "you've spent £${txTota
               min="0"
               style={{ width: '100%', background: 'rgba(232,221,208,0.07)', border: '1px solid rgba(232,221,208,0.11)', borderRadius: 12, padding: '11px 14px', color: '#E8DDD0', fontSize: 16, outline: 'none', fontFamily: 'inherit', marginBottom: 20, boxSizing: 'border-box' }}
             />
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 26 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <div>
                 <div style={{ fontSize: 14, color: '#E8DDD0', marginBottom: 2 }}>Voice responses</div>
                 <div style={{ fontSize: 12, color: 'rgba(232,221,208,0.38)' }}>Noa speaks aloud</div>
               </div>
               <Toggle on={voiceOn} onToggle={() => setVoiceOn(v => !v)} />
             </div>
+
+            {/* Feature 7 — Notification preferences */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 12, color: 'rgba(232,221,208,0.32)', letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: 10 }}>Notifications</div>
+              {notifPerms === 'granted' ? (
+                <>
+                  {[
+                    { key: 'morning', label: 'Morning nudge', sub: '9am daily — budget & payday status' },
+                    { key: 'payday',  label: 'Payday alert',  sub: 'On your salary date' },
+                    { key: 'streak',  label: 'Streak at risk',sub: '7pm if you haven\'t opened today' },
+                    { key: 'weekly',  label: 'Weekly summary',sub: 'Sunday 6pm — VELA score + surplus' },
+                  ].map(({ key, label, sub }) => (
+                    <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                      <div>
+                        <div style={{ fontSize: 13, color: '#E8DDD0', marginBottom: 2 }}>{label}</div>
+                        <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.34)' }}>{sub}</div>
+                      </div>
+                      <Toggle
+                        on={notifPrefs[key]}
+                        onToggle={() => setNotifPrefsState(p => ({ ...p, [key]: !p[key] }))}
+                      />
+                    </div>
+                  ))}
+                  {(/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.matchMedia('(display-mode: standalone)').matches) && (
+                    <div style={{ fontSize: 10, color: 'rgba(232,221,208,0.28)', lineHeight: 1.5, padding: '8px 10px', background: 'rgba(232,221,208,0.04)', borderRadius: 8 }}>
+                      iOS note: notifications only work when Noa is added to your Home Screen. Tap Share → Add to Home Screen to enable them.
+                    </div>
+                  )}
+                </>
+              ) : notifPerms === 'denied' ? (
+                <div style={{ fontSize: 12, color: 'rgba(226,75,74,0.65)', lineHeight: 1.5 }}>
+                  Notifications blocked in your browser. Go to Settings → Safari → Noa to allow them.
+                </div>
+              ) : (
+                <button
+                  onClick={async () => { await requestNotifPermission(); }}
+                  style={{ width: '100%', padding: '10px 0', background: 'rgba(200,184,154,0.1)', border: '1px solid rgba(200,184,154,0.22)', borderRadius: 10, color: PURPLE, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                >Enable notifications</button>
+              )}
+            </div>
+
             <SettingsBtn onClick={saveSettings} color={PURPLE} text="Save" />
             {showResetConfirm ? (
               <>
@@ -1676,6 +2072,8 @@ Use this data for specific, proactive comments — e.g. "you've spent £${txTota
                 setShowLogTx(false);
                 setTxError('');
                 setTxForm({ amount: '', category: 'essentials', note: '', date: new Date().toISOString().slice(0, 10) });
+                // Feature 2 — Noa comments on the transaction
+                fetchTxComment(entry, updated);
               }}
               color={PURPLE}
               text="Log transaction"
@@ -2114,16 +2512,20 @@ function SmallOrb({ alert, eveningDot, orbState = 'idle' }) {
   );
 }
 
-function MetricPill({ label, value, color, badge, badgeColor }) {
+function MetricPill({ label, value, color, badge, badgeColor, onTap, active }) {
   const isLong = value.length > 5;
   return (
-    <div style={{
-      flex: '1 1 0%', minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      gap: 6, padding: '14px 6px',
-      background: 'rgba(232,221,208,0.04)',
-      border: '1px solid rgba(232,221,208,0.06)',
-      borderRadius: 16, position: 'relative',
-    }}>
+    <div
+      onClick={onTap}
+      style={{
+        flex: '1 1 0%', minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        gap: 6, padding: '14px 6px',
+        background: active ? `rgba(${color === '#7CAE9E' ? '124,174,158' : color === '#C9A96E' ? '201,169,110' : color === '#E24B4A' ? '226,75,74' : '200,184,154'},0.10)` : 'rgba(232,221,208,0.04)',
+        border: `1px solid ${active ? color + '55' : 'rgba(232,221,208,0.06)'}`,
+        borderRadius: 16, position: 'relative', cursor: onTap ? 'pointer' : 'default',
+        transition: 'all 0.18s',
+      }}
+    >
       <div style={{ width: 6, height: 6, borderRadius: '50%', background: color, flexShrink: 0 }} />
       <div style={{ fontSize: isLong ? 13 : 20, fontWeight: 700, color, lineHeight: 1, textAlign: 'center' }}>{value}</div>
       <div style={{ fontSize: 10, color: 'rgba(232,221,208,0.3)', letterSpacing: '0.6px', textTransform: 'uppercase' }}>{label}</div>
@@ -2131,6 +2533,9 @@ function MetricPill({ label, value, color, badge, badgeColor }) {
         <div style={{ position: 'absolute', top: 6, right: 7, fontSize: 9, fontWeight: 700, color: badgeColor, letterSpacing: '0.2px' }}>
           {badge}
         </div>
+      )}
+      {onTap && (
+        <div style={{ position: 'absolute', bottom: 5, right: 7, fontSize: 8, color: 'rgba(232,221,208,0.22)', lineHeight: 1 }}>tap</div>
       )}
     </div>
   );
