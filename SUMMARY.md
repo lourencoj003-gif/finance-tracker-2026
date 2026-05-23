@@ -1,6 +1,172 @@
 # SUMMARY — Noa Agent Session Log
 
-## Session: 2026-05-22 (latest — personality rewrite + TTS cleanText)
+## Session: 2026-05-23 (latest — 7-feature improvement session)
+
+### Overview
+Full product evolution pass across 7 features. Goal: make Noa feel like a product people pay for, not a dashboard. Every feature ships with Groq AI, ElevenLabs TTS, 390px layout, and inline loading states.
+
+**Build**: 98.71 kB gzip (main) + 2.91 kB (PaydayCeremony lazy chunk) · compiled successfully · zero warnings
+
+---
+
+### FEATURE 1 — Daily Proactive Insight ✅
+
+**What it does:** On every dashboard load, Noa generates one sharp personalised sentence about the user's financial situation. Reads like something Noa would actually say — dry, specific, uses real £ numbers.
+
+**Implementation:**
+- `buildInsightPrompt()` — standalone helper outside component (reads localStorage directly; accessible inside useEffect closure at mount)
+- On mount: checks `noa_daily_insight` in localStorage for `{ date, text }`. If date matches today, uses cached text. If stale or missing, calls Groq.
+- Groq prompt: requests exactly one sentence under 22 words, Noa voice, no greeting, no FCA disclaimer, references actual payday countdown / surplus / streak
+- Caches result in `localStorage.noa_daily_insight` — one Groq call per day regardless of how many times user opens the app
+- Auto-spoken with 1.4s delay, once per session (tracked via `insightSpokenRef`)
+- Loading state: "Noa is thinking…" pulsing in the bottom card
+- Fallback: shows `insights[0]` from onboarding (or daily rotating tip) if Groq unavailable
+- Replaces the static tip card at the bottom of the dashboard
+
+**Storage additions:** `getDailyInsight()`, `saveDailyInsight()`, key `noa_daily_insight`
+
+---
+
+### FEATURE 2 — Living Transaction Feed ✅
+
+**What it does:** After a user logs a transaction via the + button, Noa responds conversationally. Makes logging feel like a conversation rather than admin.
+
+**Implementation:**
+- After `SettingsBtn` saves to localStorage in LogTransactionModal → calls `fetchTxComment(entry, updatedLog)`
+- `fetchTxComment()`: calculates category budget, category monthly spend, percentage used; builds Groq prompt requesting one Noa-voice sentence about that specific transaction in budget context
+- Response displayed as a card below the allocation strip with `✦` icon
+- Card shows "Noa is thinking…" loading state while fetching
+- Spoken aloud via `speak()`
+- State: `txComment` (string), `txCommentLoading` (bool)
+- Clears on next `setShowLogTx(true)` call (new transaction)
+- 10s AbortController timeout
+
+---
+
+### FEATURE 3 — Tappable Metric Explanations ✅
+
+**What it does:** VELA score, Savings %, and Pace pills are all tappable. Noa speaks a contextual explanation using the user's actual numbers.
+
+**Implementation:**
+- `MetricPill` component updated with `onTap` and `active` props
+- Active pill: colour-tinted background + coloured border + transition
+- `getMetricExplanation(metric)` — template-based (no Groq, instant):
+  - **Score**: quotes actual Vela score, benchmarks against typical user range (65), describes which components to improve
+  - **Savings**: actual percentage + £ amount, benchmarks against UK average 8%, gives specific advice for their band
+  - **Pace**: on track → surplus at month end; off track → deficit + days to payday
+- On tap: sets `activeMetric`, generates explanation, speaks it
+- Explanation card appears below the pills row with `cardIn` animation
+- Tap same pill again → dismisses card and stops
+- State: `activeMetric` (null | 'score' | 'savings' | 'pace')
+
+---
+
+### FEATURE 4 — Onboarding Finale ✅
+
+**What it does:** At end of onboarding, before the dashboard, Noa delivers a 3-sentence personalised financial portrait spoken aloud.
+
+**Implementation (Onboarding.js):**
+- After `buildPlan()` saves insights and data, makes a SECOND Groq call with:
+  - System prompt requesting exactly 3 sentences: observation + honest assessment + forward-looking promise
+  - User message with all collected data: income, expenses, surplus, savings rate, debt, goal
+- Sets `finaleMsg` state, then `setShowFinale(true)`
+- `useEffect` on `showFinale`: calls `voiceSpeak()` with `onEnd` callback → after speech ends, `setExpanding(true)` → `onDone` after 1.6s
+- 8-second hard fallback timer — always proceeds even if speech never starts
+- "Let's get to work" manual button for users who don't want to wait
+- Fallback portrait (3 variants based on surplus/debt/deficit) if Groq unavailable
+- Overlay: orb (speaking state), animated text (`AnimatedText` component), gold button
+- States: `finaleMsg` (string), `showFinale` (bool), `finaleSpokenRef` (prevents double-speak)
+
+---
+
+### FEATURE 5 — Monthly Noa Narrative ✅
+
+**What it does:** "How did I do?" button in the allocation section generates a 3-4 sentence monthly narrative — what happened, what improved, what to watch, next month outlook.
+
+**Implementation:**
+- "How did I do?" button added inline in the allocation section header (left of the + button)
+- `fetchMonthlyNarrative()`: calculates logged spend + tx count for current month, VELA score; sends to Groq with full `buildPrompt()` context
+- Groq prompt structure: (1) what happened this month with actual £ totals; (2) improvement or warning; (3) next month projection; ends with FCA disclaimer
+- Narrative card appears below the allocation strip (same area as Feature 2 tx comment)
+- Loading state: "Building your monthly review…" pulsing
+- Spoken aloud via `speak()`
+- "dismiss" link to close
+- States: `monthlyNarrative` (string), `narrativeLoading` (bool)
+- 12s AbortController timeout
+
+---
+
+### FEATURE 6 — Performance / Lazy Loading ✅
+
+**What was done:**
+- `PaydayCeremony` moved from static import to `React.lazy(() => import('./PaydayCeremony'))`
+- Wrapped in `<Suspense fallback={null}>` in the render tree
+- Result: PaydayCeremony split into a separate 2.91 kB gzip chunk — only loaded when the payday ceremony actually triggers
+- Main bundle: 98.71 kB gzip (unchanged)
+- `Suspense fallback={null}`: no visible flash or layout shift — seamless
+
+**What was NOT done (and why):**
+- `DetailView` is defined in the same file as VelaCore — cannot be lazy-loaded without extracting it to its own file. Low priority since it shares all the same constants/helpers.
+- Bundle is already well-optimised for a CRA SPA at 98.71 kB. No tree-shaking opportunities found.
+- True dashboard-within-2s target: achievable once GROQ_API_KEY is set (current bottleneck is API cold starts, not bundle size)
+
+---
+
+### FEATURE 7 — Push Notifications ✅ (client-side) / ⚠️ (background push needs env vars)
+
+#### Client-side (fully functional)
+- **SW updated** (`public/sw.js`): handles `push` events (shows notification), `notificationclick` (opens/focuses app), and `message` events (for client-triggered notifications via `postMessage`)
+- **SW registration**: `navigator.serviceWorker.register('/sw.js')` on VelaCore mount, stored in `swRegRef`
+- **Permission request**: "Enable notifications" button in Settings calls `requestNotifPermission()` → `Notification.requestPermission()` → attempts push subscription if VAPID key present
+- **4 notification toggles in Settings**: morning nudge, payday alert, streak at risk, weekly summary — each independently on/off, saved to `localStorage.noa_notif_prefs`
+- **Client-side scheduling**: `checkScheduledNotifications()` runs on mount. Checks localStorage for what's been sent today, then:
+  - Morning nudge (9am+, once/day): payday countdown, streak, surplus status
+  - Streak at risk (7pm+, once/day, only if streak ≥ 3): "Don't let today break it"
+  - Weekly summary (Sunday 6pm+, once/week): VELA score + surplus + streak
+- **iOS note**: if on iOS Safari and not in standalone PWA mode, shows instruction to Add to Home Screen
+- **Denied state**: shows clear instructions to unblock in Safari settings
+- **Storage additions**: `getNotifPrefs()`, `saveNotifPrefs()`, `getNotifLast()`, `saveNotifLast()`, `savePushSub()`, keys `noa_notif_prefs`, `noa_notif_last`, `noa_push_sub`
+
+#### Server-side infrastructure (written, NOT committed to main yet)
+- `api/notify.js` — VAPID-authenticated Web Push endpoint. Builds JWT, signs with ES256, sends push to subscription endpoint. Handles all encoding manually (no web-push npm package needed).
+- `api/cron-notify.js` — Vercel cron endpoint at `/api/cron-notify`, scheduled at `0 9 * * *` (9am UTC) via `vercel.json`. Foundation for server-initiated background pushes. Has TODO for subscription storage.
+- `vercel.json` — cron schedule configuration
+
+#### What's needed for true background push (when app is closed):
+1. Generate VAPID key pair (command in `api/notify.js` header)
+2. Set env vars: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_EMAIL`, `REACT_APP_VAPID_PUBLIC_KEY`
+3. Implement subscription storage server-side (Vercel Blob or similar)
+4. `api/cron-notify.js` retrieve + send to stored subscriptions
+
+---
+
+### Files changed this session
+
+| File | Changes |
+|------|---------|
+| `src/vela/storage.js` | +4 keys, +10 helper functions for daily insight, notification prefs, push sub |
+| `public/sw.js` | Push event handler, notificationclick, message handler, cache version bump |
+| `src/vela/screens/VelaCore.js` | Features 1, 2, 3, 5, 6, 7 — ~461 line additions |
+| `src/vela/screens/Onboarding.js` | Feature 4 — ~110 line additions |
+| `api/notify.js` | NEW — VAPID push sender (not yet committed) |
+| `api/cron-notify.js` | NEW — Vercel cron endpoint (not yet committed) |
+| `vercel.json` | NEW — cron schedule (not yet committed) |
+
+---
+
+### Open user actions (priority order)
+
+| Priority | Action | Where |
+|----------|--------|--------|
+| 🔴 1 | Set `GROQ_API_KEY` in Vercel | Vercel → Project → Settings → Env Vars |
+| 🔴 2 | Set `ELEVENLABS_API_KEY` in Vercel | Vercel → Project → Settings → Env Vars |
+| 🟡 3 | Generate VAPID keys (see `api/notify.js` for command) | Terminal |
+| 🟡 4 | Set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_EMAIL`, `REACT_APP_VAPID_PUBLIC_KEY` in Vercel | Vercel → Project → Settings → Env Vars |
+| 🟡 5 | Apple Developer account ($99/yr) + Xcode signing | developer.apple.com |
+
+---
+
+## Session: 2026-05-22 (previous — personality rewrite + TTS cleanText)
 
 ### Changes
 
@@ -99,16 +265,14 @@ Removed hardcoded `XvfwInXiPC6BcAjGWhmS` from `api/speak.js`. Voice ID now reads
 
 ### ITEM 6 — Transaction logging ✅
 
-Code was already functional. Added: inline error message when amount field is empty or invalid ("Enter a valid amount greater than £0"). Error clears on field change or modal close. All existing functionality verified: modal opens, saves to localStorage, allocation strip updates in real time.
+Code was already functional. Added: inline error message when amount field is empty or invalid ("Enter a valid amount greater than £0"). Error clears on field change or modal close.
 
 ---
 
 ### ITEM 7 — Noa intelligence ✅ (code) / ⚠️ (Groq key blocks live test)
 
-- `buildPrompt()` now includes full Noa personality rules (direct, witty, warm, NEVER SAY list, 2–3 sentence limit) merged with financial context.
-- Previously, personality rules only existed in `api/chat.js` as the fallback when `financialContext` was falsy — but `buildPrompt()` always returns a non-empty string, so the fallback was never used. Noa had no personality rules in production.
-- Financial context is comprehensive: name, income, expenses, surplus, debt, goals, savings, Baby Steps, recent transactions all injected from localStorage.
-- Live test blocked: Groq API key is invalid. Will work correctly once key is reset.
+- `buildPrompt()` now includes full Noa personality rules merged with financial context.
+- Previously, personality rules only existed in `api/chat.js` as the fallback — but `buildPrompt()` always returns a non-empty string, so the fallback was never used.
 
 ---
 
@@ -117,19 +281,16 @@ Code was already functional. Added: inline error message when amount field is em
 - Visit counter: `noa_visit_count` in localStorage, incremented on each VelaCore mount.
 - After 2nd+ visit: bottom-of-screen banner appears.
 - Android/Chrome: `beforeinstallprompt` event captured; "Install" button triggers native prompt.
-- iOS Safari: `beforeinstallprompt` never fires; banner shows automatically after 2nd visit.
-- Dismissed forever: `noa_pwa_dismissed = '1'` — banner never shows again.
+- iOS Safari: banner shows automatically after 2nd visit.
+- Dismissed forever: `noa_pwa_dismissed = '1'`.
 - Suppressed if already running as standalone PWA.
 
 ---
 
 ### ITEM 9 — Settings audit ✅
 
-**Bug fixed**: `saveSettings()` was writing to `'vela_name'` directly, but `getUserName()` reads from `'userName'`. Name changes didn't persist in greetings or Noa's responses.
-
-**Fix**: Now calls `setUserName(settingName.trim())` which writes both keys. `setUserName` imported from storage.
-
-All other settings verified working: payday day, savings balance, voice toggle, reset flow.
+**Bug fixed**: `saveSettings()` was writing to `'vela_name'` directly, but `getUserName()` reads from `'userName'`. Name changes didn't persist.
+**Fix**: Now calls `setUserName(settingName.trim())` which writes both keys.
 
 ---
 
@@ -139,77 +300,7 @@ All other settings verified working: payday day, savings balance, voice toggle, 
 - Slow response (>4s): shows "Give me a moment…" placeholder bubble.
 - Timeout: "Give me a moment — my connection's a bit slow right now. Try again in a second."
 - General error: "Something's not quite right on my end. Give it a moment and try again."
-- Placeholder removed before real reply is shown — no ghost bubbles.
 - ElevenLabs failures: fully silent (`console.warn` only, no toast).
-
----
-
-### Files changed this session
-
-| File | Changes |
-|------|---------|
-| `api/speak.js` | Rachel fallback voice on 404 |
-| `src/vela/Orb.js` | Idle breath 3.8s → 3s, glow opacity up |
-| `src/vela/screens/Onboarding.js` | Back button, input validation, history stack |
-| `src/vela/screens/Pin.js` | Reset confirmation modal |
-| `src/vela/screens/VelaCore.js` | Items 1, 4, 5, 7, 8, 9, 10 |
-
-**Build**: 93.26 kB gzip · zero ESLint warnings · compiled successfully
-
----
-
-### Blockers requiring user action (priority order)
-
-| Priority | Action | Where |
-|----------|--------|--------|
-| 🔴 1 | Set `GROQ_API_KEY` in Vercel | Vercel → Project → Settings → Env Vars |
-| 🔴 2 | Set `ELEVENLABS_API_KEY` in Vercel | Vercel → Project → Settings → Env Vars |
-| 🟡 3 | Apple Developer account ($99/yr) | developer.apple.com |
-| 🟡 4 | Xcode signing + archive | `npx cap open ios` |
-
----
-
-## Session: 2026-05-22 (previous — 3 bug fixes: savingsRate, voice env vars, settings name)
-
-Previously `setUserName` was already added to `saveSettings` by that session. The above 10-item session merged it cleanly.
-
----
-
-## Session: 2026-05-22 (previous — voice error surfacing + transaction logging)
-
-#### Voice fix
-- `voice.js`: reads full response body on non-OK, logs `[voice] /api/speak failed: <status> <body>`, calls `onFail` callback
-- `api/speak.js`: returns actual ElevenLabs error body to client
-- `VelaCore.js`: `onFail` shows red toast (now removed in latest session — replaced with silent fallback)
-
-#### Transaction logging
-- `+` button opens `LogTransactionModal`
-- Amount, category, note, date fields
-- Saves to `vela_expense_log`, updates allocation strip in real time
-- `buildPrompt()` injects last 7 days of transactions into Groq system prompt
-
----
-
-## Session: 2026-05-22 (previous — memory fix + chat UI redesign)
-
-- `getUserName` added to storage.js, imported in VelaCore.js
-- Chat history persisted in `noaHistory` (30-message cap)
-- Chat UI redesigned: header orb · scrollable bubbles · input bar
-- MessageBubble component: Noa left-aligned, user right-aligned
-- Auto-scroll, fade-in animation, mic button
-
----
-
-## Session: 2026-05-22 (previous — all VISION.md bugs + features)
-
-- Routing bug fixed (Splash → PIN → Onboarding → PIN → VELA)
-- ElevenLabs voice ID restored
-- Noa personality rewrite (chat.js)
-- Capacitor iOS setup
-- PWA icons generated
-- Privacy policy page
-- 100-day streak milestone
-- Screen blur on app switch
 
 ---
 
