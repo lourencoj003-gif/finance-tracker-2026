@@ -1,4 +1,20 @@
+// Startup diagnostics — logged once on first warm invocation per instance.
+// Shows key presence + first 8 chars (safe: not a secret prefix, just confirms
+// which key is loaded) and the model name. Appears in Vercel function logs.
+const MODEL = "meta-llama/llama-4-scout-17b-16e-instruct";
+let _startupLogged = false;
+function logStartup() {
+  if (_startupLogged) return;
+  _startupLogged = true;
+  const key = process.env.GROQ_API_KEY || '';
+  const present = key.length > 0;
+  const preview = present ? key.slice(0, 8) + '…' : '(not set)';
+  console.log(`[api/chat] startup — GROQ_API_KEY present=${present}, prefix=${preview}, model=${MODEL}`);
+}
+
 export default async function handler(req, res) {
+  logStartup();
+
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -70,7 +86,7 @@ Pension: 20% tax relief automatically (40% for higher-rate). Employer match is a
         "Authorization": "Bearer " + process.env.GROQ_API_KEY,
       },
       body: JSON.stringify({
-        model: "meta-llama/llama-4-scout-17b-16e-instruct",
+        model: MODEL,
         messages: [systemMessage, ...messages],
       }),
     });

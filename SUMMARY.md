@@ -1,6 +1,169 @@
 # SUMMARY — Noa Agent Session Log
 
-## Session: 2026-05-23 (latest — 7-feature improvement session)
+## Session: 2026-05-23 (latest — background build session)
+
+### Overview
+Background build session. Four standalone deliverables plus four internal Noa improvements. No manual steps required during the session.
+
+---
+
+### TASK 1 — Aldric Group Agency Website ✅
+
+**File:** `/agency/index.html`
+**URL:** `https://finance-tracker-2026-navy.vercel.app/agency/`
+
+**What it is:** Premium London consultancy marketing site. Dark-gold aesthetic. Targets UK professional services businesses (med spas, estate agents, mortgage brokers, financial advisors, restaurants, law firms) that want hands-off social media management.
+
+**Design system:**
+- Background `#080808`, gold accent `#C9A96E`, cream text `#F0E8DA`
+- Fonts: Inter + Playfair Display (Google Fonts CDN)
+- Fully mobile responsive: breakpoints at 900px, 600px
+
+**Sections:**
+1. Fixed glass nav (Aldric Group wordmark + "Start Today" CTA)
+2. Hero — headline, sub-headline, stats bar (20+ posts/mo, 3 packages, £750 starting, 0 hours from you)
+3. Problem — pull quote + body copy
+4. Services grid — Growth £750, Scale £1,250 (featured, gold border), Dominance £1,500 — each with 5 bullet deliverables
+5. How It Works — 3 numbered steps
+6. Who It's For — 6 industry cards (2-col grid mobile)
+7. Contact — mailto form (name, company, email, package select, message)
+8. Footer
+
+---
+
+### TASK 2 — Axontra Partners Website ✅
+
+**File:** `/axontra/index.html`
+**URL:** `https://finance-tracker-2026-navy.vercel.app/axontra/`
+
+**What it is:** Operational intelligence consultancy for insurance brokerages. McKinsey-meets-insurtech aesthetic. Targets brokers losing 78% of margin to manual ops.
+
+**Design system:**
+- Background `#05111f` navy, silver `#b8c4d0`, accent `#7eb8d4`
+- Fonts: Inter + Cormorant Garamond (Google Fonts CDN)
+- Animated logo pulse dot (CSS keyframe)
+- CSS grid hero background with glow overlay
+
+**Sections:**
+1. Fixed nav with animated pulse dot
+2. Hero — headline, sub, hero-metrics bar (4 stats), CTAs
+3. Problem — pull quote + 4-stat grid (78%, 3×, 60%, £0)
+4. Services — Diagnostic £2,500 one-off, Infrastructure £3,500/mo (highlighted), Intelligence £5,000/mo
+5. Why Axontra — 4 numbered strategic points
+6. Contact — mailto form
+7. Footer
+
+---
+
+### TASK 3 — Noa App Landing Page ✅
+
+**File:** `/noa-landing/index.html`
+**URL:** `https://finance-tracker-2026-navy.vercel.app/noa-landing/`
+
+**What it is:** Public-facing landing page for Noa. Matches the app's exact aesthetic and colour language. Animated orb, chat demo, pricing.
+
+**Design system:**
+- Background `#111318`, orb colour `#C8B89A`, text `#E8DDD0`, green `#7CAE9E`, gold `#C9A96E`
+- Font: Inter (Google Fonts CDN)
+- CSS animated orb: `orbBreath` scale + box-shadow pulse, `orbRipple` expanding ring, `fadeUp`, `msgIn`, `dotPulse`
+
+**Sections:**
+1. Nav — Noa wordmark + "Try Free" CTA → live app URL
+2. Hero — animated orb + "Meet Noa." h1 + sub + CTAs
+3. Features grid (3 col) — Knows your finances, Talks to you, Keeps you on track
+4. Chat demo — feel-wrap with orb header, 4 realistic chat bubbles, input bar
+5. Pull quote — "Having Noa is like having a brilliant friend…"
+6. Pricing — Noa £6.99/mo (5 features), Noa Pro £9.99/mo (8 features + coach mode)
+7. Final CTA with smaller orb
+8. Footer
+
+All CTAs → `https://finance-tracker-2026-navy.vercel.app`
+
+---
+
+### TASK 4a — VAPID Key Generation Script ✅
+
+**File:** `/scripts/generate-vapid-keys.js`
+**Usage:** `node scripts/generate-vapid-keys.js`
+
+**What it does:**
+- Generates a P-256 ECDH key pair using Node.js native `webcrypto` (no npm packages needed)
+- Exports public key as raw base64url (uncompressed point, 65 bytes → 87 base64url chars)
+- Exports private key scalar from JWK (already base64url from WebCrypto)
+- Prints four Vercel env variable name/value pairs with exact copy-paste formatting:
+  - `VAPID_PUBLIC_KEY` — for `api/notify.js` (server)
+  - `VAPID_PRIVATE_KEY` — for `api/notify.js` (server, keep secret)
+  - `VAPID_EMAIL` — `mailto:` contact for push servers
+  - `REACT_APP_VAPID_PUBLIC_KEY` — same public key, CRA prefix, for `VelaCore.js` push subscription
+- Prints both dashboard URL and Vercel CLI commands for adding env vars
+- Prints redeploy command
+
+**No npm dependencies.** Node ≥ 16 required (webcrypto built-in).
+
+---
+
+### TASK 4b — Groq Key Startup Logging ✅
+
+**File:** `api/chat.js`
+
+**What was added:**
+```
+[api/chat] startup — GROQ_API_KEY present=true, prefix=gsk_abc1…, model=meta-llama/llama-4-scout-17b-16e-instruct
+```
+- `_startupLogged` flag ensures the log fires exactly once per warm function instance (not on every request)
+- Logs: key presence (`true`/`false`), first 8 characters of the key (safe to log — not a secret), model name
+- Model extracted into a `MODEL` constant — reused in the Groq fetch body
+- Visible in Vercel Function logs (Project → Functions tab)
+
+---
+
+### TASK 4d — Dual-Failure Error State ✅
+
+**File:** `src/vela/screens/VelaCore.js`
+
+**What it does:** When both Groq (chat API) and ElevenLabs (voice API) fail simultaneously in the same session, shows a warm full-screen Noa overlay instead of a broken/silent state.
+
+**Implementation:**
+- `groqFailedRef` — set to `true` in `handleMessage` catch block
+- `elevenFailedRef` — set to `true` in `speak()`'s `onFail` callback
+- `checkDualFail()` — called after each failure; when both refs are true, sets `dualFail = true`
+- Overlay: `position: absolute, inset: 0, zIndex: 300` — covers everything
+- Contains: `<Orb size={96} state="idle" />` (slow breathing pulse), "I'm having a moment." heading, "Give me a minute and try again." sub-text, "Try again" dismiss button
+- Dismiss: resets both failure refs to `false`, clears `dualFail` — allows normal use to resume
+- Design: matches app palette (BG `#111318`, text `#E8DDD0`, button gold-tinted with `C8B89A` border)
+
+**Why this matters:** Without this, a degraded-API session shows blank chat responses AND silent orb — indistinguishable from a crash. The overlay gives users a clear, warm signal and an obvious recovery path.
+
+---
+
+### Files added/changed this session
+
+| File | Status | Notes |
+|------|--------|-------|
+| `agency/index.html` | NEW | Aldric Group website |
+| `axontra/index.html` | NEW | Axontra Partners website |
+| `noa-landing/index.html` | NEW | Noa landing page |
+| `scripts/generate-vapid-keys.js` | NEW | VAPID key generator |
+| `api/chat.js` | UPDATED | Startup logging + MODEL constant |
+| `src/vela/screens/VelaCore.js` | UPDATED | Dual-failure overlay |
+
+---
+
+### Manual steps needed (for VAPID / push notifications)
+
+1. **Run:** `node scripts/generate-vapid-keys.js`
+2. **Copy** the 4 env var values printed to terminal
+3. **Add to Vercel** (dashboard or `vercel env add`):
+   - `VAPID_PUBLIC_KEY`
+   - `VAPID_PRIVATE_KEY`
+   - `VAPID_EMAIL` (set to your actual email)
+   - `REACT_APP_VAPID_PUBLIC_KEY` (same value as `VAPID_PUBLIC_KEY`)
+4. **Redeploy** (`vercel --prod`)
+5. (Optional) Implement subscription storage in `api/cron-notify.js` for true background push
+
+---
+
+## Session: 2026-05-23 (previous — 7-feature improvement session)
 
 ### Overview
 Full product evolution pass across 7 features. Goal: make Noa feel like a product people pay for, not a dashboard. Every feature ships with Groq AI, ElevenLabs TTS, 390px layout, and inline loading states.

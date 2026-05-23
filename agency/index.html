@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Aldric Group — AI-powered marketing and automation agency. Content, email, outreach, and automation on a fixed monthly retainer." />
+  <title>Aldric Group — AI Marketing Agency</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #080808;
+      --bg2:      #0f0f0f;
+      --bg3:      #161616;
+      --gold:     #C9A96E;
+      --gold-lt:  #e0c48a;
+      --cream:    #F0E8DA;
+      --muted:    #6b6b6b;
+      --border:   rgba(201,169,110,0.15);
+      --text:     #e8e0d4;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 48px;
+      border-bottom: 1px solid rgba(201,169,110,0.08);
+      background: rgba(8,8,8,0.92);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+    .nav-logo {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 0.05em;
+      text-decoration: none;
+    }
+    .nav-links { display: flex; gap: 36px; align-items: center; }
+    .nav-links a {
+      font-size: 13px; font-weight: 500; color: var(--muted);
+      text-decoration: none; letter-spacing: 0.04em;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--cream); }
+    .nav-cta {
+      padding: 9px 22px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--gold) !important;
+      font-size: 13px !important;
+      font-weight: 500 !important;
+      text-decoration: none;
+      transition: all 0.2s !important;
+    }
+    .nav-cta:hover { background: rgba(201,169,110,0.1) !important; border-color: var(--gold) !important; }
+
+    /* SECTIONS */
+    section { padding: 120px 48px; max-width: 1200px; margin: 0 auto; }
+    .section-label {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.25em;
+      text-transform: uppercase; color: var(--gold); margin-bottom: 20px;
+    }
+
+    /* HERO */
+    .hero-wrap {
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      text-align: center;
+      padding: 160px 48px 120px;
+      position: relative; overflow: hidden;
+    }
+    .hero-bg {
+      position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(ellipse 800px 600px at 50% 40%, rgba(201,169,110,0.06) 0%, transparent 70%);
+    }
+    .hero-inner { position: relative; max-width: 900px; }
+    .hero-tag {
+      display: inline-block;
+      padding: 6px 16px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 12px; font-weight: 500;
+      color: var(--gold); letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+    .hero-h1 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: clamp(44px, 7vw, 80px);
+      font-weight: 700;
+      color: var(--cream);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      margin-bottom: 28px;
+    }
+    .hero-h1 em { font-style: italic; color: var(--gold); }
+    .hero-sub {
+      font-size: clamp(16px, 2vw, 20px);
+      font-weight: 300;
+      color: rgba(240,232,218,0.55);
+      max-width: 680px;
+      margin: 0 auto 48px;
+      line-height: 1.7;
+    }
+    .hero-ctas { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    .btn-primary {
+      padding: 16px 36px;
+      background: var(--gold);
+      color: #080808;
+      font-size: 14px; font-weight: 700;
+      border-radius: 4px;
+      text-decoration: none;
+      letter-spacing: 0.05em;
+      transition: all 0.2s;
+      display: inline-block;
+    }
+    .btn-primary:hover { background: var(--gold-lt); transform: translateY(-1px); }
+    .btn-ghost {
+      padding: 16px 36px;
+      background: transparent;
+      color: var(--cream);
+      font-size: 14px; font-weight: 500;
+      border: 1px solid rgba(240,232,218,0.2);
+      border-radius: 4px;
+      text-decoration: none;
+      letter-spacing: 0.05em;
+      transition: all 0.2s;
+      display: inline-block;
+    }
+    .btn-ghost:hover { border-color: rgba(240,232,218,0.5); background: rgba(240,232,218,0.04); }
+    .hero-stats {
+      display: flex; gap: 56px; justify-content: center;
+      margin-top: 80px; padding-top: 48px;
+      border-top: 1px solid rgba(201,169,110,0.1);
+    }
+    .stat-item { text-align: center; }
+    .stat-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 36px; font-weight: 700;
+      color: var(--gold); line-height: 1;
+      margin-bottom: 6px;
+    }
+    .stat-label { font-size: 12px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+
+    /* PROBLEM */
+    .problem-wrap { background: var(--bg2); border-radius: 2px; }
+    .problem-wrap section { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+    .problem-quote {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(26px, 3.5vw, 38px);
+      font-style: italic;
+      color: var(--cream);
+      line-height: 1.45;
+    }
+    .problem-quote span { color: var(--gold); font-style: normal; }
+    .problem-body { color: rgba(240,232,218,0.55); font-size: 16px; line-height: 1.85; }
+    .problem-body p + p { margin-top: 20px; }
+
+    /* SERVICES */
+    .services-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px;
+      margin-top: 56px;
+    }
+    .service-card {
+      background: var(--bg3);
+      padding: 44px 36px;
+      position: relative;
+      transition: background 0.3s;
+    }
+    .service-card:hover { background: #1c1c1c; }
+    .service-card.featured {
+      background: #141008;
+      border: 1px solid rgba(201,169,110,0.25);
+    }
+    .service-card.featured .service-badge {
+      position: absolute; top: 20px; right: 20px;
+      font-size: 9px; font-weight: 700; letter-spacing: 0.15em;
+      text-transform: uppercase; color: #080808;
+      background: var(--gold); padding: 4px 10px; border-radius: 2px;
+    }
+    .service-tier {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.25em;
+      text-transform: uppercase; color: var(--gold);
+      margin-bottom: 14px;
+    }
+    .service-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 30px; font-weight: 700;
+      color: var(--cream); margin-bottom: 4px;
+    }
+    .service-price {
+      font-size: 26px; font-weight: 700;
+      color: var(--gold); margin-bottom: 32px;
+    }
+    .service-price span { font-size: 14px; font-weight: 400; color: var(--muted); }
+    .service-divider {
+      height: 1px; background: var(--border);
+      margin-bottom: 28px;
+    }
+    .service-features { list-style: none; }
+    .service-features li {
+      font-size: 14px; color: rgba(240,232,218,0.65);
+      padding: 8px 0;
+      display: flex; align-items: flex-start; gap: 12px;
+    }
+    .service-features li::before {
+      content: '—';
+      color: var(--gold); flex-shrink: 0; margin-top: 1px;
+    }
+    .service-cta {
+      display: block; width: 100%;
+      margin-top: 36px; padding: 14px;
+      text-align: center; text-decoration: none;
+      font-size: 13px; font-weight: 600;
+      letter-spacing: 0.06em;
+      border: 1px solid var(--border);
+      color: var(--gold);
+      background: transparent;
+      transition: all 0.2s;
+    }
+    .service-cta:hover { background: rgba(201,169,110,0.08); border-color: var(--gold); }
+    .service-card.featured .service-cta {
+      background: var(--gold); color: #080808; border-color: var(--gold);
+    }
+    .service-card.featured .service-cta:hover { background: var(--gold-lt); }
+
+    /* HOW IT WORKS */
+    .hiw-wrap { background: var(--bg2); }
+    .steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 48px; margin-top: 56px; }
+    .step { position: relative; padding-left: 24px; }
+    .step-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 72px; font-weight: 700;
+      color: rgba(201,169,110,0.08);
+      line-height: 1; position: absolute;
+      top: -18px; left: -4px;
+      pointer-events: none;
+    }
+    .step-content { position: relative; padding-top: 12px; }
+    .step-title {
+      font-size: 20px; font-weight: 700;
+      color: var(--cream); margin-bottom: 14px;
+    }
+    .step-body { font-size: 15px; color: rgba(240,232,218,0.5); line-height: 1.75; }
+
+    /* WHO */
+    .who-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px; margin-top: 56px;
+    }
+    .who-card {
+      background: var(--bg3); padding: 36px 28px;
+      transition: background 0.2s;
+    }
+    .who-card:hover { background: #1a1a1a; }
+    .who-icon { font-size: 28px; margin-bottom: 16px; }
+    .who-name { font-size: 17px; font-weight: 600; color: var(--cream); margin-bottom: 8px; }
+    .who-desc { font-size: 13px; color: var(--muted); line-height: 1.7; }
+
+    /* CONTACT */
+    .contact-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 80px; align-items: start; }
+    .contact-left h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(32px, 4vw, 48px); font-weight: 700;
+      color: var(--cream); line-height: 1.2; margin-bottom: 20px;
+    }
+    .contact-left p { font-size: 16px; color: var(--muted); line-height: 1.75; margin-bottom: 32px; }
+    .contact-detail { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+    .contact-detail-icon { font-size: 14px; color: var(--gold); }
+    .contact-detail-text { font-size: 14px; color: rgba(240,232,218,0.55); }
+
+    form { display: flex; flex-direction: column; gap: 16px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    label { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 6px; }
+    input, select, textarea {
+      width: 100%; padding: 14px 16px;
+      background: var(--bg3); border: 1px solid rgba(240,232,218,0.08);
+      color: var(--cream); font-family: 'Inter', sans-serif;
+      font-size: 14px; border-radius: 2px;
+      outline: none; transition: border-color 0.2s;
+      -webkit-appearance: none; appearance: none;
+    }
+    input:focus, select:focus, textarea:focus { border-color: rgba(201,169,110,0.4); }
+    select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b6b6b'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; padding-right: 40px; }
+    textarea { resize: vertical; min-height: 120px; line-height: 1.6; }
+    select option { background: #161616; }
+    .form-submit {
+      padding: 16px; background: var(--gold);
+      color: #080808; font-size: 14px; font-weight: 700;
+      border: none; border-radius: 2px; cursor: pointer;
+      letter-spacing: 0.06em; transition: background 0.2s;
+    }
+    .form-submit:hover { background: var(--gold-lt); }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid rgba(201,169,110,0.1);
+      padding: 40px 48px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .footer-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 17px; font-weight: 700; color: var(--gold);
+    }
+    .footer-copy { font-size: 12px; color: var(--muted); }
+    .footer-links { display: flex; gap: 24px; }
+    .footer-links a { font-size: 12px; color: var(--muted); text-decoration: none; }
+    .footer-links a:hover { color: var(--cream); }
+
+    /* DIVIDER */
+    .section-divider { width: 48px; height: 1px; background: var(--gold); margin-bottom: 32px; opacity: 0.5; }
+
+    /* MOBILE */
+    @media (max-width: 900px) {
+      nav { padding: 16px 24px; }
+      .nav-links { display: none; }
+      section { padding: 80px 24px; }
+      .hero-wrap { padding: 120px 24px 80px; }
+      .hero-stats { gap: 32px; flex-wrap: wrap; }
+      .problem-wrap section { grid-template-columns: 1fr; gap: 40px; }
+      .services-grid { grid-template-columns: 1fr; }
+      .steps-grid { grid-template-columns: 1fr; gap: 40px; }
+      .who-grid { grid-template-columns: 1fr 1fr; }
+      .contact-grid { grid-template-columns: 1fr; gap: 40px; }
+      .form-row { grid-template-columns: 1fr; }
+      footer { flex-direction: column; gap: 16px; text-align: center; }
+    }
+    @media (max-width: 600px) {
+      .who-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a href="#" class="nav-logo">Aldric Group</a>
+    <div class="nav-links">
+      <a href="#services">Services</a>
+      <a href="#how">How It Works</a>
+      <a href="#who">Who It's For</a>
+      <a href="#contact" class="nav-cta">Get Started</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <div class="hero-wrap">
+    <div class="hero-bg"></div>
+    <div class="hero-inner">
+      <div class="hero-tag">AI Marketing Agency · London</div>
+      <h1 class="hero-h1">Intelligent marketing.<br /><em>Built to scale.</em></h1>
+      <p class="hero-sub">AI agents running your entire marketing stack — content, email, outreach, automation — for a fixed monthly retainer. No agency bloat. No guesswork.</p>
+      <div class="hero-ctas">
+        <a href="#contact" class="btn-primary">See the Packages</a>
+        <a href="#how" class="btn-ghost">How It Works</a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat-item">
+          <div class="stat-num">20+</div>
+          <div class="stat-label">Posts per month</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-num">3</div>
+          <div class="stat-label">Packages</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-num">£750</div>
+          <div class="stat-label">Starting from</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-num">0</div>
+          <div class="stat-label">Hours from you</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROBLEM -->
+  <div class="problem-wrap" id="problem">
+    <section>
+      <div>
+        <div class="section-label">The Reality</div>
+        <p class="problem-quote">
+          "Most businesses are <span>leaving revenue on the table</span> every single month."
+        </p>
+      </div>
+      <div class="problem-body">
+        <p>Inconsistent posting. Leads that never get followed up. Email lists sitting untouched. SMS campaigns that never started. The gap between businesses doing this well and those doing it manually is getting wider every month.</p>
+        <p>The businesses winning right now aren't spending more — they've just automated what you're still doing by hand, or not doing at all. AI has made this accessible to every business. Most just don't know it yet.</p>
+        <p>Aldric Group closes that gap. We build and run your entire marketing stack — so you can focus on the work, not the workflow.</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- SERVICES -->
+  <section id="services">
+    <div class="section-label">What We Offer</div>
+    <div class="section-divider"></div>
+    <h2 style="font-family:'Playfair Display',serif;font-size:clamp(30px,4vw,48px);font-weight:700;color:var(--cream);line-height:1.2;max-width:600px;">Three packages. One outcome — growth.</h2>
+
+    <div class="services-grid">
+      <!-- GROWTH -->
+      <div class="service-card">
+        <div class="service-tier">Tier 01</div>
+        <div class="service-name">Growth</div>
+        <div class="service-price">£750<span>/month</span></div>
+        <div class="service-divider"></div>
+        <ul class="service-features">
+          <li>20 social posts per month across your key platforms</li>
+          <li>Content calendar — planned, written, scheduled</li>
+          <li>Platform management — Instagram, Facebook, LinkedIn</li>
+          <li>Monthly performance report</li>
+          <li>Brand voice guide on onboarding</li>
+        </ul>
+        <a href="#contact" class="service-cta">Get Started →</a>
+      </div>
+
+      <!-- SCALE -->
+      <div class="service-card featured">
+        <div class="service-badge">Most Popular</div>
+        <div class="service-tier">Tier 02</div>
+        <div class="service-name">Scale</div>
+        <div class="service-price">£1,250<span>/month</span></div>
+        <div class="service-divider"></div>
+        <ul class="service-features">
+          <li>Everything in Growth</li>
+          <li>Email marketing — sequences, campaigns, nurture flows</li>
+          <li>Lead capture and CRM automation</li>
+          <li>Fortnightly strategy call (30 mins)</li>
+          <li>Lead nurturing — automated follow-up sequences</li>
+          <li>Monthly performance dashboard</li>
+        </ul>
+        <a href="#contact" class="service-cta">Get Started →</a>
+      </div>
+
+      <!-- DOMINANCE -->
+      <div class="service-card">
+        <div class="service-tier">Tier 03</div>
+        <div class="service-name">Dominance</div>
+        <div class="service-price">£1,500<span>/month</span></div>
+        <div class="service-divider"></div>
+        <ul class="service-features">
+          <li>Everything in Scale</li>
+          <li>SMS outreach campaigns</li>
+          <li>LinkedIn prospecting — targeted connection + message sequences</li>
+          <li>Full funnel automation — awareness to conversion</li>
+          <li>Weekly strategy call</li>
+          <li>Priority response and dedicated account manager</li>
+        </ul>
+        <a href="#contact" class="service-cta">Get Started →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <div class="hiw-wrap" id="how">
+    <section>
+      <div class="section-label">Process</div>
+      <div class="section-divider"></div>
+      <h2 style="font-family:'Playfair Display',serif;font-size:clamp(28px,3.5vw,44px);font-weight:700;color:var(--cream);max-width:500px;line-height:1.2;">Three steps to a marketing machine.</h2>
+      <div class="steps-grid">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-content">
+            <div class="step-title">We audit your current marketing</div>
+            <div class="step-body">We review your existing channels, content, email list, lead flow, and what's being left on the table. No assumptions. We look at what's actually there and map the gaps.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-content">
+            <div class="step-title">We build your automated stack</div>
+            <div class="step-body">AI agents are configured around your brand, tone of voice, and audience. Content pipelines, email sequences, and outreach workflows are built and connected — ready to run.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="step-content">
+            <div class="step-title">Agents run it. You grow.</div>
+            <div class="step-body">From week two, your marketing runs continuously — posting, following up, nurturing leads — without you lifting a finger. We monitor, optimise, and report. You focus on your business.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- WHO -->
+  <section id="who">
+    <div class="section-label">Who It's For</div>
+    <div class="section-divider"></div>
+    <h2 style="font-family:'Playfair Display',serif;font-size:clamp(28px,3.5vw,44px);font-weight:700;color:var(--cream);max-width:600px;line-height:1.2;margin-bottom:0;">Built for businesses doing serious work.</h2>
+    <div class="who-grid">
+      <div class="who-card">
+        <div class="who-icon">💆</div>
+        <div class="who-name">Med Spas & Aesthetics</div>
+        <div class="who-desc">Build a local content presence, capture enquiries, and run email campaigns to keep clients coming back consistently.</div>
+      </div>
+      <div class="who-card">
+        <div class="who-icon">🏠</div>
+        <div class="who-name">Estate Agents</div>
+        <div class="who-desc">Consistent posting on valuations and listings, lead follow-up sequences, and market update campaigns that position you as the local expert.</div>
+      </div>
+      <div class="who-card">
+        <div class="who-icon">🏦</div>
+        <div class="who-name">Mortgage Brokers</div>
+        <div class="who-desc">Rate alert campaigns, first-time buyer content, and automated nurture flows for leads that aren't ready to buy yet — but will be.</div>
+      </div>
+      <div class="who-card">
+        <div class="who-icon">📊</div>
+        <div class="who-name">Financial Advisors</div>
+        <div class="who-desc">Thought leadership content, compliant email campaigns, and LinkedIn outreach to the clients your competitors are missing.</div>
+      </div>
+      <div class="who-card">
+        <div class="who-icon">🍽️</div>
+        <div class="who-name">Restaurants & Hospitality</div>
+        <div class="who-desc">Daily social presence, reservation campaigns, loyalty sequences, and SMS marketing that actually fills tables on quiet nights.</div>
+      </div>
+      <div class="who-card">
+        <div class="who-icon">⚖️</div>
+        <div class="who-name">Law Firms</div>
+        <div class="who-desc">Educational content that builds trust, referral campaigns, and follow-up sequences for enquiries that have gone cold.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <div style="background:var(--bg2);" id="contact">
+    <section>
+      <div class="contact-grid">
+        <div class="contact-left">
+          <div class="section-label">Get In Touch</div>
+          <h2>Ready to stop doing it manually?</h2>
+          <p>Tell us about your business and which package interests you. We'll respond within one business day with a clear proposal — no fluff, no hard sell.</p>
+          <div class="contact-detail">
+            <span class="contact-detail-icon">→</span>
+            <span class="contact-detail-text">Response within 1 business day</span>
+          </div>
+          <div class="contact-detail">
+            <span class="contact-detail-icon">→</span>
+            <span class="contact-detail-text">No setup fees. Month-to-month.</span>
+          </div>
+          <div class="contact-detail">
+            <span class="contact-detail-icon">→</span>
+            <span class="contact-detail-text">First 30-day review included on all packages</span>
+          </div>
+        </div>
+        <form action="mailto:hello@aldricgroup.co.uk" method="post" enctype="text/plain">
+          <div class="form-row">
+            <div>
+              <label for="name">Your Name</label>
+              <input type="text" id="name" name="name" placeholder="e.g. Sarah Mitchell" required />
+            </div>
+            <div>
+              <label for="business">Business Name</label>
+              <input type="text" id="business" name="business" placeholder="e.g. Mitchell & Co." required />
+            </div>
+          </div>
+          <div>
+            <label for="email">Email Address</label>
+            <input type="email" id="email" name="email" placeholder="sarah@mitchellandco.com" required />
+          </div>
+          <div>
+            <label for="package">Which Package Interests You?</label>
+            <select id="package" name="package">
+              <option value="">Select a package…</option>
+              <option value="Growth — £750/mo">Growth — £750/mo</option>
+              <option value="Scale — £1,250/mo">Scale — £1,250/mo</option>
+              <option value="Dominance — £1,500/mo">Dominance — £1,500/mo</option>
+              <option value="Not sure yet">Not sure yet — tell me more</option>
+            </select>
+          </div>
+          <div>
+            <label for="message">Anything else?</label>
+            <textarea id="message" name="message" placeholder="Tell us a bit about your business and your current marketing setup…"></textarea>
+          </div>
+          <button type="submit" class="form-submit">Send Enquiry →</button>
+        </form>
+      </div>
+    </section>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-logo">Aldric Group</div>
+    <div class="footer-copy">© 2026 Aldric Group. London. All rights reserved.</div>
+    <div class="footer-links">
+      <a href="#services">Services</a>
+      <a href="#contact">Contact</a>
+    </div>
+  </footer>
+
+</body>
+</html>

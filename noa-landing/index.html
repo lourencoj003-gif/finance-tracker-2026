@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Noa — your AI financial navigator. She knows your money, remembers your goals, and tells you the truth." />
+  <title>Noa — AI Financial Navigator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #111318;
+      --bg2:     #0e1016;
+      --bg3:     #161a22;
+      --text:    #E8DDD0;
+      --muted:   #A89880;
+      --purple:  #C8B89A;
+      --green:   #7CAE9E;
+      --gold:    #C9A96E;
+      --red:     #E24B4A;
+      --border:  rgba(200,184,154,0.14);
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* KEYFRAMES */
+    @keyframes orbBreath {
+      0%,100% { transform: scale(1);    box-shadow: 0 0 40px 16px rgba(200,184,154,0.28), 0 0 80px 40px rgba(200,184,154,0.10); }
+      50%      { transform: scale(1.09); box-shadow: 0 0 60px 24px rgba(200,184,154,0.44), 0 0 120px 60px rgba(200,184,154,0.16); }
+    }
+    @keyframes orbRipple {
+      0%   { transform: scale(1);   opacity: 0.35; }
+      100% { transform: scale(2.2); opacity: 0; }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes msgIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes dotPulse {
+      0%,100% { opacity: 0.4; transform: scale(0.8); }
+      50%      { opacity: 1;   transform: scale(1); }
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 40px;
+      border-bottom: 1px solid rgba(200,184,154,0.06);
+      background: rgba(17,19,24,0.92);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    }
+    .nav-brand {
+      font-size: 18px; font-weight: 700; color: var(--purple);
+      letter-spacing: 0.06em; text-decoration: none;
+    }
+    .nav-right { display: flex; gap: 14px; align-items: center; }
+    .nav-link { font-size: 13px; color: var(--muted); text-decoration: none; transition: color 0.2s; }
+    .nav-link:hover { color: var(--text); }
+    .nav-cta {
+      padding: 9px 20px; background: var(--purple);
+      color: var(--bg); font-size: 13px; font-weight: 700;
+      border-radius: 8px; text-decoration: none;
+      transition: all 0.2s;
+    }
+    .nav-cta:hover { background: #d4c4a8; }
+
+    /* HERO */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 140px 40px 100px; text-align: center;
+      position: relative; overflow: hidden;
+    }
+    .hero-bg {
+      position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(ellipse 700px 500px at 50% 45%, rgba(200,184,154,0.05) 0%, transparent 70%);
+    }
+
+    /* ORB */
+    .orb-wrap {
+      position: relative; width: 140px; height: 140px;
+      margin-bottom: 48px; flex-shrink: 0;
+    }
+    .orb-ripple {
+      position: absolute; inset: 0; border-radius: 50%;
+      background: rgba(200,184,154,0.1);
+      animation: orbRipple 3s ease-out infinite;
+    }
+    .orb-ripple:nth-child(2) { animation-delay: 1s; }
+    .orb {
+      width: 140px; height: 140px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #e8ddd0, var(--purple) 55%, #7a6a52);
+      animation: orbBreath 3s ease-in-out infinite;
+      position: relative; z-index: 1;
+    }
+
+    .hero-tag {
+      display: inline-block; padding: 5px 14px;
+      background: rgba(200,184,154,0.08);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 11px; font-weight: 600; color: var(--gold);
+      letter-spacing: 0.1em; text-transform: uppercase;
+      margin-bottom: 24px;
+      animation: fadeUp 0.8s ease-out 0.2s both;
+    }
+    .hero h1 {
+      font-size: clamp(52px, 10vw, 96px);
+      font-weight: 800; color: var(--text);
+      letter-spacing: -0.04em; line-height: 1;
+      margin-bottom: 20px;
+      animation: fadeUp 0.8s ease-out 0.4s both;
+    }
+    .hero-sub {
+      font-size: clamp(16px, 2.2vw, 20px);
+      font-weight: 300; color: rgba(232,221,208,0.52);
+      max-width: 560px; line-height: 1.7; margin-bottom: 44px;
+      animation: fadeUp 0.8s ease-out 0.6s both;
+    }
+    .hero-ctas {
+      display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
+      animation: fadeUp 0.8s ease-out 0.8s both;
+    }
+    .btn-main {
+      padding: 16px 36px; background: var(--purple);
+      color: var(--bg); font-size: 15px; font-weight: 700;
+      border-radius: 12px; text-decoration: none;
+      letter-spacing: 0.02em; transition: all 0.2s;
+      display: inline-block;
+    }
+    .btn-main:hover { background: #d4c4a8; transform: translateY(-2px); }
+    .btn-sec {
+      padding: 16px 36px; background: rgba(232,221,208,0.06);
+      border: 1px solid rgba(232,221,208,0.18);
+      color: var(--text); font-size: 15px; font-weight: 400;
+      border-radius: 12px; text-decoration: none;
+      transition: all 0.2s; display: inline-block;
+    }
+    .btn-sec:hover { background: rgba(232,221,208,0.1); }
+    .hero-note {
+      margin-top: 16px; font-size: 12px; color: rgba(168,152,128,0.5);
+      animation: fadeUp 0.8s ease-out 1s both;
+    }
+
+    /* SECTION SHARED */
+    .section { padding: 100px 40px; max-width: 1100px; margin: 0 auto; }
+    .s-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.28em;
+      text-transform: uppercase; color: var(--gold); margin-bottom: 16px;
+    }
+
+    /* WHAT NOA DOES */
+    .features-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px;
+      margin-top: 48px;
+    }
+    .feature {
+      background: rgba(232,221,208,0.03);
+      border: 1px solid rgba(232,221,208,0.06);
+      padding: 36px 28px; border-radius: 0;
+      transition: background 0.25s;
+    }
+    .feature:hover { background: rgba(232,221,208,0.05); }
+    .feature-icon { font-size: 28px; margin-bottom: 20px; }
+    .feature-title {
+      font-size: 18px; font-weight: 700; color: var(--text);
+      margin-bottom: 12px; letter-spacing: -0.01em;
+    }
+    .feature-body { font-size: 14px; color: var(--muted); line-height: 1.75; }
+
+    /* HOW IT FEELS — chat demo */
+    .feel-wrap {
+      background: rgba(232,221,208,0.02);
+      border: 1px solid rgba(232,221,208,0.07);
+      border-radius: 24px; overflow: hidden; margin-top: 56px;
+    }
+    .feel-header {
+      padding: 16px 24px;
+      border-bottom: 1px solid rgba(232,221,208,0.06);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .feel-orb {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #e8ddd0, var(--purple) 55%, #7a6a52);
+      animation: orbBreath 3s ease-in-out infinite; flex-shrink: 0;
+    }
+    .feel-header-text { font-size: 14px; font-weight: 600; color: var(--text); }
+    .feel-header-sub { font-size: 11px; color: var(--muted); }
+    .feel-messages { padding: 28px 24px; display: flex; flex-direction: column; gap: 14px; }
+    .bubble {
+      max-width: 82%; padding: 12px 16px; border-radius: 16px;
+      font-size: 14px; font-weight: 300; line-height: 1.6; color: var(--text);
+    }
+    .bubble-noa {
+      align-self: flex-start;
+      background: rgba(232,221,208,0.06);
+      border: 1px solid rgba(232,221,208,0.09);
+      border-radius: 4px 16px 16px 16px;
+      animation: msgIn 0.4s ease-out both;
+    }
+    .bubble-noa:nth-child(2) { animation-delay: 0.8s; }
+    .bubble-noa:nth-child(3) { animation-delay: 1.8s; }
+    .bubble-user {
+      align-self: flex-end;
+      background: rgba(200,184,154,0.12);
+      border: 1px solid rgba(200,184,154,0.2);
+      border-radius: 16px 4px 16px 16px;
+      animation: msgIn 0.4s ease-out 0.4s both;
+    }
+    .bubble-user:nth-child(4) { animation-delay: 1.4s; }
+    .feel-input {
+      padding: 16px 24px;
+      border-top: 1px solid rgba(232,221,208,0.06);
+      display: flex; gap: 10px; align-items: center;
+    }
+    .feel-input-bar {
+      flex: 1; background: rgba(255,255,255,0.04);
+      border: 0.5px solid rgba(232,221,208,0.14);
+      border-radius: 20px; padding: 11px 18px;
+      font-size: 13px; color: rgba(232,221,208,0.3);
+      font-family: 'Inter', sans-serif; outline: none;
+    }
+
+    /* QUOTE SECTION */
+    .quote-section {
+      text-align: center; padding: 100px 40px;
+      background: rgba(200,184,154,0.02);
+      border-top: 1px solid rgba(200,184,154,0.07);
+      border-bottom: 1px solid rgba(200,184,154,0.07);
+    }
+    .quote-orb-sm {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #e8ddd0, var(--purple) 55%, #7a6a52);
+      animation: orbBreath 3s ease-in-out infinite;
+      margin: 0 auto 28px;
+    }
+    blockquote {
+      font-size: clamp(18px, 3vw, 26px);
+      font-weight: 300; color: var(--text);
+      max-width: 700px; margin: 0 auto; line-height: 1.65;
+      letter-spacing: 0.01em;
+    }
+    blockquote cite {
+      display: block; margin-top: 16px;
+      font-size: 12px; color: var(--muted);
+      font-style: normal; letter-spacing: 0.08em; text-transform: uppercase;
+    }
+
+    /* PRICING */
+    .pricing-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+      margin-top: 48px; max-width: 700px; margin-left: auto; margin-right: auto;
+    }
+    .price-card {
+      background: rgba(232,221,208,0.04);
+      border: 1px solid rgba(232,221,208,0.08);
+      border-radius: 20px; padding: 32px 28px;
+      transition: border-color 0.2s;
+    }
+    .price-card:hover { border-color: rgba(200,184,154,0.2); }
+    .price-card.featured {
+      background: rgba(200,184,154,0.07);
+      border-color: rgba(200,184,154,0.25);
+    }
+    .price-tier {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.2em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 10px;
+    }
+    .price-name {
+      font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 4px;
+    }
+    .price-amount {
+      font-size: 38px; font-weight: 800; color: var(--purple);
+      letter-spacing: -0.03em; line-height: 1; margin-bottom: 4px;
+    }
+    .price-period { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+    .price-divider { height: 1px; background: rgba(232,221,208,0.07); margin-bottom: 20px; }
+    .price-features { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .price-features li {
+      font-size: 13px; color: rgba(232,221,208,0.6);
+      display: flex; gap: 10px; align-items: flex-start;
+    }
+    .price-features li::before { content: '✓'; color: var(--green); flex-shrink: 0; font-weight: 700; }
+    .price-cta {
+      display: block; text-align: center; text-decoration: none;
+      margin-top: 24px; padding: 13px;
+      font-size: 13px; font-weight: 600;
+      border-radius: 10px;
+      border: 1px solid rgba(200,184,154,0.2);
+      color: var(--purple); transition: all 0.2s;
+    }
+    .price-cta:hover { background: rgba(200,184,154,0.1); border-color: rgba(200,184,154,0.4); }
+    .price-card.featured .price-cta {
+      background: var(--purple); color: var(--bg); border-color: var(--purple);
+    }
+    .price-card.featured .price-cta:hover { background: #d4c4a8; }
+    .pricing-trial {
+      text-align: center; margin-top: 28px;
+      font-size: 13px; color: var(--muted);
+    }
+    .pricing-trial strong { color: var(--green); }
+
+    /* FINAL CTA */
+    .final-cta {
+      text-align: center; padding: 120px 40px;
+    }
+    .final-orb-wrap {
+      position: relative; width: 90px; height: 90px;
+      margin: 0 auto 40px;
+    }
+    .final-orb {
+      width: 90px; height: 90px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #e8ddd0, var(--purple) 55%, #7a6a52);
+      animation: orbBreath 3s ease-in-out infinite;
+    }
+    .final-orb-ripple {
+      position: absolute; inset: 0; border-radius: 50%;
+      background: rgba(200,184,154,0.1);
+      animation: orbRipple 3s ease-out infinite;
+    }
+    .final-cta h2 {
+      font-size: clamp(32px, 5vw, 58px);
+      font-weight: 800; color: var(--text);
+      letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 16px;
+    }
+    .final-cta p { font-size: 17px; color: var(--muted); margin-bottom: 40px; }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid rgba(200,184,154,0.07);
+      padding: 32px 40px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .footer-brand { font-size: 15px; font-weight: 700; color: var(--purple); }
+    .footer-copy { font-size: 12px; color: var(--muted); }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a { font-size: 12px; color: var(--muted); text-decoration: none; }
+    .footer-links a:hover { color: var(--text); }
+
+    /* RESPONSIVE */
+    @media (max-width: 800px) {
+      nav { padding: 14px 20px; }
+      .hero { padding: 120px 20px 80px; }
+      .section { padding: 72px 20px; }
+      .features-grid { grid-template-columns: 1fr; }
+      .pricing-grid { grid-template-columns: 1fr; max-width: 400px; }
+      footer { flex-direction: column; gap: 12px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a href="#" class="nav-brand">noa</a>
+    <div class="nav-right">
+      <a href="#features" class="nav-link">What she does</a>
+      <a href="#pricing" class="nav-link">Pricing</a>
+      <a href="https://finance-tracker-2026-navy.vercel.app" class="nav-cta" target="_blank" rel="noopener">Try Free</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-bg"></div>
+    <div class="orb-wrap" style="animation: fadeUp 0.8s ease-out 0.1s both; position:relative;">
+      <div class="orb-ripple"></div>
+      <div class="orb-ripple" style="animation-delay:1s;"></div>
+      <div class="orb"></div>
+    </div>
+    <div class="hero-tag">AI Financial Navigator</div>
+    <h1>Meet Noa.</h1>
+    <p class="hero-sub">Your AI financial navigator. She knows your money, remembers your goals, and tells you the truth.</p>
+    <div class="hero-ctas">
+      <a href="https://finance-tracker-2026-navy.vercel.app" class="btn-main" target="_blank" rel="noopener">Try Noa Free</a>
+      <a href="#features" class="btn-sec">See what she does</a>
+    </div>
+    <p class="hero-note">14-day free trial · No credit card required</p>
+  </div>
+
+  <!-- WHAT NOA DOES -->
+  <div id="features">
+    <div class="section">
+      <div class="s-label">What Noa Does</div>
+      <h2 style="font-size:clamp(28px,4vw,44px);font-weight:800;color:var(--text);letter-spacing:-0.03em;line-height:1.15;max-width:540px;">Not an app. A financial friend who actually knows your numbers.</h2>
+      <div class="features-grid">
+        <div class="feature">
+          <div class="feature-icon">🧠</div>
+          <div class="feature-title">Knows your finances</div>
+          <div class="feature-body">Noa learns your income, expenses, debt, savings, and goals during a 5-minute onboarding. She remembers everything. Every conversation starts where the last one left off — no re-explaining.</div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">💬</div>
+          <div class="feature-title">Talks to you</div>
+          <div class="feature-body">Voice-powered AI that responds like a brilliant friend — not a chatbot. Dry, direct, occasionally funny. Never says "Great question." Gives you the actual number and what to do with it.</div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">📈</div>
+          <div class="feature-title">Keeps you on track</div>
+          <div class="feature-body">Daily insights every morning based on your real data. A one-line reaction every time you log a transaction. A monthly narrative of exactly what happened and what comes next.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOW IT FEELS -->
+  <div id="demo">
+    <div class="section">
+      <div class="s-label">How It Feels</div>
+      <h2 style="font-size:clamp(26px,3.5vw,40px);font-weight:800;color:var(--text);letter-spacing:-0.02em;line-height:1.2;margin-bottom:8px;">Like texting the one person<br />who tells you the truth.</h2>
+      <p style="font-size:15px;color:var(--muted);margin-bottom:0;max-width:480px;">Every response uses your actual numbers. No generic advice. No corporate filler. Just exactly what you need to hear.</p>
+
+      <div class="feel-wrap">
+        <div class="feel-header">
+          <div class="feel-orb"></div>
+          <div>
+            <div class="feel-header-text">Noa</div>
+            <div class="feel-header-sub">Your AI financial navigator</div>
+          </div>
+          <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
+            <div style="width:6px;height:6px;border-radius:50%;background:var(--green);animation:dotPulse 2s ease-in-out infinite;"></div>
+            <span style="font-size:11px;color:var(--muted);">Active</span>
+          </div>
+        </div>
+        <div class="feel-messages">
+          <div class="bubble bubble-noa">
+            Payday in 3 days. You have £163 left. Manageable — if you avoid anything with a menu.
+          </div>
+          <div class="bubble bubble-user">
+            what if I grabbed dinner tonight? nothing crazy
+          </div>
+          <div class="bubble bubble-noa">
+            £163 over 3 days is £54/day. Dinner's fine. The risk is the round of drinks after. You know how that goes.
+          </div>
+          <div class="bubble bubble-noa">
+            Log the transaction when you're back — I'll let you know where you stand. What's the plan for the weekend?
+          </div>
+        </div>
+        <div class="feel-input">
+          <div class="feel-input-bar" contenteditable="false">Ask Noa…</div>
+          <div style="width:36px;height:36px;border-radius:50%;background:rgba(200,184,154,0.12);border:1px solid rgba(200,184,154,0.2);display:flex;align-items:center;justify-content:center;color:var(--purple);font-size:16px;flex-shrink:0;">›</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUOTE -->
+  <div class="quote-section">
+    <div class="quote-orb-sm"></div>
+    <blockquote>
+      "You've hit your savings target 3 weeks running. That's not luck, that's a habit forming."
+      <cite>Noa · Daily insight</cite>
+    </blockquote>
+  </div>
+
+  <!-- PRICING -->
+  <div id="pricing">
+    <div class="section" style="text-align:center;">
+      <div class="s-label" style="text-align:center;">Pricing</div>
+      <h2 style="font-size:clamp(28px,4vw,44px);font-weight:800;color:var(--text);letter-spacing:-0.03em;line-height:1.15;margin-bottom:10px;">Simple. Honest. No surprises.</h2>
+      <p style="font-size:16px;color:var(--muted);max-width:400px;margin:0 auto 0;">14-day free trial on all plans. Cancel any time — your data stays yours.</p>
+
+      <div class="pricing-grid">
+        <div class="price-card">
+          <div class="price-tier">Tier 01</div>
+          <div class="price-name">Noa</div>
+          <div class="price-amount">£6.99</div>
+          <div class="price-period">per month</div>
+          <div class="price-divider"></div>
+          <ul class="price-features">
+            <li>Full onboarding — income, expenses, debt, goals</li>
+            <li>Conversational AI chat (unlimited)</li>
+            <li>Daily proactive insights</li>
+            <li>Transaction logging + reactions</li>
+            <li>VELA score and financial tracking</li>
+            <li>Voice responses (ElevenLabs TTS)</li>
+          </ul>
+          <a href="https://finance-tracker-2026-navy.vercel.app" class="price-cta" target="_blank" rel="noopener">Start Free Trial →</a>
+        </div>
+
+        <div class="price-card featured">
+          <div class="price-tier">Tier 02</div>
+          <div class="price-name">Noa Pro</div>
+          <div class="price-amount">£9.99</div>
+          <div class="price-period">per month</div>
+          <div class="price-divider"></div>
+          <ul class="price-features">
+            <li>Everything in Noa</li>
+            <li>Monthly Noa narrative — full review, spoken</li>
+            <li>Push notifications — morning nudge, streak alerts</li>
+            <li>Weekly financial summary</li>
+            <li>Payday ceremony — allocation walkthrough</li>
+            <li>Priority response time</li>
+          </ul>
+          <a href="https://finance-tracker-2026-navy.vercel.app" class="price-cta" target="_blank" rel="noopener">Start Free Trial →</a>
+        </div>
+      </div>
+
+      <p class="pricing-trial"><strong>Both plans include a 14-day free trial.</strong> No credit card required to start.</p>
+    </div>
+  </div>
+
+  <!-- FINAL CTA -->
+  <div class="final-cta">
+    <div class="final-orb-wrap">
+      <div class="final-orb-ripple"></div>
+      <div class="final-orb"></div>
+    </div>
+    <h2>Your money deserves<br />better than a spreadsheet.</h2>
+    <p>Start your free trial. Noa remembers everything from day one.</p>
+    <a href="https://finance-tracker-2026-navy.vercel.app" class="btn-main" target="_blank" rel="noopener">Try Noa Free →</a>
+    <p style="margin-top:14px;font-size:12px;color:rgba(168,152,128,0.4);">14-day trial · No card needed · Cancel any time</p>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-brand">noa</div>
+    <div class="footer-copy">© 2026 Noa. Built with AI. London.</div>
+    <div class="footer-links">
+      <a href="https://finance-tracker-2026-navy.vercel.app/privacy.html">Privacy</a>
+      <a href="https://finance-tracker-2026-navy.vercel.app">Launch App</a>
+    </div>
+  </footer>
+
+</body>
+</html>

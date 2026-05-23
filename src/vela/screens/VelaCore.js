@@ -329,6 +329,17 @@ export default function VelaCore({ onReset }) {
   const [notifPrefs, setNotifPrefsState]      = useState(() => getNotifPrefs());
   const swRegRef                               = useRef(null);
 
+  // Task 4d — Dual-failure state: shown when both Groq (chat) + ElevenLabs (voice) fail together
+  const [dualFail, setDualFail]               = useState(false);
+  const groqFailedRef                          = useRef(false);
+  const elevenFailedRef                        = useRef(false);
+
+  function checkDualFail() {
+    if (groqFailedRef.current && elevenFailedRef.current) {
+      setDualFail(true);
+    }
+  }
+
   const orbRef           = useRef('idle');
   const voiceOnRef       = useRef(true);
   const recognitionRef   = useRef(null);
@@ -656,8 +667,14 @@ export default function VelaCore({ onReset }) {
       onStart: () => setOrbState('speaking'),
       onEnd:   () => setOrbState('idle'),
       onError: () => setOrbState('idle'),
-      // ElevenLabs failures fall back to browser TTS silently — no user-visible toast
-      onFail:  (msg) => { console.warn('[voice] ElevenLabs unavailable, using browser TTS:', msg); setOrbState('idle'); },
+      // ElevenLabs failures fall back to browser TTS. Also checked against Groq failure
+      // for the dual-fail overlay (Task 4d).
+      onFail:  (msg) => {
+        console.warn('[voice] ElevenLabs unavailable, using browser TTS:', msg);
+        setOrbState('idle');
+        elevenFailedRef.current = true;
+        checkDualFail();
+      },
     });
   }
 
@@ -798,6 +815,9 @@ export default function VelaCore({ onReset }) {
       saveHistory(history);
       setOrbState('idle');
       setCards(prev => prev.filter(c => c.text !== 'Give me a moment…'));
+      // Mark Groq as failed — if ElevenLabs also failed this session, show dual-fail overlay
+      groqFailedRef.current = true;
+      checkDualFail();
       const isTimeout = e?.name === 'AbortError';
       const err = isTimeout
         ? "Give me a moment — my connection's a bit slow right now. Try again in a second."
@@ -2125,6 +2145,58 @@ Use this data for specific, proactive comments — e.g. "you've spent £${txTota
             style={{ flexShrink: 0, background: 'none', border: 'none', color: 'rgba(232,221,208,0.32)', fontSize: 18, cursor: 'pointer', padding: 4, lineHeight: 1 }}
             aria-label="Dismiss"
           >×</button>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════
+          DUAL-FAIL OVERLAY (Task 4d)
+          Shown when both Groq (chat) + ElevenLabs (voice) fail simultaneously.
+          Warm Noa message + orb in slow idle pulse.
+      ══════════════════════════════════════════ */}
+      {dualFail && (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 300,
+          background: 'rgba(17,19,24,0.94)',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          gap: 28, padding: '32px 24px',
+          animation: 'cardIn 0.35s ease-out',
+        }}>
+          {/* Orb — idle state = slow breathing pulse */}
+          <Orb size={96} state="idle" />
+
+          <div style={{ textAlign: 'center', maxWidth: 280 }}>
+            <div style={{
+              fontSize: 19, fontWeight: 600, color: '#E8DDD0',
+              letterSpacing: '-0.01em', lineHeight: 1.4, marginBottom: 10,
+            }}>
+              I'm having a moment.
+            </div>
+            <div style={{
+              fontSize: 14, color: 'rgba(232,221,208,0.6)',
+              lineHeight: 1.6,
+            }}>
+              Give me a minute and try again.
+            </div>
+          </div>
+
+          <button
+            onClick={() => {
+              groqFailedRef.current  = false;
+              elevenFailedRef.current = false;
+              setDualFail(false);
+            }}
+            style={{
+              background: 'rgba(200,184,154,0.12)',
+              border: '1px solid rgba(200,184,154,0.22)',
+              borderRadius: 24, color: '#C8B89A',
+              fontSize: 13, fontWeight: 500,
+              padding: '10px 28px', cursor: 'pointer',
+              letterSpacing: '0.02em',
+            }}
+          >
+            Try again
+          </button>
         </div>
       )}
 
