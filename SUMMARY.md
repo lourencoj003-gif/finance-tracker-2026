@@ -2,6 +2,148 @@
 
 ---
 
+## Session: 2026-05-24 (latest — Tasks A–D: chat restore, double voice, health score, proactive Noa)
+
+### Overview
+
+Four tasks completed in one session. All committed and pushed to `main`. Build: 105.19 kB gzip (+1.54 kB).
+
+---
+
+### TASK A — Restore Talk to Noa ✅
+
+**Commit:** `3d63748` (with Tasks C + D)
+**Files:** `src/vela/screens/VelaCore.js`
+
+**Problem**: The dashboard grew to have more content (weekly review, challenge, payday plan, accounts, health score) than fits in a fixed-height `overflow: hidden` container. The "Talk to Noa" button was pushed off the bottom of the screen and unrecoverable.
+
+**Fix:**
+- Removed `paddingBottom` from the outer dashboard panel; swipe-detection `onTouchStart`/`onTouchEnd` moved to just the **top hero section** (prevents scroll/swipe conflict)
+- Top section changed from `flex: 1` to `flexShrink: 0` — orb, numbers, forecast strip hold their size
+- New **scrollable cards area** (`flex: 1, overflowY: auto, overscrollBehavior: contain`) wraps all cards below the hero — health score ring, metric pills, allocation, transaction feed, narratives, weekly review, challenge card, payday plan, daily insight
+- Scrollable area has `paddingBottom: 76` so content clears the pinned bar
+- **Pinned "Ask Noa…" bar**: `position: absolute, bottom: 0` with gradient fade-up — always visible regardless of scroll position, one tap to open chat
+- **Orb is now tappable** from the dashboard: tapping orb opens chat (unless evening dot is active — then opens evening check-in as before)
+- Chat interface itself unchanged: greeting, message list, mic, input bar all intact
+
+---
+
+### TASK B — Fix double voice ✅
+
+**Commit:** `514ac88`
+**Files:** `src/vela/voice.js`
+
+**Root cause**: `audio.play()` returns a Promise. On some cases (iOS Safari, network cut mid-play, decode error), both `audio.play().catch()` AND `audio.onerror` could fire, triggering browser TTS fallback twice — or ElevenLabs starts playing and then a mid-session network error triggers browser TTS on top.
+
+**Fix:**
+- Added `elevenLabsSucceeded` boolean flag (local to each `speak()` call)
+- `audio.play().then(() => { elevenLabsSucceeded = true; })` — flag set only when ElevenLabs is confirmed playing
+- `audio.onerror`: checks flag — if ElevenLabs already started, calls `onError`/`onEnd` only (no fallback); if it never started, calls `fallback()`
+- `audio.play().catch()`: cleans up the audio element (`src = ''`) before calling fallback, guards with `!elevenLabsSucceeded`
+- Result: **exactly one voice plays at any time** — ElevenLabs when available, browser TTS only when ElevenLabs definitively fails before producing audio
+
+---
+
+### TASK C — Payday Health Score ✅
+
+**Commit:** `3d63748` (with Tasks A + D)
+**Files:** `src/vela/screens/VelaCore.js`
+
+**Formula:**
+```
+timeUsedPct  = daysElapsed / totalDaysInPayPeriod × 100
+budgetUsedPct = totalSpentThisMonth / (income − 20% savings) × 100
+healthScore  = Math.round(100 − (budgetUsedPct − timeUsedPct))  [capped 0–100]
+```
+
+**New helper:** `daysInPayPeriod(paydayDay)` — calculates exact pay period start (previous payday) and returns `{ totalDays, elapsed }` accounting for month-length edge cases.
+
+**Visual (120px SVG ring):**
+| Score | Label | Colour |
+|-------|-------|--------|
+| 85–100 | On Track | Green `#7CAE9E` |
+| 65–84 | Watch it | Amber `#C9A96E` |
+| 40–64 | Falling behind | Orange `#E8955A` |
+| 0–39 | Red zone | Deep amber `#C97032` |
+
+- Score centred inside ring in large bold font
+- Label below in matching colour
+- "Payday in X days" below label
+- Thin savings progress bar at bottom: `savings / goal × 100` — goal = first savings goal or 3× monthly expenses as emergency fund default
+- Ring **animates from 0 → score over 1.5s** on mount (ease-out cubic via `requestAnimationFrame`)
+- **Recalculates and re-animates** after every logged transaction (`useEffect` on `expenseLog.length`)
+- **Tapping the ring** toggles the Weekly Review card (same as tapping the weekly review header)
+- **`buildPrompt()` injection** — added to COMPUTED FACTS section:
+  ```
+  • Payday Health Score: X/100 (Label) — budget vs time comparison; 85+ = on track, <65 = needs attention
+  ```
+- Positioned between the top hero section (orb/numbers) and the metric pills
+
+---
+
+### TASK D — Proactive Noa ✅
+
+**Commit:** `3d63748` (with Tasks A + C)
+**Files:** `src/vela/screens/VelaCore.js`
+
+#### 1. Auto-speak on dashboard load
+Already built (Feature 1 from prior session). Verified working:
+- Daily insight fetched once/day from Groq, cached in `localStorage.noa_daily_insight`
+- Auto-spoken after 1.4s delay on mount, once per session (`insightSpokenRef`)
+- If `privacyMode` is on → shows "Tap to hear Noa" button instead of speaking
+
+#### 2. Idle prompt after 45 seconds
+New: after 45s of no interaction (no chat open), Noa speaks one contextual prompt — fires **once per app session**, resets on next open.
+
+Prompt selection logic (using live data at fire time):
+| Condition | Prompt |
+|-----------|--------|
+| Lifestyle spend > 70% of budget | "Your lifestyle spend is running hot. Want me to break it down?" |
+| Surplus > 0 and payday > 10 days | "Savings are looking good this month. Want to talk about next month?" |
+| Payday < 5 days away | "Payday in X days. Want your payday plan?" |
+| Health score < 65 | "Your budget health is at X. Want some suggestions?" |
+| Default | "Anything you want to talk through?" |
+
+Uses `chatOpenRef` (synced via `useEffect`) to check if user is already in chat before firing.
+
+#### 3. Tappable orb — opens chat
+- Orb `onClick` in dashboard: if evening dot active → evening check-in; otherwise → `unlockAudio(); setChatOpen(true)`
+- Cursor always `pointer` (was `default` when no evening dot)
+
+#### 4. Card tap reactions — metric pills
+Already built (Feature 3 from prior session). Verified in code:
+- Vela Score pill → `getMetricExplanation('score')` → `speak(ex)` — quotes actual score, benchmarks vs UK average
+- Savings pill → `getMetricExplanation('savings')` → `speak(ex)` — actual %, UK average 8%, advice for their band
+- Pace pill → `getMetricExplanation('pace')` → `speak(ex)` — surplus/deficit context, days to payday
+- Active pill gets colour-tinted background + border; second tap dismisses
+
+---
+
+### Commits this session
+
+| Commit | Tasks | Files |
+|--------|-------|-------|
+| `3d63748` | A + C + D | `src/vela/screens/VelaCore.js` |
+| `514ac88` | B | `src/vela/voice.js` |
+
+Both pushed to `origin/main` ✅
+
+---
+
+### What's working now
+
+- ✅ Chat always accessible: pinned "Ask Noa…" bar visible at all times, orb tap also opens chat
+- ✅ Double voice eliminated: `elevenLabsSucceeded` flag ensures only one voice plays
+- ✅ Payday Health Score ring visible between orb and metric pills, with animation + savings bar
+- ✅ Health score injected into every Groq prompt
+- ✅ Noa auto-speaks daily insight on load (if not privacy mode)
+- ✅ Idle prompt fires after 45s silence — once per session
+- ✅ Metric pills (Vela Score / Savings / Pace) tap to explain with Noa's voice
+
+---
+
+---
+
 ## Session: 2026-05-24 (latest — autonomous build session: bugs + accounts + FitLink)
 
 ### Overview
