@@ -328,6 +328,57 @@
     /* DIVIDER */
     .section-divider { width: 48px; height: 1px; background: var(--gold); margin-bottom: 32px; opacity: 0.5; }
 
+    /* STICKY NAV — transparent at top, solid after scroll */
+    nav {
+      transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    nav.scrolled {
+      background: rgba(8,8,8,0.97) !important;
+      border-color: rgba(201,169,110,0.15) !important;
+      box-shadow: 0 1px 24px rgba(0,0,0,0.5);
+    }
+    nav.at-top {
+      background: transparent !important;
+      border-color: transparent !important;
+    }
+
+    /* SCROLL FADE-IN ANIMATIONS */
+    .fade-up {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.65s ease, transform 0.65s ease;
+    }
+    .fade-up.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* FORM ERROR STATES */
+    .field-error { font-size: 11px; color: #e55; margin-top: 5px; display: none; }
+    .field-error.show { display: block; }
+    input.invalid, select.invalid { border-color: rgba(229,85,85,0.6) !important; }
+
+    /* WHATSAPP BUTTON */
+    .btn-whatsapp {
+      padding: 14px 28px;
+      background: #25D366;
+      color: #fff;
+      font-size: 13px; font-weight: 700;
+      border-radius: 4px;
+      text-decoration: none;
+      letter-spacing: 0.04em;
+      transition: all 0.2s;
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-whatsapp:hover { background: #1ebe5a; transform: translateY(-1px); }
+    .btn-whatsapp-contact {
+      display: inline-flex; align-items: center; gap: 8px;
+      color: #25D366; font-size: 14px; font-weight: 600;
+      text-decoration: none; margin-top: 20px;
+      transition: opacity 0.2s;
+    }
+    .btn-whatsapp-contact:hover { opacity: 0.8; }
+
     /* MOBILE */
     @media (max-width: 900px) {
       nav { padding: 16px 24px; }
@@ -371,6 +422,10 @@
       <div class="hero-ctas">
         <a href="#contact" class="btn-primary">See the Packages</a>
         <a href="#how" class="btn-ghost">How It Works</a>
+        <a href="https://wa.me/447700000000" target="_blank" rel="noopener" class="btn-whatsapp">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          Chat with us
+        </a>
       </div>
       <div class="hero-stats">
         <div class="stat-item">
@@ -394,7 +449,7 @@
   </div>
 
   <!-- PROBLEM -->
-  <div class="problem-wrap" id="problem">
+  <div class="problem-wrap fade-up" id="problem">
     <section>
       <div>
         <div class="section-label">The Reality</div>
@@ -411,7 +466,7 @@
   </div>
 
   <!-- SERVICES -->
-  <section id="services">
+  <section id="services" class="fade-up">
     <div class="section-label">What We Offer</div>
     <div class="section-divider"></div>
     <h2 style="font-family:'Playfair Display',serif;font-size:clamp(30px,4vw,48px);font-weight:700;color:var(--cream);line-height:1.2;max-width:600px;">Three packages. One outcome — growth.</h2>
@@ -471,7 +526,7 @@
   </section>
 
   <!-- HOW IT WORKS -->
-  <div class="hiw-wrap" id="how">
+  <div class="hiw-wrap fade-up" id="how">
     <section>
       <div class="section-label">Process</div>
       <div class="section-divider"></div>
@@ -503,7 +558,7 @@
   </div>
 
   <!-- WHO -->
-  <section id="who">
+  <section id="who" class="fade-up">
     <div class="section-label">Who It's For</div>
     <div class="section-divider"></div>
     <h2 style="font-family:'Playfair Display',serif;font-size:clamp(28px,3.5vw,44px);font-weight:700;color:var(--cream);max-width:600px;line-height:1.2;margin-bottom:0;">Built for businesses doing serious work.</h2>
@@ -542,7 +597,7 @@
   </section>
 
   <!-- CONTACT -->
-  <div style="background:var(--bg2);" id="contact">
+  <div style="background:var(--bg2);" id="contact" class="fade-up">
     <section>
       <div class="contact-grid">
         <div class="contact-left">
@@ -561,21 +616,27 @@
             <span class="contact-detail-icon">→</span>
             <span class="contact-detail-text">First 30-day review included on all packages</span>
           </div>
+          <a href="https://wa.me/447700000000" target="_blank" rel="noopener" class="btn-whatsapp-contact">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            Chat with us on WhatsApp
+          </a>
         </div>
-        <form action="mailto:hello@aldricgroup.co.uk" method="post" enctype="text/plain">
+        <form id="aldric-form" action="mailto:hello@aldricgroup.co.uk" method="post" enctype="text/plain">
           <div class="form-row">
             <div>
               <label for="name">Your Name</label>
-              <input type="text" id="name" name="name" placeholder="e.g. Sarah Mitchell" required />
+              <input type="text" id="name" name="name" placeholder="e.g. Sarah Mitchell" />
+              <div class="field-error" id="name-error">Please enter your name</div>
             </div>
             <div>
               <label for="business">Business Name</label>
-              <input type="text" id="business" name="business" placeholder="e.g. Mitchell & Co." required />
+              <input type="text" id="business" name="business" placeholder="e.g. Mitchell & Co." />
             </div>
           </div>
           <div>
             <label for="email">Email Address</label>
-            <input type="email" id="email" name="email" placeholder="sarah@mitchellandco.com" required />
+            <input type="email" id="email" name="email" placeholder="sarah@mitchellandco.com" />
+            <div class="field-error" id="email-error">Please enter a valid email address</div>
           </div>
           <div>
             <label for="package">Which Package Interests You?</label>
@@ -586,12 +647,13 @@
               <option value="Dominance — £1,500/mo">Dominance — £1,500/mo</option>
               <option value="Not sure yet">Not sure yet — tell me more</option>
             </select>
+            <div class="field-error" id="package-error">Please select a package</div>
           </div>
           <div>
             <label for="message">Anything else?</label>
             <textarea id="message" name="message" placeholder="Tell us a bit about your business and your current marketing setup…"></textarea>
           </div>
-          <button type="submit" class="form-submit">Send Enquiry →</button>
+          <button type="button" onclick="submitAldricForm()" class="form-submit">Send Enquiry →</button>
         </form>
       </div>
     </section>
@@ -607,5 +669,77 @@
     </div>
   </footer>
 
+  <script>
+    // Sticky nav — transparent at top, solid after 50px
+    const nav = document.querySelector('nav');
+    function updateNav() {
+      if (window.scrollY > 50) {
+        nav.classList.remove('at-top');
+        nav.classList.add('scrolled');
+      } else {
+        nav.classList.add('at-top');
+        nav.classList.remove('scrolled');
+      }
+    }
+    updateNav();
+    window.addEventListener('scroll', updateNav, { passive: true });
+
+    // Scroll-triggered fade-in via Intersection Observer
+    const fadeEls = document.querySelectorAll('.fade-up');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.08 });
+    fadeEls.forEach(el => observer.observe(el));
+
+    // Form validation + mailto
+    function submitAldricForm() {
+      const nameEl    = document.getElementById('name');
+      const emailEl   = document.getElementById('email');
+      const packageEl = document.getElementById('package');
+      let valid = true;
+
+      // Reset
+      [nameEl, emailEl, packageEl].forEach(el => el.classList.remove('invalid'));
+      document.querySelectorAll('.field-error').forEach(e => e.classList.remove('show'));
+
+      if (!nameEl.value.trim()) {
+        nameEl.classList.add('invalid');
+        document.getElementById('name-error').classList.add('show');
+        valid = false;
+      }
+      const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailEl.value.trim() || !emailRe.test(emailEl.value.trim())) {
+        emailEl.classList.add('invalid');
+        document.getElementById('email-error').classList.add('show');
+        valid = false;
+      }
+      if (!packageEl.value) {
+        packageEl.classList.add('invalid');
+        document.getElementById('package-error').classList.add('show');
+        valid = false;
+      }
+
+      if (valid) {
+        document.getElementById('aldric-form').submit();
+      } else {
+        // Scroll to first error
+        document.querySelector('.invalid').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    // Clear errors on input change
+    ['name','email','package'].forEach(id => {
+      document.getElementById(id).addEventListener('input', function() {
+        this.classList.remove('invalid');
+        const err = document.getElementById(id + '-error');
+        if (err) err.classList.remove('show');
+      });
+    });
+  </script>
 </body>
 </html>
