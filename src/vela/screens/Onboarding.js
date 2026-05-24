@@ -81,8 +81,9 @@ const Q = [
 
 function parsePayday(val) {
   if (/last|end.?of.?month|eom/i.test(val)) return 28;
-  const m = val.match(/\b(\d{1,2})\b/);
-  return m ? Math.min(31, Math.max(1, parseInt(m[0], 10))) : 25;
+  // Use non-word-boundary match so ordinals like "7th", "25th", "1st" are captured
+  const m = val.match(/(\d{1,2})(?:st|nd|rd|th)?(?:\s|$|,)/i) || val.match(/(\d{1,2})/);
+  return m ? Math.min(31, Math.max(1, parseInt(m[1], 10))) : 25;
 }
 
 function parseSavings(val) {
@@ -221,7 +222,13 @@ export default function Onboarding({ onDone }) {
     if      (step === 0) { nd.name = val; setUserName(val); }
     else if (step === 1) { nd.income = parseAmount(val); }
     else if (step === 2) { nd.payday = parsePayday(val); }
-    else if (step === 3) { nd.expenses = parseAmount(val); nd.expenseDetails = val; }
+    else if (step === 3) {
+      // Sum ALL expense amounts listed (e.g. "£900 rent, £60 Netflix, £40 gym" → 1000)
+      const _c = val.replace(/[£$€,]/g, '');
+      const _ns = (_c.match(/\d+(?:\.\d+)?/g) || []).map(Number).filter(n => n > 0);
+      nd.expenses = _ns.length > 0 ? _ns.reduce((a, b) => a + b, 0) : parseAmount(val);
+      nd.expenseDetails = val;
+    }
     else if (step === 4) { nd.lifestyleSpend = val; }
     else if (step === 5) { nd.debt = parseDebt(val); }
     else if (step === 6) { nd.goal = val; }

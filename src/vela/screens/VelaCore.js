@@ -213,15 +213,32 @@ function buildInsightPrompt() {
   const { income = 0, expenses = 0, debt = 0, savings = 0, payday = 25 } = d;
   const surplus = income - expenses;
   const now = new Date();
-  let nextPay = new Date(now.getFullYear(), now.getMonth(), payday);
-  if (nextPay <= now) {
-    const nm = now.getMonth() + 1;
-    const ny = nm > 11 ? now.getFullYear() + 1 : now.getFullYear();
-    nextPay  = new Date(ny, nm > 11 ? 0 : nm, Math.min(payday, new Date(ny, (nm > 11 ? 0 : nm) + 1, 0).getDate()));
-  }
-  const daysToPayday = Math.ceil((nextPay - now) / 86400000);
+  const daysToPayday = daysUntilPayday(payday);
   const streak       = parseInt(localStorage.getItem('vela_streak_count') || '0', 10);
   return `You are Noa — a sharp, dry, warm personal financial navigator. Speak in first person about the user, max 22 words.\n\nUser data: name=${name || 'unknown'}, income=£${income}/month, expenses=£${expenses}/month, surplus=£${surplus}/month, debt=£${debt}, savings=£${savings}, payday in ${daysToPayday} day${daysToPayday === 1 ? '' : 's'}, streak=${streak} days.\n\nExamples of the style:\n- "Payday in 3 days. You have £163 left. Manageable — if you avoid anything with a menu."\n- "You've hit your savings target 3 weeks running. That's not luck, that's a habit."\n- "Your surplus this month is £${surplus.toFixed(0)}. That's £${(surplus * 12).toFixed(0)} a year if you protect it."`;
+}
+
+// ── Payday helpers — correct month-boundary calculation ──────────────
+// Uses today's date (not datetime) so payday-today shows 0, not next-month.
+function calcNextPayday(paydayDay) {
+  const now      = new Date();
+  const todayDay = now.getDate();
+  if (todayDay > paydayDay) {
+    // payday already passed this month → next month
+    const nm  = now.getMonth() + 1;
+    const ny  = nm > 11 ? now.getFullYear() + 1 : now.getFullYear();
+    const nm2 = nm > 11 ? 0 : nm;
+    return new Date(ny, nm2, Math.min(paydayDay, new Date(ny, nm2 + 1, 0).getDate()));
+  } else {
+    const dim = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    return new Date(now.getFullYear(), now.getMonth(), Math.min(paydayDay, dim));
+  }
+}
+function daysUntilPayday(paydayDay) {
+  const nextPay = calcNextPayday(paydayDay);
+  const t       = new Date();
+  const today   = new Date(t.getFullYear(), t.getMonth(), t.getDate());
+  return Math.round((nextPay - today) / 86400000);
 }
 
 function daysLeftInWeek() {
@@ -908,14 +925,7 @@ export default function VelaCore({ onReset }) {
     const inMyPocket  = surplus > 0 ? Math.floor(surplus / daysLeft) : 0;
 
     // Days to next payday
-    let nextPay = new Date(now.getFullYear(), now.getMonth(), payday);
-    if (nextPay <= now) {
-      const nm  = now.getMonth() + 1;
-      const ny  = nm > 11 ? now.getFullYear() + 1 : now.getFullYear();
-      const nm2 = nm > 11 ? 0 : nm;
-      nextPay   = new Date(ny, nm2, Math.min(payday, new Date(ny, nm2 + 1, 0).getDate()));
-    }
-    const daysToPayday = Math.ceil((nextPay - now) / 86400000);
+    const daysToPayday = daysUntilPayday(payday);
     const paydayStatus = daysToPayday === 0 ? 'TODAY' : `in ${daysToPayday} day${daysToPayday === 1 ? '' : 's'}`;
     const paydayAlert  = daysToPayday <= 3
       ? `\n⚡ PAYDAY ALERT: Payday is ${paydayStatus} — proactively lead with the Payday Routine.`
@@ -1101,10 +1111,7 @@ Use this data for specific, proactive comments — e.g. "you've spent £${txTota
     const { income = 0, expenses = 0, payday = 25, debt: dbt = 0 } = d;
     const surplus = income - expenses;
     const sk = parseInt(localStorage.getItem('vela_streak_count') || '0', 10);
-    let now2 = new Date();
-    let nextPay2 = new Date(now2.getFullYear(), now2.getMonth(), payday);
-    if (nextPay2 <= now2) { const nm = now2.getMonth() + 1; const ny = nm > 11 ? now2.getFullYear() + 1 : now2.getFullYear(); nextPay2 = new Date(ny, nm > 11 ? 0 : nm, payday); }
-    const dtpay = Math.ceil((nextPay2 - now2) / 86400000);
+    const dtpay = daysUntilPayday(payday);
 
     // Morning nudge — once per day, if past 9am
     if (prefs.morning && last.morning !== today && h >= 9 && income > 0) {
@@ -1360,14 +1367,7 @@ Use this data for specific, proactive comments — e.g. "you've spent £${txTota
   }
 
   // Days to next payday
-  let nextPayD = new Date(nowD.getFullYear(), nowD.getMonth(), payday);
-  if (nextPayD <= nowD) {
-    const nm  = nowD.getMonth() + 1;
-    const ny  = nm > 11 ? nowD.getFullYear() + 1 : nowD.getFullYear();
-    const nm2 = nm > 11 ? 0 : nm;
-    nextPayD  = new Date(ny, nm2, Math.min(payday, new Date(ny, nm2 + 1, 0).getDate()));
-  }
-  const daysToNextPay = Math.ceil((nextPayD - nowD) / 86400000);
+  const daysToNextPay = daysUntilPayday(payday);
 
   // Monthly / Annual toggle values for pills
   const displayNum = viewMode === 'monthly'
