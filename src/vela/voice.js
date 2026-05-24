@@ -98,6 +98,11 @@ export async function speak(text, { onStart, onEnd, onError, onFail, privacyMode
     const url  = URL.createObjectURL(blob);
     const audio = new Audio(url);
     currentAudio = audio;
+
+    // Guard flag — set true only once audio.play() resolves (ElevenLabs is actually playing).
+    // Prevents browser TTS fallback from firing if ElevenLabs already started.
+    let elevenLabsSucceeded = false;
+
     audio.onended = () => {
       URL.revokeObjectURL(url);
       if (currentAudio === audio) currentAudio = null;
@@ -106,12 +111,30 @@ export async function speak(text, { onStart, onEnd, onError, onFail, privacyMode
     audio.onerror = () => {
       URL.revokeObjectURL(url);
       if (currentAudio === audio) currentAudio = null;
-      if (onError) onError(); else if (onEnd) onEnd();
+      if (elevenLabsSucceeded) {
+        // ElevenLabs started playing but errored mid-playback — do NOT trigger browser TTS,
+        // that would cause double voice. Just signal the end/error.
+        if (onError) onError(); else if (onEnd) onEnd();
+      } else {
+        // ElevenLabs never produced audio — safe to fall back to browser TTS.
+        fallback(clean, onEnd, onError);
+      }
     };
-    audio.play().catch(playErr => {
-      console.error('[voice] audio.play() failed:', playErr?.message);
-      fallback(clean, onEnd, onError);
-    });
+
+    audio.play()
+      .then(() => {
+        // play() resolved — ElevenLabs audio is now streaming. Lock out browser TTS.
+        elevenLabsSucceeded = true;
+      })
+      .catch(playErr => {
+        console.error('[voice] audio.play() failed:', playErr?.message);
+        // play() was rejected (autoplay policy, decode error, etc.) — ElevenLabs never played.
+        // Clean up the audio element so onerror doesn't also fire and cause a second fallback.
+        try { audio.src = ''; } catch (_) {}
+        if (currentAudio === audio) currentAudio = null;
+        URL.revokeObjectURL(url);
+        if (!elevenLabsSucceeded) fallback(clean, onEnd, onError);
+      });
   } catch (err) {
     console.error('[voice] speak() threw:', err?.message);
     if (onFail) onFail(`Voice error: ${err?.message || 'network failure'}`);
