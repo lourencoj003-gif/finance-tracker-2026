@@ -1,6 +1,35 @@
 # SUMMARY — Noa Agent Session Log
 
-## Session: 2026-05-23 (latest — background build session)
+## Session: 2026-05-24 (latest — Landing Pages Build Fix)
+
+### What was done this session
+
+#### BUG FIX — Static landing pages not served on Vercel
+- **Problem**: The new landing pages (`agency/index.html`, `axontra/index.html`, `noa-landing/index.html`) were created in the root directory. Because `react-scripts build` only copies the contents of the `public/` directory into the production `build/` output, these landing pages were completely excluded from the deployed build on Vercel. Visiting URLs like `/noa-landing/` fell back to the main SPA’s `/index.html` (due to Vercel SPA routing) rather than showing the intended landing page.
+- **Fix**: Moved the three folders/pages into the `public/` directory:
+  - `public/agency/index.html`
+  - `public/axontra/index.html`
+  - `public/noa-landing/index.html`
+- **Result**: Running `npm run build` now correctly bundles these directories into the `build/` output folder (`build/agency/index.html`, etc.), which ensures they are correctly served as standalone static pages on Vercel.
+
+#### REPO & LIVE APP AUDIT
+- Checked GitHub for commits in the last 24 hours. Identified 2 new commits:
+  1. `5de029c` (Background build: 3 websites + VAPID script + chat logging + dual-fail overlay)
+  2. `8d0feb2` (Feature 4-7: onboarding finale, monthly narrative, push notifications infra)
+- Verified and reviewed the changes made in these commits (startup logging in `api/chat.js`, dual-failure screen overlay in `VelaCore.js`, onboarding finale narrative in `Onboarding.js`, push notifications backend endpoints in `api/notify.js` & `api/cron-notify.js`).
+- Ran the key generation script `node scripts/generate-vapid-keys.js` to verify functionality.
+
+#### Files changed
+- Moved `agency/index.html` → `public/agency/index.html`
+- Moved `axontra/index.html` → `public/axontra/index.html`
+- Moved `noa-landing/index.html` → `public/noa-landing/index.html`
+
+#### Build result
+- `npm run build` completed successfully with zero warnings and bundled the three static landing pages correctly.
+
+---
+
+## Session: 2026-05-23 (previous — background build session)
 
 ### Overview
 Background build session. Four standalone deliverables plus four internal Noa improvements. No manual steps required during the session.
