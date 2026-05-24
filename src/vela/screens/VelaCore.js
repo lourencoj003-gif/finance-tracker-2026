@@ -21,6 +21,8 @@ const GREEN     = '#7CAE9E';
 const AMBER     = '#C9A96E';
 const RED       = '#E24B4A';
 const DEBT_RED  = '#E24B4A';
+const ORANGE    = '#E8955A';
+const DEEP_AMBER = '#C97032';
 const BG        = '#111318';
 
 const CHALLENGES = [
@@ -240,6 +242,19 @@ function daysUntilPayday(paydayDay) {
   return Math.round((nextPay - today) / 86400000);
 }
 
+// Task C — Payday Health Score: compute days elapsed and total days in pay period
+function daysInPayPeriod(paydayDay) {
+  const nextPay = calcNextPayday(paydayDay);
+  // Previous payday = same day number, previous month
+  const prevPay = new Date(nextPay.getFullYear(), nextPay.getMonth() - 1,
+    Math.min(paydayDay, new Date(nextPay.getFullYear(), nextPay.getMonth(), 0).getDate()));
+  const now     = new Date();
+  const today   = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const totalDays = Math.max(1, Math.round((nextPay - prevPay) / 86400000));
+  const elapsed   = Math.max(0, Math.min(totalDays, Math.round((today - prevPay) / 86400000)));
+  return { totalDays, elapsed };
+}
+
 function daysLeftInWeek() {
   const day = new Date().getDay();
   return day === 0 ? 0 : 7 - day;
@@ -400,6 +415,10 @@ export default function VelaCore({ onReset }) {
   const [privacyMode, setPrivacyModeState]     = useState(() => getPrivacyMode());
   const privacyModeRef                         = useRef(getPrivacyMode());
 
+  // Task C — Payday Health Score ring animation
+  const [payHealthAnimScore, setPayHealthAnimScore] = useState(0);
+  const payHealthAnimRef = useRef(null);
+
   // Task 2 — Conversation Memory: toast state
   const [convoCleared, setConvoCleared]        = useState(false);
 
@@ -425,6 +444,8 @@ export default function VelaCore({ onReset }) {
   const voiceOnRef       = useRef(true);
   const recognitionRef   = useRef(null);
   const greetedRef       = useRef(false);
+  const chatOpenRef      = useRef(false);
+  const idlePromptFiredRef = useRef(false);
   const alertFiredRef    = useRef(false);
   const touchStartY      = useRef(null);
   const touchStartX      = useRef(null);
@@ -438,6 +459,8 @@ export default function VelaCore({ onReset }) {
 
   useEffect(() => { voiceOnRef.current = voiceOn; }, [voiceOn]);
   useEffect(() => { privacyModeRef.current = privacyMode; }, [privacyMode]);
+  // Keep chatOpenRef in sync so idle prompt timer can check it without stale closure
+  useEffect(() => { chatOpenRef.current = chatOpen; }, [chatOpen]);
 
   // ── PWA install prompt — show once after 2nd visit ────────────────
   useEffect(() => {
@@ -654,6 +677,82 @@ export default function VelaCore({ onReset }) {
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Task C — Payday Health Score: animate ring from 0 to score over 1.5s
+  // Re-triggers whenever expenseLog changes (i.e. after every logged transaction)
+  useEffect(() => {
+    if (payHealthAnimRef.current) cancelAnimationFrame(payHealthAnimRef.current);
+    // Compute healthScore fresh here so the animation always targets the current value
+    const d2 = getData() || {};
+    const inc2 = d2.income || 0;
+    const pd2  = d2.payday || 25;
+    const ym2  = new Date().toISOString().slice(0, 7);
+    const spent2 = getExpenseLog()
+      .filter(e => e.date && e.date.startsWith(ym2))
+      .reduce((s, e) => s + e.amount, 0);
+    const { totalDays: td2, elapsed: el2 } = daysInPayPeriod(pd2);
+    const tUp2 = (el2 / td2) * 100;
+    const bud2 = Math.max(1, inc2 - Math.round(inc2 * 0.20));
+    const bUp2 = inc2 > 0 ? (spent2 / bud2) * 100 : 0;
+    const target = inc2 > 0 ? Math.min(100, Math.max(0, Math.round(100 - (bUp2 - tUp2)))) : 0;
+    if (target === 0) { setPayHealthAnimScore(0); return; }
+    const duration = 1500;
+    let startTs = null;
+    const animStep = (ts) => {
+      if (!startTs) startTs = ts;
+      const prog  = Math.min(1, (ts - startTs) / duration);
+      const eased = 1 - Math.pow(1 - prog, 3); // ease-out cubic
+      setPayHealthAnimScore(Math.round(eased * target));
+      if (prog < 1) { payHealthAnimRef.current = requestAnimationFrame(animStep); }
+    };
+    payHealthAnimRef.current = requestAnimationFrame(animStep);
+    return () => { if (payHealthAnimRef.current) cancelAnimationFrame(payHealthAnimRef.current); };
+  }, [expenseLog.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Task D — Idle prompt: after 45s of no interaction, Noa speaks one contextual prompt.
+  // Fires once per app session. Uses fresh data so it reflects current state at fire time.
+  useEffect(() => {
+    const tid = setTimeout(() => {
+      if (idlePromptFiredRef.current) return; // already fired this session
+      if (chatOpenRef.current) return;        // user is already in chat
+      idlePromptFiredRef.current = true;
+      const d2   = getData() || {};
+      const inc2 = d2.income || 0;
+      if (inc2 === 0) return; // no onboarding data yet
+      const exp2 = d2.expenses || 0;
+      const pd2  = d2.payday || 25;
+      const ym2  = new Date().toISOString().slice(0, 7);
+      const log2 = getExpenseLog();
+      const lifestyleSpent = log2
+        .filter(e => e.date && e.date.startsWith(ym2) && (e.category || 'essentials').toLowerCase() === 'lifestyle')
+        .reduce((s, e) => s + e.amount, 0);
+      const lifestyleBudget = Math.max(1, Math.round(inc2 * 0.25));
+      const lifestylePct    = Math.round((lifestyleSpent / lifestyleBudget) * 100);
+      const surplus2        = inc2 - exp2;
+      const dtp2            = daysUntilPayday(pd2);
+      // Quick health score for idle context
+      const totalSpent2 = log2.filter(e => e.date && e.date.startsWith(ym2)).reduce((s, e) => s + e.amount, 0);
+      const { totalDays: td3, elapsed: el3 } = daysInPayPeriod(pd2);
+      const tUp3 = (el3 / td3) * 100;
+      const bud3 = Math.max(1, inc2 - Math.round(inc2 * 0.20));
+      const bUp3 = (totalSpent2 / bud3) * 100;
+      const hs   = Math.min(100, Math.max(0, Math.round(100 - (bUp3 - tUp3))));
+      let msg;
+      if (lifestylePct > 70) {
+        msg = 'Your lifestyle spend is running hot. Want me to break it down?';
+      } else if (surplus2 > 0 && dtp2 > 10) {
+        msg = 'Savings are looking good this month. Want to talk about next month?';
+      } else if (dtp2 < 5 && dtp2 > 0) {
+        msg = `Payday in ${dtp2} day${dtp2 === 1 ? '' : 's'}. Want your payday plan?`;
+      } else if (hs < 65) {
+        msg = `Your budget health is at ${hs}. Want some suggestions?`;
+      } else {
+        msg = 'Anything you want to talk through?';
+      }
+      speak(msg);
+    }, 45000);
+    return () => clearTimeout(tid);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Chat greeting: check-in → alert → normal ──────────────────────
@@ -1009,6 +1108,17 @@ export default function VelaCore({ onReset }) {
       ? `\n\n══ RECENT CONVERSATION CONTEXT (last ${recentMemory.length} exchange${recentMemory.length > 1 ? 's' : ''} — use for continuity, don't repeat verbatim) ══\n${recentMemory.map((m, i) => `[${i + 1}] User: ${m.user}\n    Noa: ${m.noa}`).join('\n')}`
       : '';
 
+    // Task C — Payday Health Score for Noa's context
+    const { totalDays: bpTotalDays, elapsed: bpElapsed } = daysInPayPeriod(payday);
+    const bpTimeUsed   = (bpElapsed / bpTotalDays) * 100;
+    const bpBudget     = Math.max(1, income - Math.round(income * 0.20));
+    const bpSpent      = getExpenseLog()
+      .filter(e => e.date && e.date.startsWith(new Date().toISOString().slice(0, 7)))
+      .reduce((s, e) => s + e.amount, 0);
+    const bpBudgetUsed = income > 0 ? (bpSpent / bpBudget) * 100 : 0;
+    const bpScore      = income > 0 ? Math.min(100, Math.max(0, Math.round(100 - (bpBudgetUsed - bpTimeUsed)))) : 0;
+    const bpLabel      = bpScore >= 85 ? 'On Track' : bpScore >= 65 ? 'Watch it' : bpScore >= 40 ? 'Falling behind' : 'Red zone';
+
     return `You are Noa — a personal financial navigator. You are not a chatbot, not an advisor, not an app. You are the financial version of that one brilliant friend everyone wishes they had: sharp, warm, occasionally funny, always honest, and completely invested in the user's financial future.
 ${name ? `You are speaking with ${name}. Use their name naturally — not robotically, and not in every message.` : ''}
 
@@ -1059,6 +1169,7 @@ ${insights.length > 0 ? `• Prior insights:  ${insights.slice(0, 3).join(' | ')
 • IN MY POCKET:      £${inMyPocket}/day safe to spend (surplus ÷ ${daysLeft} days left this month)
 • Savings rate:      ${savingsRate}% of income — ${srLabel}
 • Current Baby Step: ${babyStepLabel}${paydayAlert}
+• Payday Health Score: ${bpScore}/100 (${bpLabel}) — budget vs time comparison; 85+ = on track, <65 = needs attention
 
 ══ PAYDAY ROUTINE — use when user mentions payday ══
 When income lands on the ${ord(payday)}, allocate in order:
@@ -1441,6 +1552,29 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
   // Days to next payday
   const daysToNextPay = daysUntilPayday(payday);
 
+  // Task C — Payday Health Score (used for ring display + idle prompt + Noa context)
+  const totalSpentThisMonthH = expenseLog
+    .filter(e => e.date && e.date.startsWith(thisMonthYM))
+    .reduce((s, e) => s + e.amount, 0);
+  const { totalDays: phTotalDays, elapsed: phElapsed } = daysInPayPeriod(payday);
+  const phTimeUsedPct   = (phElapsed / phTotalDays) * 100;
+  const phSpendableBudget = Math.max(1, income - Math.round(income * 0.20));
+  const phBudgetUsedPct   = income > 0 ? (totalSpentThisMonthH / phSpendableBudget) * 100 : 0;
+  const healthScore = income > 0
+    ? Math.min(100, Math.max(0, Math.round(100 - (phBudgetUsedPct - phTimeUsedPct))))
+    : 0;
+  const healthLabel = healthScore >= 85 ? 'On Track'
+    : healthScore >= 65 ? 'Watch it'
+    : healthScore >= 40 ? 'Falling behind'
+    : 'Red zone';
+  const healthColor = healthScore >= 85 ? GREEN
+    : healthScore >= 65 ? AMBER
+    : healthScore >= 40 ? ORANGE
+    : DEEP_AMBER;
+  // Savings goal bar
+  const savingsGoalForBar = goals.length > 0 ? goals[0].target : (expenses > 0 ? Math.round(expenses * 3) : 0);
+  const savingsPct = savingsGoalForBar > 0 ? Math.min(100, Math.round((savings / savingsGoalForBar) * 100)) : 0;
+
   // Monthly / Annual toggle values for pills
   const displayNum = viewMode === 'monthly'
     ? `£${Math.abs(surplus).toLocaleString('en-GB')}`
@@ -1488,13 +1622,10 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
           DASHBOARD — swipe up to reveal detail
       ══════════════════════════════════════════ */}
       <div
-        onTouchStart={onTouchStart}
-        onTouchEnd={e => onSwipeEnd(e, false)}
         style={{
           position: 'absolute', inset: 0,
           display: 'flex', flexDirection: 'column',
           paddingTop: 'max(env(safe-area-inset-top), 24px)',
-          paddingBottom: 'max(env(safe-area-inset-bottom), 16px)',
           paddingLeft: 20, paddingRight: 20,
           boxSizing: 'border-box',
           transform: detailOpen ? 'translateY(-100%)' : 'translateY(0)',
@@ -1531,13 +1662,24 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
           </div>
         </div>
 
-        {/* Top section */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+        {/* Top hero section — fixed height, swipe-up to detail */}
+        <div
+          onTouchStart={onTouchStart}
+          onTouchEnd={e => onSwipeEnd(e, false)}
+          style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+        >
           <div style={{ fontSize: 15, color: 'rgba(232,221,208,0.36)', letterSpacing: '0.2px' }}>{getGreeting()}</div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
             <div
-              onClick={() => { if (showEveningDot) { setEveningPhase('ask'); setEveningNote(''); setEveningCheckOpen(true); } }}
-              style={{ cursor: showEveningDot ? 'pointer' : 'default', position: 'relative', display: 'inline-block' }}
+              onClick={() => {
+                if (showEveningDot) {
+                  setEveningPhase('ask'); setEveningNote(''); setEveningCheckOpen(true);
+                } else {
+                  // Task D — tapping the orb opens chat directly
+                  unlockAudio(); setChatOpen(true);
+                }
+              }}
+              style={{ cursor: 'pointer', position: 'relative', display: 'inline-block' }}
             >
               <SmallOrb alert={spendAlert} eveningDot={showEveningDot} orbState={chatOpen ? orbState : 'idle'} mood={mood} moodCfg={moodCfg} />
               {privacyMode && (
@@ -1603,7 +1745,87 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
               </div>
             ))}
           </div>
-        </div>
+        </div>{/* end top hero section */}
+
+        {/* ── Scrollable cards area ─────────────────────────────────── */}
+        <div
+          className="chat-scroll"
+          style={{
+            flex: 1, overflowY: 'auto',
+            paddingBottom: 76, /* room for pinned Ask Noa bar */
+            overscrollBehavior: 'contain',
+            WebkitOverflowScrolling: 'touch',
+          }}
+        >
+
+        {/* Task C — Payday Health Score ring */}
+        {income > 0 && (() => {
+          const ringR    = 46;
+          const ringCirc = 2 * Math.PI * ringR;
+          const ringDash = (payHealthAnimScore / 100) * ringCirc;
+          return (
+            <div
+              onClick={() => setWeeklyExpanded(e => !e)}
+              style={{
+                marginBottom: 10, cursor: 'pointer',
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                background: 'rgba(232,221,208,0.04)', border: '1px solid rgba(232,221,208,0.08)',
+                borderRadius: 16, padding: '14px 20px',
+                animation: 'cardIn 0.4s ease-out',
+              }}
+            >
+              {/* SVG ring */}
+              <div style={{ position: 'relative', marginBottom: 4 }}>
+                <svg width="120" height="120" viewBox="0 0 120 120">
+                  {/* Track */}
+                  <circle cx="60" cy="60" r={ringR} fill="none"
+                    stroke="rgba(255,255,255,0.06)" strokeWidth="8" />
+                  {/* Progress */}
+                  <circle cx="60" cy="60" r={ringR} fill="none"
+                    stroke={healthColor} strokeWidth="8" strokeLinecap="round"
+                    strokeDasharray={`${ringDash} ${ringCirc}`}
+                    transform="rotate(-90 60 60)"
+                    style={{ transition: 'stroke-dasharray 0.06s linear' }}
+                  />
+                </svg>
+                {/* Score centred inside ring */}
+                <div style={{
+                  position: 'absolute', inset: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <div style={{ fontSize: 30, fontWeight: 800, color: healthColor, letterSpacing: '-1.5px', lineHeight: 1 }}>
+                    {payHealthAnimScore}
+                  </div>
+                </div>
+              </div>
+              {/* Label */}
+              <div style={{ fontSize: 14, fontWeight: 700, color: healthColor, marginBottom: 5 }}>{healthLabel}</div>
+              {/* Payday countdown */}
+              <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.45)', marginBottom: savingsGoalForBar > 0 ? 10 : 0 }}>
+                {daysToNextPay === 0 ? 'Payday today 💰' : `Payday in ${daysToNextPay} day${daysToNextPay === 1 ? '' : 's'}`}
+              </div>
+              {/* Savings progress bar */}
+              {savingsGoalForBar > 0 && (
+                <div style={{ width: '100%', maxWidth: 220 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontSize: 9, color: 'rgba(232,221,208,0.3)' }}>Savings</span>
+                    <span style={{ fontSize: 9, color: 'rgba(232,221,208,0.4)' }}>
+                      £{savings.toLocaleString('en-GB')} of £{savingsGoalForBar.toLocaleString('en-GB')} — {savingsPct}%
+                    </span>
+                  </div>
+                  <div style={{ height: 3, background: 'rgba(232,221,208,0.08)', borderRadius: 2 }}>
+                    <div style={{
+                      height: '100%', width: `${savingsPct}%`,
+                      background: GREEN, borderRadius: 2,
+                      transition: 'width 0.8s ease',
+                      minWidth: savings > 0 ? 3 : 0,
+                    }} />
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* 3 metric pills — equal width, full row, tappable (Feature 3) */}
         <div style={{ display: 'flex', gap: 10, marginBottom: activeMetric ? 0 : 10, width: '100%' }}>
@@ -1909,22 +2131,9 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
           >💰 My Payday Plan</button>
         )}
 
-        {/* Talk to Noa button */}
-        <button
-          onClick={() => { unlockAudio(); setChatOpen(true); }}
-          style={{
-            width: '100%', height: 58,
-            background: 'rgba(232,221,208,0.07)',
-            border: '1px solid rgba(232,221,208,0.28)',
-            borderRadius: 18,
-            color: '#E8DDD0', fontSize: 17, fontWeight: 500, cursor: 'pointer',
-            letterSpacing: '0.08em',
-          }}
-        >Talk to Noa</button>
-
         {/* Feature 1 — Daily proactive insight */}
         <div style={{
-          display: 'flex', alignItems: 'flex-start', gap: 8, marginTop: 10,
+          display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 6,
           background: 'rgba(232,221,208,0.03)', border: '1px solid rgba(232,221,208,0.05)',
           borderRadius: 12, padding: '9px 12px',
           minHeight: 38,
@@ -1944,9 +2153,31 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
           }
         </div>
 
-        {/* Swipe-up hint */}
-        <div style={{ textAlign: 'center', marginTop: 8, animation: 'swipeHint 2.6s ease-in-out infinite' }}>
-          <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.22)', letterSpacing: '0.5px' }}>↑  details</div>
+        </div>{/* end scrollable cards area */}
+
+        {/* ── Pinned "Ask Noa" bar — always visible, one tap away ── */}
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0,
+          paddingBottom: 'max(env(safe-area-inset-bottom), 12px)',
+          paddingLeft: 20, paddingRight: 20, paddingTop: 10,
+          background: `linear-gradient(to bottom, transparent, ${BG} 45%)`,
+          pointerEvents: 'none', zIndex: 8,
+        }}>
+          <button
+            onClick={() => { unlockAudio(); setChatOpen(true); }}
+            style={{
+              pointerEvents: 'all',
+              width: '100%', height: 52,
+              background: 'rgba(232,221,208,0.08)',
+              border: '1px solid rgba(232,221,208,0.24)',
+              borderRadius: 18,
+              color: '#E8DDD0', fontSize: 16, fontWeight: 400, cursor: 'pointer',
+              letterSpacing: '0.06em',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            }}
+          >
+            <span style={{ fontSize: 15, opacity: 0.55 }}>✦</span> Ask Noa…
+          </button>
         </div>
       </div>
 
