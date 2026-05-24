@@ -85,6 +85,10 @@ const KEYFRAMES = `
     0%,100% { transform: scale(1);    opacity: 1; }
     50%     { transform: scale(1.45); opacity: 0.55; }
   }
+  @keyframes orbMoodPulse {
+    0%,100% { transform: scale(1);    filter: brightness(1);    }
+    50%     { transform: scale(1.07); filter: brightness(1.12); }
+  }
   @keyframes confettiFly {
     0%   { transform: translate(0, 0) scale(1);                           opacity: 1; }
     100% { transform: translate(var(--dx), var(--dy)) scale(0.35);        opacity: 0; }
@@ -231,6 +235,49 @@ function getGreeting() {
   const base = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
   return name ? `${base}, ${name}` : base;
 }
+
+// Task 3 — Orb Mood States
+// Returns one of: 'thriving' | 'steady' | 'watchful' | 'alert'
+function calcMood({ income, expenses, surplus, savingsGoal, savingsBalance }) {
+  if (income <= 0) return 'steady';
+  const surplusRatio = surplus / income;
+  const goalPct = savingsGoal > 0 ? savingsBalance / savingsGoal : 1;
+  if (surplus < 0 || goalPct < 0.20) return 'alert';
+  if (surplusRatio < 0.10 || goalPct < 0.50) return 'watchful';
+  if (surplusRatio > 0.25 && goalPct >= 0.80) return 'thriving';
+  return 'steady';
+}
+
+const MOOD_CFG = {
+  thriving: {
+    label: 'THRIVING',
+    labelColor: 'rgba(201,169,110,0.65)',
+    glowColor:  'rgba(201,169,110,0.55)',
+    pulseSpeed: '4s',
+    shadow: '0 0 32px 12px rgba(201,169,110,0.42)',
+  },
+  steady: {
+    label: 'STEADY',
+    labelColor: 'rgba(232,221,208,0.32)',
+    glowColor:  'rgba(200,184,154,0.42)',
+    pulseSpeed: '3s',
+    shadow: '0 0 18px 6px rgba(200,184,154,0.32)',
+  },
+  watchful: {
+    label: 'WATCHFUL',
+    labelColor: 'rgba(180,190,200,0.48)',
+    glowColor:  'rgba(170,185,205,0.38)',
+    pulseSpeed: '2.5s',
+    shadow: '0 0 18px 6px rgba(170,185,205,0.28)',
+  },
+  alert: {
+    label: 'ALERT',
+    labelColor: 'rgba(201,169,110,0.72)',
+    glowColor:  'rgba(201,140,80,0.52)',
+    pulseSpeed: '2s',
+    shadow: '0 0 24px 8px rgba(201,140,80,0.38)',
+  },
+};
 
 function calcVelaScore({ income, expenses, debt, streak }) {
   if (income <= 0) return 0;
@@ -927,6 +974,16 @@ export default function VelaCore({ onReset }) {
       : savingsRate >= 0  ? 'below the UK average of ~8% — room to improve'
       : 'negative — expenses exceed income';
 
+    // Task 3 — Mood for tone guidance in daily insight and responses
+    const promptMood = calcMood({ income, expenses, surplus, savingsGoal: goals.length > 0 ? goals[0].target : 0, savingsBalance: savings });
+    const moodToneMap = {
+      thriving: 'dry wit and quiet confidence — the user is doing well, acknowledge it understated',
+      steady:   'warm and direct — things are on track, keep momentum',
+      watchful: 'focused and specific — call out what to watch without alarm',
+      alert:    'warm support and calm clarity — do not catastrophise, give one clear next step',
+    };
+    const moodTone = `\n\nTONE GUIDANCE (current mood: ${promptMood.toUpperCase()}): ${moodToneMap[promptMood]}`;
+
     // Task 2 — Conversation Memory: inject last 3 exchanges for continuity
     const recentMemory = getConvoMemory().slice(-3);
     const memoryBlock = recentMemory.length > 0
@@ -1011,7 +1068,7 @@ Step 5: Specific goal-based saving
 2. When user asks what they can afford, use IN MY POCKET: £${inMyPocket}/day.
 3. Reference Baby Step ${babyStep} when giving savings, debt, or investment advice.
 4. If payday ≤ 3 days away, lead with the Payday Routine allocation.
-5. End financial advice with: ⚖️ Guidance only — not FCA-regulated advice.${recentTx.length > 0 ? `
+5. End financial advice with: ⚖️ Guidance only — not FCA-regulated advice.${moodTone}${recentTx.length > 0 ? `
 
 ══ RECENT TRANSACTIONS (last 7 days — ${recentTx.length} logged, £${txTotal.toFixed(2)} total) ══
 ${txLines.join('\n')}
@@ -1236,6 +1293,11 @@ Use this data for specific, proactive comments — e.g. "you've spent £${txTota
   const isEveningTime   = new Date().getHours() >= 19 && new Date().getHours() < 21;
   const showEveningDot  = isEveningTime && !eveningAnswered;
 
+  // Task 3 — Orb Mood
+  const firstGoalTarget = goals.length > 0 ? goals[0].target : 0;
+  const mood = calcMood({ income, expenses, surplus, savingsGoal: firstGoalTarget, savingsBalance: savings });
+  const moodCfg = MOOD_CFG[mood];
+
   // Vela Score
   const velaScore      = calcVelaScore({ income, expenses, debt, streak });
   const velaScoreColor = velaScore >= 70 ? GREEN : velaScore >= 50 ? AMBER : RED;
@@ -1364,14 +1426,23 @@ Use this data for specific, proactive comments — e.g. "you've spent £${txTota
         {/* Top section */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
           <div style={{ fontSize: 15, color: 'rgba(232,221,208,0.36)', letterSpacing: '0.2px' }}>{getGreeting()}</div>
-          <div
-            onClick={() => { if (showEveningDot) { setEveningPhase('ask'); setEveningNote(''); setEveningCheckOpen(true); } }}
-            style={{ cursor: showEveningDot ? 'pointer' : 'default', position: 'relative', display: 'inline-block' }}
-          >
-            <SmallOrb alert={spendAlert} eveningDot={showEveningDot} orbState={chatOpen ? orbState : 'idle'} />
-            {privacyMode && (
-              <div style={{ position: 'absolute', top: 0, right: -4, fontSize: 12, lineHeight: 1, opacity: 0.7, pointerEvents: 'none' }}>🔒</div>
-            )}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
+            <div
+              onClick={() => { if (showEveningDot) { setEveningPhase('ask'); setEveningNote(''); setEveningCheckOpen(true); } }}
+              style={{ cursor: showEveningDot ? 'pointer' : 'default', position: 'relative', display: 'inline-block' }}
+            >
+              <SmallOrb alert={spendAlert} eveningDot={showEveningDot} orbState={chatOpen ? orbState : 'idle'} mood={mood} moodCfg={moodCfg} />
+              {privacyMode && (
+                <div style={{ position: 'absolute', top: 0, right: -4, fontSize: 12, lineHeight: 1, opacity: 0.7, pointerEvents: 'none' }}>🔒</div>
+              )}
+            </div>
+            {/* Task 3 — Mood label */}
+            <div style={{
+              fontSize: 9, letterSpacing: '1.2px', textTransform: 'uppercase',
+              color: moodCfg.labelColor,
+              transition: 'color 2s ease',
+              fontWeight: 600,
+            }}>{moodCfg.label}</div>
           </div>
           {debtMode ? (
             <>
@@ -2582,20 +2653,29 @@ function DetailLabel({ children }) {
 
 // ── Shared sub-components ───────────────────────────────────────────
 
-function SmallOrb({ alert, eveningDot, orbState = 'idle' }) {
+function SmallOrb({ alert, eveningDot, orbState = 'idle', mood = 'steady', moodCfg = null }) {
   const isSpeaking  = orbState === 'speaking';
   const isListening = orbState === 'listening';
   const isThinking  = orbState === 'thinking';
 
+  // Task 3 — Mood affects idle glow and pulse speed; active states override
+  const cfg = moodCfg || MOOD_CFG.steady;
+
   const bg = isListening
     ? `radial-gradient(circle at 35% 35%, #c8e0ff, #5890d8 55%, #103060)`
-    : `radial-gradient(circle at 35% 35%, #d8cebe, ${PURPLE} 55%, #7a6a52)`;
+    : mood === 'thriving'
+      ? `radial-gradient(circle at 35% 35%, #e8d8a0, #C9A96E 55%, #7a5a18)`
+      : mood === 'alert'
+        ? `radial-gradient(circle at 35% 35%, #e8c888, #C9956E 55%, #7a4818)`
+        : mood === 'watchful'
+          ? `radial-gradient(circle at 35% 35%, #d0d4d8, #9aaabb 55%, #4a5a68)`
+          : `radial-gradient(circle at 35% 35%, #d8cebe, ${PURPLE} 55%, #7a6a52)`;
 
   const glow = isSpeaking
     ? '0 0 32px 12px rgba(240,228,210,0.82), 0 0 64px 26px rgba(240,228,210,0.32)'
     : isListening
       ? '0 0 28px 10px rgba(88,144,216,0.6)'
-      : '0 0 18px 6px rgba(200,184,154,0.32)';
+      : cfg.shadow;
 
   const anim = isSpeaking
     ? 'orbSpeaking 0.38s ease-in-out infinite'
@@ -2603,7 +2683,7 @@ function SmallOrb({ alert, eveningDot, orbState = 'idle' }) {
       ? 'orbListening 0.9s ease-in-out infinite'
       : isThinking
         ? 'orbThinking 2.2s ease-in-out infinite'
-        : 'orbIdle 3s ease-in-out infinite';
+        : `orbMoodPulse ${cfg.pulseSpeed} ease-in-out infinite`;
 
   return (
     <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -2611,7 +2691,7 @@ function SmallOrb({ alert, eveningDot, orbState = 'idle' }) {
         width: 60, height: 60, borderRadius: '50%',
         background: bg, boxShadow: glow,
         animation: anim,
-        transition: 'background 0.6s ease, box-shadow 0.5s ease',
+        transition: 'background 2s ease, box-shadow 2s ease',
       }} />
       {alert && !eveningDot && (
         <div style={{
