@@ -815,6 +815,8 @@ export default function VelaCore({ onReset }) {
       if (!res.ok) throw new Error(json.error);
       history.push({ role: 'assistant', content: json.text });
       saveHistory(history);
+      // Task 2 — Append exchange to conversation memory
+      appendConvoMemory(clean, json.text);
       setOrbState('idle');
       // Remove the "Give me a moment" placeholder if it was added
       setCards(prev => prev.filter(c => c.text !== 'Give me a moment…'));
@@ -925,6 +927,12 @@ export default function VelaCore({ onReset }) {
       : savingsRate >= 0  ? 'below the UK average of ~8% — room to improve'
       : 'negative — expenses exceed income';
 
+    // Task 2 — Conversation Memory: inject last 3 exchanges for continuity
+    const recentMemory = getConvoMemory().slice(-3);
+    const memoryBlock = recentMemory.length > 0
+      ? `\n\n══ RECENT CONVERSATION CONTEXT (last ${recentMemory.length} exchange${recentMemory.length > 1 ? 's' : ''} — use for continuity, don't repeat verbatim) ══\n${recentMemory.map((m, i) => `[${i + 1}] User: ${m.user}\n    Noa: ${m.noa}`).join('\n')}`
+      : '';
+
     return `You are Noa — a personal financial navigator. You are not a chatbot, not an advisor, not an app. You are the financial version of that one brilliant friend everyone wishes they had: sharp, warm, occasionally funny, always honest, and completely invested in the user's financial future.
 ${name ? `You are speaking with ${name}. Use their name naturally — not robotically, and not in every message.` : ''}
 
@@ -1007,7 +1015,7 @@ Step 5: Specific goal-based saving
 
 ══ RECENT TRANSACTIONS (last 7 days — ${recentTx.length} logged, £${txTotal.toFixed(2)} total) ══
 ${txLines.join('\n')}
-Use this data for specific, proactive comments — e.g. "you've spent £${txTotal.toFixed(2)} this week."` : ''}`;
+Use this data for specific, proactive comments — e.g. "you've spent £${txTotal.toFixed(2)} this week."` : ''}${memoryBlock}`;
   }
 
   function saveSettings() {
@@ -2002,6 +2010,21 @@ Use this data for specific, proactive comments — e.g. "you've spent £${txTota
                   onClick={async () => { await requestNotifPermission(); }}
                   style={{ width: '100%', padding: '10px 0', background: 'rgba(200,184,154,0.1)', border: '1px solid rgba(200,184,154,0.22)', borderRadius: 10, color: PURPLE, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
                 >Enable notifications</button>
+              )}
+            </div>
+
+            {/* Task 2 — Clear conversation history */}
+            <div style={{ marginBottom: 16 }}>
+              <button
+                onClick={() => {
+                  clearConvoMemory();
+                  setConvoCleared(true);
+                  setTimeout(() => setConvoCleared(false), 2200);
+                }}
+                style={{ background: 'none', border: 'none', padding: 0, color: 'rgba(232,221,208,0.34)', fontSize: 12, cursor: 'pointer', letterSpacing: '0.2px', textDecoration: 'underline', fontFamily: 'inherit' }}
+              >Clear conversation history</button>
+              {convoCleared && (
+                <span style={{ marginLeft: 8, fontSize: 11, color: GREEN, animation: 'cardIn 0.2s ease-out' }}>Conversation cleared</span>
               )}
             </div>
 
