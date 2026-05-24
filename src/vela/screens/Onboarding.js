@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { parseAmount, parseDebt } from '../scoring';
-import { saveData, saveInsights, markReady, markOnboardingDone, setUserName } from '../storage';
+import { saveData, saveInsights, markReady, markOnboardingDone, setUserName, saveAccounts } from '../storage';
 import { speak as voiceSpeak, stopSpeaking } from '../voice';
 import Orb from '../Orb';
 
@@ -56,6 +56,12 @@ const Q = [
     id: 'expenses',
     ask: () => "Do you have any fixed monthly costs — things like rent, subscriptions, bills? Tell me what they are and roughly how much each costs.",
     ph:  'e.g. £900 rent, £60 Netflix, £40 gym',
+  },
+  {
+    id: 'accounts',
+    type: 'accounts',
+    ask: () => "Which bank accounts do you use? Add up to 4 — I'll use them in your payday plan.",
+    ph:  '',
   },
   {
     id: 'lifestyle',
@@ -118,6 +124,7 @@ export default function Onboarding({ onDone }) {
   const [inputError, setInputError] = useState('');
   const [history, setHistory]   = useState([]); // stack of { step, data, input } for back navigation
   const [data, setData]         = useState({ name: '', income: 0, payday: 25, expenses: 0, expenseDetails: '', lifestyleSpend: '', debt: 0, goal: '', savings: 0 });
+  const [accountDraft, setAccountDraft] = useState([]);  // accounts being built on step 4
   const [building, setBuilding] = useState(false);
   const [orbState, setOrbState] = useState('idle');
   const [currentQ, setCurrentQ] = useState('');
@@ -206,6 +213,21 @@ export default function Onboarding({ onDone }) {
     setCardKey(k => k + 1);
   }
 
+  // Advance from the accounts step (step 4) — saves accounts and moves forward
+  function advanceFromAccounts(accs) {
+    saveAccounts(accs);
+    setHistory(h => [...h, { step, data: { ...data }, prevInput: '' }]);
+    const next = step + 1;
+    setStep(next);
+    setOrbState('thinking');
+    setTimeout(() => {
+      const q = Q[next].ask(data);
+      setCurrentQ(q);
+      setCardKey(k => k + 1);
+      speak(q);
+    }, 650);
+  }
+
   function send() {
     const val = input.trim();
     setInputError('');
@@ -229,10 +251,11 @@ export default function Onboarding({ onDone }) {
       nd.expenses = _ns.length > 0 ? _ns.reduce((a, b) => a + b, 0) : parseAmount(val);
       nd.expenseDetails = val;
     }
-    else if (step === 4) { nd.lifestyleSpend = val; }
-    else if (step === 5) { nd.debt = parseDebt(val); }
-    else if (step === 6) { nd.goal = val; }
-    else if (step === 7) { nd.savings = parseSavings(val); }
+    // step 4 = accounts — handled via skipAccounts / advanceFromAccounts, not send()
+    else if (step === 5) { nd.lifestyleSpend = val; }
+    else if (step === 6) { nd.debt = parseDebt(val); }
+    else if (step === 7) { nd.goal = val; }
+    else if (step === 8) { nd.savings = parseSavings(val); }
     setData(nd);
 
     const next = step + 1;
@@ -428,8 +451,18 @@ export default function Onboarding({ onDone }) {
         </div>
       )}
 
+      {/* ── Accounts step UI (step 4) ── */}
+      {!building && step === 4 && Q[4]?.type === 'accounts' && (
+        <AccountsStep
+          accounts={accountDraft}
+          onChange={setAccountDraft}
+          onContinue={() => advanceFromAccounts(accountDraft)}
+          onSkip={() => advanceFromAccounts([])}
+        />
+      )}
+
       {/* ── Input bar ── */}
-      {!building && step < Q.length && (
+      {!building && step < Q.length && Q[step]?.type !== 'accounts' && (
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0,
           display: 'flex', flexDirection: 'column', gap: 0,
@@ -573,5 +606,93 @@ function AnimatedText({ text }) {
         <span key={i} style={{ animation: 'sentenceIn 0.6s ease-out', display: 'inline' }}>{s} </span>
       ))}
     </>
+  );
+}
+
+const PURPOSES = ['Bills and Essentials', 'Daily Spending', 'Savings', 'Investments'];
+
+function AccountsStep({ accounts, onChange, onContinue, onSkip }) {
+  const [name, setName] = useState('');
+  const [purpose, setPurpose] = useState(PURPOSES[0]);
+  const [balance, setBalance] = useState('');
+  const [err, setErr] = useState('');
+
+  function addAccount() {
+    if (!name.trim()) { setErr('Add an account name'); return; }
+    if (accounts.length >= 4) { setErr('Maximum 4 accounts'); return; }
+    onChange([...accounts, { id: Date.now(), name: name.trim(), purpose, balance: parseFloat(balance) || 0 }]);
+    setName(''); setBalance(''); setPurpose(PURPOSES[0]); setErr('');
+  }
+
+  function remove(id) { onChange(accounts.filter(a => a.id !== id)); }
+
+  return (
+    <div style={{
+      position: 'absolute', bottom: 0, left: 0, right: 0,
+      background: '#111318', borderTop: '1px solid rgba(232,221,208,0.07)',
+      padding: '14px 16px 0', boxSizing: 'border-box',
+      paddingBottom: 'max(14px, calc(env(safe-area-inset-bottom) + 8px))',
+    }}>
+      {/* Existing accounts */}
+      {accounts.map(a => (
+        <div key={a.id} style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          background: 'rgba(200,184,154,0.08)', borderRadius: 10,
+          padding: '8px 12px', marginBottom: 7,
+          border: '1px solid rgba(200,184,154,0.15)',
+        }}>
+          <div>
+            <div style={{ fontSize: 13, color: '#E8DDD0', fontWeight: 600 }}>{a.name}</div>
+            <div style={{ fontSize: 10, color: '#A89880' }}>{a.purpose}{a.balance > 0 ? ` · £${a.balance.toLocaleString('en-GB')}` : ''}</div>
+          </div>
+          <button onClick={() => remove(a.id)} style={{ background: 'none', border: 'none', color: 'rgba(232,221,208,0.3)', fontSize: 18, cursor: 'pointer', padding: '0 4px', lineHeight: 1 }}>×</button>
+        </div>
+      ))}
+
+      {/* Add form — shown if < 4 accounts */}
+      {accounts.length < 4 && (
+        <>
+          {err && <div style={{ fontSize: 11, color: '#E24B4A', marginBottom: 5 }}>{err}</div>}
+          <div style={{ display: 'flex', gap: 7, marginBottom: 7 }}>
+            <input
+              value={name}
+              onChange={e => { setName(e.target.value); setErr(''); }}
+              placeholder='Account name…'
+              style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '0.5px solid rgba(232,221,208,0.2)', borderRadius: 10, padding: '10px 14px', color: '#E8DDD0', fontSize: 14, outline: 'none', fontFamily: 'inherit' }}
+            />
+            <input
+              value={balance}
+              onChange={e => setBalance(e.target.value)}
+              placeholder='£ balance'
+              type='number'
+              style={{ width: 90, background: 'rgba(255,255,255,0.05)', border: '0.5px solid rgba(232,221,208,0.2)', borderRadius: 10, padding: '10px 10px', color: '#E8DDD0', fontSize: 14, outline: 'none', fontFamily: 'inherit' }}
+            />
+          </div>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
+            {PURPOSES.map(p => (
+              <button key={p} onClick={() => setPurpose(p)} style={{
+                padding: '5px 11px', borderRadius: 20, border: `1px solid ${purpose === p ? '#C8B89A' : 'rgba(232,221,208,0.15)'}`,
+                background: purpose === p ? 'rgba(200,184,154,0.16)' : 'transparent',
+                color: purpose === p ? '#C8B89A' : 'rgba(232,221,208,0.45)',
+                fontSize: 11, cursor: 'pointer', fontFamily: 'inherit',
+              }}>{p}</button>
+            ))}
+          </div>
+          <button onClick={addAccount} style={{
+            width: '100%', padding: '11px 0', background: 'rgba(200,184,154,0.1)',
+            border: '1px solid rgba(200,184,154,0.25)', borderRadius: 12,
+            color: '#C8B89A', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+            marginBottom: 10, fontFamily: 'inherit',
+          }}>+ Add account</button>
+        </>
+      )}
+
+      <div style={{ display: 'flex', gap: 10 }}>
+        <button onClick={onSkip} style={{ flex: 1, padding: '11px 0', background: 'transparent', border: '1px solid rgba(232,221,208,0.12)', borderRadius: 12, color: 'rgba(232,221,208,0.35)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Skip</button>
+        <button onClick={onContinue} style={{ flex: 2, padding: '11px 0', background: 'rgba(200,184,154,0.18)', border: '1px solid rgba(200,184,154,0.35)', borderRadius: 12, color: '#C8B89A', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+          {accounts.length > 0 ? `Continue with ${accounts.length} account${accounts.length > 1 ? 's' : ''}` : 'Skip for now'}
+        </button>
+      </div>
+    </div>
   );
 }

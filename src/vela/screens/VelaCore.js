@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
-import { getData, saveData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin, getGoals, saveGoals, getLastOpen, setLastOpen, getLastCeremonyYM, setLastCeremonyYM, getDebts, saveDebts, getChallenge, saveChallenge, getExpenseLog, saveExpenseLog, getEveningDate, setEveningDate, appendEveningLog, getUserName, setUserName, getDailyInsight, saveDailyInsight, getNotifPrefs, saveNotifPrefs, getNotifLast, saveNotifLast, savePushSub, getPrivacyMode, setPrivacyMode as savePrivacyMode, appendConvoMemory, getConvoMemory, clearConvoMemory } from '../storage';
+import { getData, saveData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin, getGoals, saveGoals, getLastOpen, setLastOpen, getLastCeremonyYM, setLastCeremonyYM, getDebts, saveDebts, getChallenge, saveChallenge, getExpenseLog, saveExpenseLog, getEveningDate, setEveningDate, appendEveningLog, getUserName, setUserName, getDailyInsight, saveDailyInsight, getNotifPrefs, saveNotifPrefs, getNotifLast, saveNotifLast, savePushSub, getPrivacyMode, setPrivacyMode as savePrivacyMode, appendConvoMemory, getConvoMemory, clearConvoMemory, getAccounts } from '../storage';
 import Orb from '../Orb';
 import { speak as voiceSpeak, stopSpeaking } from '../voice';
 
@@ -212,7 +212,6 @@ function buildInsightPrompt() {
   const name = getUserName() || d.name || '';
   const { income = 0, expenses = 0, debt = 0, savings = 0, payday = 25 } = d;
   const surplus = income - expenses;
-  const now = new Date();
   const daysToPayday = daysUntilPayday(payday);
   const streak       = parseInt(localStorage.getItem('vela_streak_count') || '0', 10);
   return `You are Noa — a sharp, dry, warm personal financial navigator. Speak in first person about the user, max 22 words.\n\nUser data: name=${name || 'unknown'}, income=£${income}/month, expenses=£${expenses}/month, surplus=£${surplus}/month, debt=£${debt}, savings=£${savings}, payday in ${daysToPayday} day${daysToPayday === 1 ? '' : 's'}, streak=${streak} days.\n\nExamples of the style:\n- "Payday in 3 days. You have £163 left. Manageable — if you avoid anything with a menu."\n- "You've hit your savings target 3 weeks running. That's not luck, that's a habit."\n- "Your surplus this month is £${surplus.toFixed(0)}. That's £${(surplus * 12).toFixed(0)} a year if you protect it."`;
@@ -403,6 +402,13 @@ export default function VelaCore({ onReset }) {
 
   // Task 2 — Conversation Memory: toast state
   const [convoCleared, setConvoCleared]        = useState(false);
+
+  // Bank Account Allocation — read accounts from storage
+  const accounts = getAccounts();
+  // Payday Plan modal state
+  const [showPaydayPlan, setShowPaydayPlan]     = useState(false);
+  const [paydayPlanText, setPaydayPlanText]     = useState('');
+  const [paydayPlanLoading, setPaydayPlanLoading] = useState(false);
 
   // Task 4d — Dual-failure state: shown when both Groq (chat) + ElevenLabs (voice) fail together
   const [dualFail, setDualFail]               = useState(false);
@@ -1061,6 +1067,10 @@ When income lands on the ${ord(payday)}, allocate in order:
   3. LIFESTYLE     (25%) £${alloc.lifestyle.toLocaleString('en-GB')}/month — dining, entertainment, hobbies
   4. BUFFER         (5%) £${alloc.buffer.toLocaleString('en-GB')}/month — unexpected costs
 Always quote exact £ amounts, not just percentages.
+${accounts.length > 0 ? `
+══ USER'S BANK ACCOUNTS ══
+${accounts.map(a => `• ${a.name} — ${a.purpose}${a.balance > 0 ? ` (current balance: £${a.balance.toLocaleString('en-GB')})` : ''}`).join('\n')}
+When discussing payday or budgeting, reference these account names directly.` : ''}
 
 ══ BABY STEPS UK FRAMEWORK ══
 Step 1: £1,000 emergency fund first
@@ -1235,6 +1245,68 @@ Use this data for specific, proactive comments — e.g. "you've spent £${txTota
       if (json.text) speak(json.text);
     } catch { setMonthlyNarrative('Something went wrong getting your monthly review. Try again in a moment.'); }
     finally { setNarrativeLoading(false); }
+  }
+
+  // Task 2 — Payday Plan: Groq-generated account-specific spoken briefing
+  async function fetchPaydayPlan() {
+    if (paydayPlanLoading) return;
+    setPaydayPlanLoading(true);
+    setPaydayPlanText('');
+    const accs = accounts;
+    const surplus = income - expenses;
+    // Build account allocation summary for the prompt
+    let allocationHint = '';
+    if (accs.length > 0) {
+      const billsAcc   = accs.find(a => a.purpose === 'Bills and Essentials');
+      const savingsAcc = accs.find(a => a.purpose === 'Savings');
+      const investAcc  = accs.find(a => a.purpose === 'Investments');
+      const billsAmt   = billsAcc   ? Math.round(expenses) : 0;
+      const savingsAmt = savingsAcc ? Math.round(income * 0.20) : 0;
+      const investAmt  = investAcc  ? Math.round(income * 0.10) : 0;
+      const spendAmt   = income - billsAmt - savingsAmt - investAmt;
+      allocationHint = accs.map(a => {
+        let amt = 0;
+        if (a.purpose === 'Bills and Essentials') amt = billsAmt;
+        else if (a.purpose === 'Savings')         amt = savingsAmt;
+        else if (a.purpose === 'Investments')     amt = investAmt;
+        else                                       amt = Math.max(0, spendAmt);
+        return `${a.name} (${a.purpose}): £${amt.toLocaleString('en-GB')}`;
+      }).join(', ');
+    }
+    const planPrompt = `You are Noa — a sharp, dry, warm personal financial navigator. Payday has just landed. Generate a spoken payday allocation briefing (60-90 words) using the user's ACTUAL account names and the calculated amounts provided. Be direct, confident, Noa-voice. No FCA disclaimer. No greeting. Start with "Right. Payday." and walk through each account in order. End with a sharp one-liner about what they should NOT do.
+
+User data: income=£${income}/month, expenses=£${expenses}/month, surplus=£${surplus}/month.
+${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set up — give generic advice about allocating income on payday.`}`;
+
+    try {
+      const controller = new AbortController();
+      const timeout    = setTimeout(() => controller.abort(), 12000);
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ financialContext: planPrompt, messages: [{ role: 'user', content: 'Give me my payday plan.' }] }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      const json = await res.json();
+      const text = (json.text || '').trim();
+      setPaydayPlanText(text);
+      if (text) speak(text);
+    } catch {
+      const fallback = accs.length > 0
+        ? `Right. Payday. ${accs.map((a, i) => {
+            const amts = [Math.round(expenses), Math.round(income * 0.20), Math.round(income * 0.10)];
+            const labels = ['Bills and Essentials', 'Savings', 'Investments'];
+            const idx = labels.indexOf(a.purpose);
+            const amt = idx >= 0 ? amts[idx] : Math.max(0, income - expenses);
+            return `£${amt.toLocaleString('en-GB')} goes to ${a.name}`;
+          }).join('. ')}. That's the plan. Don't spend what's already allocated.`
+        : `Right. Payday. Cover your fixed costs first — £${expenses.toLocaleString('en-GB')}. Set aside £${Math.round(income * 0.20).toLocaleString('en-GB')} before anything else. The remainder is your spending money — and only that.`;
+      setPaydayPlanText(fallback);
+      speak(fallback);
+    } finally {
+      setPaydayPlanLoading(false);
+    }
   }
 
   // Feature 3 — Template-based metric explanations (no Groq — instant)
@@ -1821,6 +1893,22 @@ Use this data for specific, proactive comments — e.g. "you've spent £${txTota
           </div>
         )}
 
+        {/* Task 2 — My Payday Plan button (visible when ≤7 days to payday) */}
+        {income > 0 && daysToNextPay <= 7 && (
+          <button
+            onClick={() => { unlockAudio(); setShowPaydayPlan(true); fetchPaydayPlan(); }}
+            style={{
+              width: '100%', marginBottom: 8, padding: '13px 0',
+              background: daysToNextPay <= 2 ? 'rgba(201,169,110,0.18)' : 'rgba(200,184,154,0.12)',
+              border: `1px solid ${daysToNextPay <= 2 ? 'rgba(201,169,110,0.45)' : 'rgba(200,184,154,0.3)'}`,
+              borderRadius: 16, color: daysToNextPay <= 2 ? AMBER : PURPLE,
+              fontSize: 15, fontWeight: 700, cursor: 'pointer',
+              letterSpacing: '0.04em',
+              animation: daysToNextPay <= 2 ? 'blink 2.4s ease-in-out infinite' : 'none',
+            }}
+          >💰 My Payday Plan</button>
+        )}
+
         {/* Talk to Noa button */}
         <button
           onClick={() => { unlockAudio(); setChatOpen(true); }}
@@ -2117,6 +2205,53 @@ Use this data for specific, proactive comments — e.g. "you've spent £${txTota
                   style={{ width: '100%', padding: 13, background: PURPLE, border: 'none', borderRadius: 12, color: '#E8DDD0', fontSize: 15, fontWeight: 600, cursor: 'pointer', marginBottom: 10 }}
                 >Save reflection</button>
                 <button onClick={() => setEveningPhase('ask')} style={{ width: '100%', padding: 10, background: 'none', border: 'none', color: 'rgba(232,221,208,0.28)', fontSize: 13, cursor: 'pointer' }}>Back</button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Task 2: Payday Plan modal ── */}
+      {showPaydayPlan && (
+        <div
+          onClick={e => { if (e.target === e.currentTarget) { setShowPaydayPlan(false); stopSpeaking(); } }}
+          style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.82)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 50 }}
+        >
+          <div style={{
+            width: '100%', background: '#13151c', borderTop: '1px solid rgba(200,184,154,0.2)',
+            borderRadius: '24px 24px 0 0', padding: '24px 20px 36px',
+            animation: 'cardIn 0.3s ease-out',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div style={{ fontSize: 10, color: AMBER, letterSpacing: '1.2px', textTransform: 'uppercase', fontWeight: 700 }}>💰 Payday Plan</div>
+              <button onClick={() => { setShowPaydayPlan(false); stopSpeaking(); }} style={{ background: 'none', border: 'none', color: 'rgba(232,221,208,0.3)', fontSize: 22, cursor: 'pointer', padding: 4, lineHeight: 1 }}>×</button>
+            </div>
+            {paydayPlanLoading ? (
+              <div style={{ fontSize: 13, color: 'rgba(232,221,208,0.3)', lineHeight: 1.6, animation: 'blink 1.6s ease-in-out infinite', minHeight: 80, display: 'flex', alignItems: 'center' }}>
+                Noa is building your plan…
+              </div>
+            ) : (
+              <>
+                <div style={{ fontSize: 15, color: '#E8DDD0', lineHeight: 1.72, fontWeight: 300, marginBottom: 20 }}>
+                  {paydayPlanText || 'Tap to generate your payday plan.'}
+                </div>
+                {accounts.length > 0 && (
+                  <div style={{ marginBottom: 16 }}>
+                    {accounts.map(a => (
+                      <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8, paddingBottom: 8, borderBottom: '1px solid rgba(232,221,208,0.05)' }}>
+                        <div>
+                          <div style={{ fontSize: 13, color: '#E8DDD0', fontWeight: 500 }}>{a.name}</div>
+                          <div style={{ fontSize: 10, color: 'rgba(232,221,208,0.35)' }}>{a.purpose}</div>
+                        </div>
+                        {a.balance > 0 && <div style={{ fontSize: 13, color: AMBER, fontWeight: 600 }}>£{a.balance.toLocaleString('en-GB')}</div>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <button
+                  onClick={() => { if (paydayPlanText) speak(paydayPlanText); else fetchPaydayPlan(); }}
+                  style={{ width: '100%', padding: '12px 0', background: 'rgba(201,169,110,0.14)', border: '1px solid rgba(201,169,110,0.3)', borderRadius: 14, color: AMBER, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
+                >{paydayPlanText ? '🔊 Hear it again' : 'Generate plan'}</button>
               </>
             )}
           </div>

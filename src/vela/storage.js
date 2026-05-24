@@ -32,6 +32,7 @@ const K = {
   PUSH_SUB:       'noa_push_sub',
   PRIVACY_MODE:   'vela_privacy_mode',      // Task 1 — Privacy Mode
   CONV_MEMORY:    'noa_conversation_memory', // Task 2 — Conversation Memory
+  ACCOUNTS:       'vela_accounts',           // Task 2 — Bank Account Allocation
 };
 
 export const getPin              = ()    => localStorage.getItem(K.PIN);
@@ -134,6 +135,10 @@ const MAX_MEMORY = 10;
 export const getConvoMemory   = ()    => { const r = localStorage.getItem(K.CONV_MEMORY); return r ? JSON.parse(r) : []; };
 export const saveConvoMemory  = (arr) => localStorage.setItem(K.CONV_MEMORY, JSON.stringify(arr.slice(-MAX_MEMORY)));
 export const clearConvoMemory = ()    => localStorage.removeItem(K.CONV_MEMORY);
+// Bank Account Allocation — up to 4 accounts with name, purpose, balance
+export const getAccounts  = ()    => { const r = localStorage.getItem(K.ACCOUNTS); return r ? JSON.parse(r) : []; };
+export const saveAccounts = (arr) => localStorage.setItem(K.ACCOUNTS, JSON.stringify(arr));
+
 export const appendConvoMemory = (user, noa) => {
   const mem = getConvoMemory();
   mem.push({ user, noa, ts: Date.now() });
