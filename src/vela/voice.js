@@ -59,9 +59,24 @@ function fallback(text, onEnd, onError) {
     : (window.speechSynthesis.onvoiceschanged = () => { fire(); window.speechSynthesis.onvoiceschanged = null; });
 }
 
-export async function speak(text, { onStart, onEnd, onError, onFail } = {}) {
+// privacyScrub — Task 1: Privacy Mode.
+// After cleanText() has already converted £1,500 → "1,500 pounds" etc,
+// replace any spoken monetary figure with a neutral phrase so bystanders
+// can't hear specific numbers.  Applied only when privacyMode = true.
+function privacyScrub(t) {
+  return t
+    // "1,500 pounds" / "163.50 pounds" / "50 pounds" → "that amount"
+    .replace(/[\d][\d,]*(?:\.\d+)?\s+pounds?/gi, 'that amount')
+    // "23 percent" / "8 percent" → "that percentage"
+    .replace(/\d+(?:\.\d+)?\s+percent/gi, 'that percentage')
+    // residual raw £ symbols if any slipped through
+    .replace(/£[\d,]+(?:\.\d+)?/g, 'that amount');
+}
+
+export async function speak(text, { onStart, onEnd, onError, onFail, privacyMode = false } = {}) {
   stopSpeaking();
-  const clean = cleanText(text);
+  let clean = cleanText(text);
+  if (privacyMode) clean = privacyScrub(clean);
   if (!clean) { if (onEnd) onEnd(); return; }
   if (onStart) onStart();
   console.log('[voice] calling /api/speak, text length:', clean.length);

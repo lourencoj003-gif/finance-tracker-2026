@@ -26,10 +26,12 @@ const K = {
   TAP_HINT:     'vela_tap_hint_seen',
   INTRO_SEEN:   'vela_intro_seen',
   PREV_SCORE:   'vela_prev_score',
-  DAILY_INSIGHT: 'noa_daily_insight',
-  NOTIF_PREFS:   'noa_notif_prefs',
-  NOTIF_LAST:    'noa_notif_last',
-  PUSH_SUB:      'noa_push_sub',
+  DAILY_INSIGHT:  'noa_daily_insight',
+  NOTIF_PREFS:    'noa_notif_prefs',
+  NOTIF_LAST:     'noa_notif_last',
+  PUSH_SUB:       'noa_push_sub',
+  PRIVACY_MODE:   'vela_privacy_mode',      // Task 1 — Privacy Mode
+  CONV_MEMORY:    'noa_conversation_memory', // Task 2 — Conversation Memory
 };
 
 export const getPin              = ()    => localStorage.getItem(K.PIN);
@@ -121,3 +123,19 @@ export const saveNotifLast = (d)   => localStorage.setItem(K.NOTIF_LAST, JSON.st
 // Push subscription endpoint (stored for reference; server sends pushes using this)
 export const getPushSub  = ()    => { const r = localStorage.getItem(K.PUSH_SUB); return r ? JSON.parse(r) : null; };
 export const savePushSub = (sub) => localStorage.setItem(K.PUSH_SUB, JSON.stringify(sub));
+
+// Task 1 — Privacy Mode: suppress specific £ figures from being spoken aloud
+export const getPrivacyMode  = ()    => localStorage.getItem(K.PRIVACY_MODE) === 'true';
+export const setPrivacyMode  = (on)  => localStorage.setItem(K.PRIVACY_MODE, on ? 'true' : 'false');
+
+// Task 2 — Conversation Memory: last 10 exchanges (user + Noa), injected into prompts
+// Each entry: { user: string, noa: string, ts: number }
+const MAX_MEMORY = 10;
+export const getConvoMemory   = ()    => { const r = localStorage.getItem(K.CONV_MEMORY); return r ? JSON.parse(r) : []; };
+export const saveConvoMemory  = (arr) => localStorage.setItem(K.CONV_MEMORY, JSON.stringify(arr.slice(-MAX_MEMORY)));
+export const clearConvoMemory = ()    => localStorage.removeItem(K.CONV_MEMORY);
+export const appendConvoMemory = (user, noa) => {
+  const mem = getConvoMemory();
+  mem.push({ user, noa, ts: Date.now() });
+  saveConvoMemory(mem);
+};
