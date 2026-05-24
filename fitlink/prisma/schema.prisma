@@ -1,0 +1,260 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Enums ───────────────────────────────────────────────────────────────
+
+enum Role {
+  CLIENT
+  TRAINER
+  ADMIN
+}
+
+enum ConnectionStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  BLOCKED
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
+}
+
+enum WorkoutStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
+}
+
+// ── Models ──────────────────────────────────────────────────────────────
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String
+  passwordHash  String
+  role          Role     @default(CLIENT)
+  avatarUrl     String?
+  bio           String?
+  location      String?
+  specialties   String[] @default([])
+  xp            Int      @default(0)
+  level         Int      @default(1)
+  onboardingDone Boolean @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  healthLogs       HealthLog[]
+  nutritionLogs    NutritionLog[]
+  tasks            Task[]
+  workouts         Workout[]
+  sentConnections     Connection[] @relation("ConnectionSender")
+  receivedConnections Connection[] @relation("ConnectionReceiver")
+  trainerClients   TrainerClient[] @relation("TrainerClients")
+  clientOf         TrainerClient[] @relation("ClientOf")
+  dailySummaries   DailySummary[]
+  progressProfile  ProgressProfile?
+  xpEvents         XpEvent[]
+  dailySnapshots   DailyProgressSnapshot[]
+}
+
+model HealthLog {
+  id        String   @id @default(cuid())
+  userId    String
+  date      DateTime @default(now())
+  steps     Int?
+  calories  Int?
+  waterMl   Int?
+  sleepHrs  Float?
+  weight    Float?
+  heartRate Int?
+  notes     String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+}
+
+model NutritionLog {
+  id           String      @id @default(cuid())
+  userId       String
+  date         DateTime    @default(now())
+  mealType     String      // breakfast / lunch / dinner / snack
+  totalKcal    Int         @default(0)
+  proteinG     Float       @default(0)
+  carbsG       Float       @default(0)
+  fatG         Float       @default(0)
+  notes        String?
+  foodEntries  FoodEntry[]
+  createdAt    DateTime    @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+}
+
+model FoodEntry {
+  id             String       @id @default(cuid())
+  nutritionLogId String
+  name           String
+  quantity       Float        @default(1)
+  unit           String       @default("g")
+  kcal           Int          @default(0)
+  proteinG       Float        @default(0)
+  carbsG         Float        @default(0)
+  fatG           Float        @default(0)
+
+  nutritionLog NutritionLog @relation(fields: [nutritionLogId], references: [id], onDelete: Cascade)
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  userId      String
+  title       String
+  description String?
+  status      TaskStatus @default(PENDING)
+  dueDate     DateTime?
+  completedAt DateTime?
+  xpReward    Int        @default(10)
+  category    String?    // workout / nutrition / habit / recovery
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+}
+
+model Workout {
+  id          String        @id @default(cuid())
+  userId      String
+  title       String
+  description String?
+  status      WorkoutStatus @default(PLANNED)
+  scheduledAt DateTime?
+  startedAt   DateTime?
+  completedAt DateTime?
+  durationMin Int?
+  xpReward    Int           @default(25)
+  exercises   Json?         // [{ name, sets, reps, weight, notes }]
+  notes       String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, scheduledAt])
+}
+
+model Connection {
+  id         String           @id @default(cuid())
+  senderId   String
+  receiverId String
+  status     ConnectionStatus @default(PENDING)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  sender   User @relation("ConnectionSender",   fields: [senderId],   references: [id], onDelete: Cascade)
+  receiver User @relation("ConnectionReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId])
+  @@index([senderId])
+  @@index([receiverId])
+}
+
+model TrainerClient {
+  id        String   @id @default(cuid())
+  trainerId String
+  clientId  String
+  notes     String?
+  startDate DateTime @default(now())
+  active    Boolean  @default(true)
+
+  trainer User @relation("TrainerClients", fields: [trainerId], references: [id], onDelete: Cascade)
+  client  User @relation("ClientOf",       fields: [clientId],  references: [id], onDelete: Cascade)
+
+  @@unique([trainerId, clientId])
+}
+
+model DailySummary {
+  id           String   @id @default(cuid())
+  userId       String
+  date         DateTime
+  stepsGoalPct Float    @default(0)
+  caloriesIn   Int      @default(0)
+  caloriesOut  Int      @default(0)
+  waterGoalPct Float    @default(0)
+  sleepHrs     Float    @default(0)
+  workoutDone  Boolean  @default(false)
+  tasksComplete Int     @default(0)
+  tasksTotal    Int     @default(0)
+  xpEarned     Int      @default(0)
+  streakDay    Int      @default(0)
+  notes        String?
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId])
+}
+
+model ProgressProfile {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  heightCm         Float?
+  weightKg         Float?
+  targetWeightKg   Float?
+  bodyFatPct       Float?
+  fitnessGoal      String?  // lose_weight / build_muscle / improve_endurance / general_fitness
+  activityLevel    String?  // sedentary / light / moderate / active / very_active
+  dailyStepGoal    Int      @default(10000)
+  dailyCalGoal     Int      @default(2000)
+  dailyWaterMlGoal Int      @default(2500)
+  dailySleepHrsGoal Float   @default(8)
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model XpEvent {
+  id          String   @id @default(cuid())
+  userId      String
+  amount      Int
+  reason      String
+  referenceId String?  // task/workout/log ID that triggered the XP
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model DailyProgressSnapshot {
+  id           String   @id @default(cuid())
+  userId       String
+  date         DateTime
+  xpTotal      Int      @default(0)
+  level        Int      @default(1)
+  streakCount  Int      @default(0)
+  weightKg     Float?
+  notes        String?
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId])
+}
