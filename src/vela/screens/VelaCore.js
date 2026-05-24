@@ -361,6 +361,9 @@ export default function VelaCore({ onReset }) {
   const insightSpokenRef                       = useRef(false);
   const [insightTapPending, setInsightTapPending] = useState(false);
 
+  // Task 4 — Weekly Review card expand state
+  const [weeklyExpanded, setWeeklyExpanded]   = useState(false);
+
   // Feature 2 — Living transaction feed
   const [txComment, setTxComment]             = useState('');
   const [txCommentLoading, setTxCommentLoading] = useState(false);
@@ -1323,6 +1326,39 @@ Use this data for specific, proactive comments — e.g. "you've spent £${txTota
     return acc;
   }, { essentials: 0, lifestyle: 0, savings: 0 });
 
+  // Task 4 — Weekly spending calculations
+  const weekStart = (() => {
+    const d = new Date(nowD);
+    const day = d.getDay(); // 0=Sun, 1=Mon...
+    d.setDate(d.getDate() - (day === 0 ? 6 : day - 1)); // Monday-based week
+    return d.toISOString().slice(0, 10);
+  })();
+  const weeklyTx = expenseLog.filter(e => e.date && e.date >= weekStart);
+  const weeklyByCategory = weeklyTx.reduce((acc, e) => {
+    const cat = (e.category || 'essentials').toLowerCase();
+    const key = cat === 'lifestyle' ? 'lifestyle' : cat === 'savings' ? 'savings' : 'essentials';
+    acc[key] = (acc[key] || 0) + e.amount;
+    return acc;
+  }, { essentials: 0, lifestyle: 0, savings: 0 });
+  const weeklyTotal = weeklyTx.reduce((s, e) => s + e.amount, 0);
+  // Weekly budget = monthly / 4.33
+  const weeklyBudget = { essentials: Math.round(income * 0.50 / 4.33), lifestyle: Math.round(income * 0.25 / 4.33), savings: Math.round(income * 0.20 / 4.33) };
+  const weeklyTotalBudget = weeklyBudget.essentials + weeklyBudget.lifestyle + weeklyBudget.savings;
+
+  // Weekly Noa sentence — template based, no API
+  function getWeeklySentence() {
+    const lifestylePct = weeklyBudget.lifestyle > 0 ? Math.round((weeklyByCategory.lifestyle / weeklyBudget.lifestyle) * 100) : 0;
+    const dayOfWeek = new Date(nowD).getDay();
+    const daysIn = dayOfWeek === 0 ? 7 : dayOfWeek;
+    const surplusLeft = Math.max(0, surplus - weeklyTotal);
+    if (daysToNextPay <= 2) return `Final stretch. You've got £${surplusLeft.toFixed(0)} left to work with.`;
+    if (weeklyTotal === 0) return `No spend logged yet this week. Either you're budgeting perfectly or you forgot to log.`;
+    if (lifestylePct > 85) return `Lifestyle is running hot this week. Worth watching.`;
+    if (lifestylePct > 60) return `${daysIn} day${daysIn > 1 ? 's' : ''} in. Lifestyle budget is ${lifestylePct}% used. Pace yourself.`;
+    if (weeklyTotal > weeklyTotalBudget) return `Over the weekly budget. Every day counts from here.`;
+    return `Clean week so far. Keep the pace.`;
+  }
+
   // Days to next payday
   let nextPayD = new Date(nowD.getFullYear(), nowD.getMonth(), payday);
   if (nextPayD <= nowD) {
@@ -1639,6 +1675,104 @@ Use this data for specific, proactive comments — e.g. "you've spent £${txTota
                   >dismiss</button>
                 </>
             }
+          </div>
+        )}
+
+        {/* ── Task 4 — Weekly Review Card ── */}
+        {income > 0 && (
+          <div
+            onClick={() => setWeeklyExpanded(e => !e)}
+            style={{
+              marginBottom: 10, background: 'rgba(232,221,208,0.04)',
+              border: '1px solid rgba(232,221,208,0.08)', borderRadius: 16,
+              padding: '11px 14px', cursor: 'pointer',
+              animation: 'cardIn 0.4s ease-out',
+              transition: 'background 0.15s',
+            }}
+          >
+            {/* Header row */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <div style={{ fontSize: 9, color: 'rgba(232,221,208,0.3)', letterSpacing: '0.8px', textTransform: 'uppercase', fontWeight: 600 }}>This Week</div>
+              {/* Days to payday chip */}
+              <div style={{
+                fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 8,
+                background: daysToNextPay >= 7 ? 'rgba(124,174,158,0.14)' : daysToNextPay >= 3 ? 'rgba(201,169,110,0.14)' : 'rgba(226,75,74,0.14)',
+                color: daysToNextPay >= 7 ? GREEN : daysToNextPay >= 3 ? AMBER : RED,
+                border: `1px solid ${daysToNextPay >= 7 ? 'rgba(124,174,158,0.25)' : daysToNextPay >= 3 ? 'rgba(201,169,110,0.25)' : 'rgba(226,75,74,0.25)'}`,
+              }}>
+                {daysToNextPay === 0 ? 'Payday today' : daysToNextPay === 1 ? 'Payday tomorrow' : `Payday in ${daysToNextPay} days`}
+              </div>
+            </div>
+
+            {/* Spending bar — Essentials / Lifestyle / Savings */}
+            {weeklyTotal > 0 ? (
+              <>
+                <div style={{ display: 'flex', height: 6, borderRadius: 3, overflow: 'hidden', marginBottom: 5, background: 'rgba(232,221,208,0.06)' }}>
+                  {[
+                    { key: 'essentials', color: PURPLE },
+                    { key: 'lifestyle',  color: AMBER },
+                    { key: 'savings',    color: GREEN },
+                  ].map(({ key, color }) => {
+                    const w = weeklyTotal > 0 ? Math.min(100, (weeklyByCategory[key] / weeklyTotalBudget) * 100) : 0;
+                    return w > 0 ? (
+                      <div key={key} style={{ width: `${w}%`, background: color, transition: 'width 0.5s ease', minWidth: 2 }} />
+                    ) : null;
+                  })}
+                </div>
+                <div style={{ display: 'flex', gap: 10, marginBottom: 7 }}>
+                  {[
+                    { key: 'essentials', label: 'Essentials', color: PURPLE },
+                    { key: 'lifestyle',  label: 'Lifestyle',  color: AMBER },
+                    { key: 'savings',    label: 'Savings',    color: GREEN },
+                  ].map(({ key, label, color }) => weeklyByCategory[key] > 0 ? (
+                    <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                      <div style={{ width: 5, height: 5, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                      <span style={{ fontSize: 9, color: 'rgba(232,221,208,0.4)' }}>£{Math.round(weeklyByCategory[key])} {label}</span>
+                    </div>
+                  ) : null)}
+                </div>
+              </>
+            ) : (
+              <div style={{ fontSize: 10, color: 'rgba(232,221,208,0.22)', marginBottom: 7 }}>No transactions logged this week</div>
+            )}
+
+            {/* Noa sentence */}
+            <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.5)', lineHeight: 1.5, fontStyle: 'italic' }}>
+              "{getWeeklySentence()}"
+            </div>
+
+            {/* Expand indicator */}
+            {weeklyTx.length > 0 && (
+              <div style={{ fontSize: 9, color: 'rgba(232,221,208,0.22)', marginTop: 6, textAlign: 'right' }}>
+                {weeklyExpanded ? '↑ hide' : `↓ ${weeklyTx.length} transaction${weeklyTx.length > 1 ? 's' : ''}`}
+              </div>
+            )}
+
+            {/* Expanded transaction list */}
+            {weeklyExpanded && weeklyTx.length > 0 && (
+              <div style={{ marginTop: 10, borderTop: '1px solid rgba(232,221,208,0.07)', paddingTop: 10 }}>
+                {[...weeklyTx].reverse().map((tx, i) => {
+                  const cat = (tx.category || 'essentials');
+                  const catColor = cat === 'lifestyle' ? AMBER : cat === 'savings' ? GREEN : PURPLE;
+                  return (
+                    <div key={i} style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      paddingTop: 6, paddingBottom: 6,
+                      borderBottom: i < weeklyTx.length - 1 ? '1px solid rgba(232,221,208,0.04)' : 'none',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                        <div style={{ width: 5, height: 5, borderRadius: '50%', background: catColor, flexShrink: 0 }} />
+                        <div>
+                          <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.62)' }}>{tx.note || cat}</div>
+                          <div style={{ fontSize: 9, color: 'rgba(232,221,208,0.28)' }}>{tx.date}</div>
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: catColor }}>£{tx.amount.toFixed(2)}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
