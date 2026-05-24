@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
-import { getData, saveData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin, getGoals, saveGoals, getLastOpen, setLastOpen, getLastCeremonyYM, setLastCeremonyYM, getDebts, saveDebts, getChallenge, saveChallenge, getExpenseLog, saveExpenseLog, getEveningDate, setEveningDate, appendEveningLog, getUserName, setUserName, getDailyInsight, saveDailyInsight, getNotifPrefs, saveNotifPrefs, getNotifLast, saveNotifLast, savePushSub } from '../storage';
+import { getData, saveData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin, getGoals, saveGoals, getLastOpen, setLastOpen, getLastCeremonyYM, setLastCeremonyYM, getDebts, saveDebts, getChallenge, saveChallenge, getExpenseLog, saveExpenseLog, getEveningDate, setEveningDate, appendEveningLog, getUserName, setUserName, getDailyInsight, saveDailyInsight, getNotifPrefs, saveNotifPrefs, getNotifLast, saveNotifLast, savePushSub, getPrivacyMode, setPrivacyMode as savePrivacyMode, appendConvoMemory, getConvoMemory, clearConvoMemory } from '../storage';
 import Orb from '../Orb';
 import { speak as voiceSpeak, stopSpeaking } from '../voice';
 
@@ -312,6 +312,7 @@ export default function VelaCore({ onReset }) {
   const [dailyInsight, setDailyInsight]       = useState('');
   const [insightLoading, setInsightLoading]   = useState(false);
   const insightSpokenRef                       = useRef(false);
+  const [insightTapPending, setInsightTapPending] = useState(false);
 
   // Feature 2 — Living transaction feed
   const [txComment, setTxComment]             = useState('');
@@ -328,6 +329,13 @@ export default function VelaCore({ onReset }) {
   const [notifPerms, setNotifPerms]           = useState(() => ('Notification' in window ? Notification.permission : 'default'));
   const [notifPrefs, setNotifPrefsState]      = useState(() => getNotifPrefs());
   const swRegRef                               = useRef(null);
+
+  // Task 1 — Privacy Mode
+  const [privacyMode, setPrivacyModeState]     = useState(() => getPrivacyMode());
+  const privacyModeRef                         = useRef(getPrivacyMode());
+
+  // Task 2 — Conversation Memory: toast state
+  const [convoCleared, setConvoCleared]        = useState(false);
 
   // Task 4d — Dual-failure state: shown when both Groq (chat) + ElevenLabs (voice) fail together
   const [dualFail, setDualFail]               = useState(false);
@@ -356,6 +364,7 @@ export default function VelaCore({ onReset }) {
   function setOrbState(s) { orbRef.current = s; _setOrbState(s); }
 
   useEffect(() => { voiceOnRef.current = voiceOn; }, [voiceOn]);
+  useEffect(() => { privacyModeRef.current = privacyMode; }, [privacyMode]);
 
   // ── PWA install prompt — show once after 2nd visit ────────────────
   useEffect(() => {
@@ -401,7 +410,7 @@ export default function VelaCore({ onReset }) {
       const tid = setTimeout(() => {
         if (!insightSpokenRef.current) {
           insightSpokenRef.current = true;
-          speak(cached.text);
+          if (privacyModeRef.current) { setInsightTapPending(true); } else { speak(cached.text); }
         }
       }, 1400);
       return () => clearTimeout(tid);
@@ -429,7 +438,7 @@ export default function VelaCore({ onReset }) {
           setTimeout(() => {
             if (!insightSpokenRef.current) {
               insightSpokenRef.current = true;
-              speak(text);
+              if (privacyModeRef.current) { setInsightTapPending(true); } else { speak(text); }
             }
           }, 1400);
         }
@@ -667,6 +676,7 @@ export default function VelaCore({ onReset }) {
       onStart: () => setOrbState('speaking'),
       onEnd:   () => setOrbState('idle'),
       onError: () => setOrbState('idle'),
+      privacyMode: privacyModeRef.current,
       // ElevenLabs failures fall back to browser TTS. Also checked against Groq failure
       // for the dual-fail overlay (Task 4d).
       onFail:  (msg) => {
@@ -1348,9 +1358,12 @@ Use this data for specific, proactive comments — e.g. "you've spent £${txTota
           <div style={{ fontSize: 15, color: 'rgba(232,221,208,0.36)', letterSpacing: '0.2px' }}>{getGreeting()}</div>
           <div
             onClick={() => { if (showEveningDot) { setEveningPhase('ask'); setEveningNote(''); setEveningCheckOpen(true); } }}
-            style={{ cursor: showEveningDot ? 'pointer' : 'default' }}
+            style={{ cursor: showEveningDot ? 'pointer' : 'default', position: 'relative', display: 'inline-block' }}
           >
             <SmallOrb alert={spendAlert} eveningDot={showEveningDot} orbState={chatOpen ? orbState : 'idle'} />
+            {privacyMode && (
+              <div style={{ position: 'absolute', top: 0, right: -4, fontSize: 12, lineHeight: 1, opacity: 0.7, pointerEvents: 'none' }}>🔒</div>
+            )}
           </div>
           {debtMode ? (
             <>
@@ -1618,8 +1631,14 @@ Use this data for specific, proactive comments — e.g. "you've spent £${txTota
           <span style={{ fontSize: 13, flexShrink: 0, lineHeight: '1.5' }}>✦</span>
           {insightLoading
             ? <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.22)', lineHeight: 1.5, animation: 'blink 1.6s ease-in-out infinite' }}>Noa is thinking…</div>
-            : <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.38)', lineHeight: 1.5 }}>
+            : <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.38)', lineHeight: 1.5, flex: 1 }}>
                 {dailyInsight || (insights.length > 0 ? insights[0] : getDailyTip())}
+                {insightTapPending && (
+                  <button
+                    onClick={() => { speak(dailyInsight); setInsightTapPending(false); }}
+                    style={{ display: 'block', marginTop: 5, background: 'none', border: '1px solid rgba(200,184,154,0.3)', borderRadius: 8, color: 'rgba(200,184,154,0.65)', fontSize: 10, padding: '3px 9px', cursor: 'pointer', letterSpacing: '0.2px', fontFamily: 'inherit' }}
+                  >Tap to hear Noa</button>
+                )}
               </div>
           }
         </div>
@@ -1935,6 +1954,15 @@ Use this data for specific, proactive comments — e.g. "you've spent £${txTota
                 <div style={{ fontSize: 12, color: 'rgba(232,221,208,0.38)' }}>Noa speaks aloud</div>
               </div>
               <Toggle on={voiceOn} onToggle={() => setVoiceOn(v => !v)} />
+            </div>
+
+            {/* Task 1 — Privacy Mode toggle */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <div style={{ flex: 1, marginRight: 12 }}>
+                <div style={{ fontSize: 14, color: '#E8DDD0', marginBottom: 2 }}>Privacy Mode 🔒</div>
+                <div style={{ fontSize: 12, color: 'rgba(232,221,208,0.38)', lineHeight: 1.45 }}>Noa won't say specific numbers out loud. Useful in public.</div>
+              </div>
+              <Toggle on={privacyMode} onToggle={() => { const next = !privacyMode; setPrivacyModeState(next); savePrivacyMode(next); privacyModeRef.current = next; }} />
             </div>
 
             {/* Feature 7 — Notification preferences */}
