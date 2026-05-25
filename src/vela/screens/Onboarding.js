@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { parseAmount, parseDebt } from '../scoring';
-import { saveData, saveInsights, markReady, markOnboardingDone, setUserName, saveAccounts } from '../storage';
+import { saveData, saveInsights, markReady, markOnboardingDone, setUserName, saveAccounts, saveExpenseLog, saveBankingRequisition, saveBankingAccountIds, saveBankingInstitution, setBankingLastSync, setBankingPending, getBankingRequisition, getBankingPending, clearBankingPending } from '../storage';
 import { speak as voiceSpeak, stopSpeaking } from '../voice';
 import Orb from '../Orb';
 
@@ -864,11 +864,126 @@ function IncomeStep({ sources, onChange, onContinue }) {
 
 const PURPOSES = ['Bills and Essentials', 'Daily Spending', 'Savings', 'Investments'];
 
+// Nordigen institution IDs for the most common UK banks
+const BANKS = [
+  { id: 'MONZO_MONZO',              name: 'Monzo',    emoji: '🔶' },
+  { id: 'STARLING_SRLGGB3L',        name: 'Starling', emoji: '🌟' },
+  { id: 'REVOLUT_REVOGB21',         name: 'Revolut',  emoji: '🔵' },
+  { id: 'BARCLAYS_BARCGB22',        name: 'Barclays', emoji: '🦅' },
+  { id: 'HSBC_PERSONAL_HSBCGB2LXXX', name: 'HSBC',   emoji: '🔴' },
+  { id: 'NATWEST_NWBKGB2L',         name: 'NatWest',  emoji: '🏦' },
+  { id: 'LLOYDS_LOYDGB2L',          name: 'Lloyds',   emoji: '🐎' },
+];
+
 function AccountsStep({ accounts, onChange, onContinue, onSkip }) {
-  const [name, setName] = useState('');
+  const [name, setName]       = useState('');
   const [purpose, setPurpose] = useState(PURPOSES[0]);
   const [balance, setBalance] = useState('');
-  const [err, setErr] = useState('');
+  const [err, setErr]         = useState('');
+
+  // Banking connection: 'idle' | 'picker' | 'loading' | 'connected' | 'error'
+  const [bankStep, setBankStep]           = useState('idle');
+  const [bankName, setBankName]           = useState('');
+  const [bankErrMsg, setBankErrMsg]       = useState('');
+  const connectedRef = useRef(false);
+
+  // On mount — check if we're returning from a Nordigen OAuth redirect
+  useEffect(() => {
+    if (connectedRef.current) return;
+    const reqId   = getBankingRequisition();
+    const pending = getBankingPending();
+    if (reqId && pending) {
+      connectedRef.current = true;
+      setBankName(localStorage.getItem('vela_banking_institution') || 'Your bank');
+      setBankStep('loading');
+      completeBankConnect(reqId);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function completeBankConnect(reqId) {
+    try {
+      clearBankingPending();
+      const cr = await fetch('/api/banking/connect', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ action: 'complete', requisitionId: reqId }),
+      });
+      const cd = await cr.json();
+      if (!cd.accountIds || cd.accountIds.length === 0) {
+        setBankStep('error');
+        setBankErrMsg('Bank not connected yet — please try again.');
+        return;
+      }
+      saveBankingAccountIds(cd.accountIds);
+
+      // Fetch balances
+      const ar = await fetch('/api/banking/accounts', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ accountIds: cd.accountIds }),
+      });
+      const ad = await ar.json();
+      if (ad.accounts && ad.accounts.length > 0) {
+        const built = ad.accounts.map(a => ({
+          id:       a.id,
+          name:     a.name,
+          purpose:  'Bank Account',
+          balance:  a.balance,
+          fromBank: true,
+        }));
+        onChange(built);
+      }
+
+      // Fetch + store last 30 days of transactions
+      const tr = await fetch('/api/banking/transactions', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ accountIds: cd.accountIds }),
+      });
+      const td = await tr.json();
+      if (td.transactions && td.transactions.length > 0) {
+        const entries = td.transactions.map(tx => ({
+          id:       `bank_${tx.date}_${Math.random().toString(36).slice(2, 7)}`,
+          amount:   tx.amount,
+          category: tx.category,
+          note:     tx.description,
+          date:     tx.date,
+          fromBank: true,
+        }));
+        saveExpenseLog(entries);
+      }
+
+      setBankingLastSync();
+      setBankStep('connected');
+    } catch (e) {
+      console.error('[completeBankConnect]', e);
+      setBankStep('error');
+      setBankErrMsg('Connection failed — please try again.');
+    }
+  }
+
+  async function initiateConnect(bank) {
+    setBankStep('loading');
+    setBankName(bank.name);
+    saveBankingInstitution(bank.name);
+    try {
+      const redirectUri = window.location.origin + '/';
+      const r = await fetch('/api/banking/connect', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ action: 'initiate', institutionId: bank.id, redirectUri }),
+      });
+      const d = await r.json();
+      if (!d.link || !d.requisitionId) throw new Error('No link returned from server');
+      saveBankingRequisition(d.requisitionId);
+      setBankingPending();
+      window.location.href = d.link; // navigate to bank consent screen
+    } catch (e) {
+      console.error('[initiateConnect]', e);
+      setBankStep('error');
+      setBankErrMsg('Could not start connection — check internet and try again.');
+    }
+  }
 
   function addAccount() {
     if (!name.trim()) { setErr('Add an account name'); return; }
@@ -879,31 +994,114 @@ function AccountsStep({ accounts, onChange, onContinue, onSkip }) {
 
   function remove(id) { onChange(accounts.filter(a => a.id !== id)); }
 
+  const bankConnected = bankStep === 'connected';
+
   return (
     <div style={{
       position: 'absolute', bottom: 0, left: 0, right: 0,
       background: '#111318', borderTop: '1px solid rgba(232,221,208,0.07)',
       padding: '14px 16px 0', boxSizing: 'border-box',
       paddingBottom: 'max(14px, calc(env(safe-area-inset-bottom) + 8px))',
+      overflowY: 'auto', maxHeight: '72vh',
     }}>
-      {/* Existing accounts */}
+
+      {/* ── Open Banking section ─────────────────────────────────────── */}
+      {bankConnected ? (
+        /* Connected state */
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12,
+          padding: '10px 14px', borderRadius: 12,
+          background: 'rgba(124,174,158,0.1)', border: '1px solid rgba(124,174,158,0.25)',
+        }}>
+          <div style={{ fontSize: 18, lineHeight: 1 }}>✅</div>
+          <div>
+            <div style={{ fontSize: 13, color: '#7CAE9E', fontWeight: 600 }}>{bankName} connected</div>
+            <div style={{ fontSize: 10, color: 'rgba(232,221,208,0.38)' }}>Accounts and transactions imported</div>
+          </div>
+        </div>
+      ) : bankStep === 'loading' ? (
+        /* Loading state */
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12,
+          padding: '10px 14px', borderRadius: 12,
+          background: 'rgba(200,184,154,0.06)', border: '1px solid rgba(200,184,154,0.15)',
+        }}>
+          <div style={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid rgba(200,184,154,0.2)', borderTopColor: '#C8B89A', animation: 'noaOrbPulse 0.8s linear infinite', flexShrink: 0 }} />
+          <div style={{ fontSize: 13, color: 'rgba(232,221,208,0.6)' }}>
+            {bankName ? `Connecting ${bankName}…` : 'Completing connection…'}
+          </div>
+        </div>
+      ) : bankStep === 'picker' ? (
+        /* Bank picker */
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.38)', marginBottom: 8, letterSpacing: '0.6px', textTransform: 'uppercase' }}>Choose your bank</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7 }}>
+            {BANKS.map(b => (
+              <button key={b.id} onClick={() => initiateConnect(b)} style={{
+                padding: '9px 8px', borderRadius: 10, background: 'rgba(200,184,154,0.07)',
+                border: '1px solid rgba(200,184,154,0.18)', color: '#E8DDD0',
+                fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
+                display: 'flex', alignItems: 'center', gap: 7, textAlign: 'left',
+              }}>
+                <span style={{ fontSize: 16, lineHeight: 1 }}>{b.emoji}</span>
+                <span>{b.name}</span>
+              </button>
+            ))}
+          </div>
+          <button onClick={() => setBankStep('idle')} style={{ background: 'none', border: 'none', color: 'rgba(232,221,208,0.3)', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', marginTop: 6, padding: 0 }}>
+            Cancel
+          </button>
+        </div>
+      ) : (
+        /* Idle — show Connect button */
+        <div style={{ marginBottom: 12 }}>
+          <button onClick={() => setBankStep('picker')} style={{
+            width: '100%', padding: '11px 0',
+            background: 'rgba(124,174,158,0.1)', border: '1px solid rgba(124,174,158,0.28)',
+            borderRadius: 12, color: '#7CAE9E', fontSize: 14, fontWeight: 600,
+            cursor: 'pointer', fontFamily: 'inherit',
+          }}>🔗 Connect your bank</button>
+          <div style={{ fontSize: 10, color: 'rgba(232,221,208,0.28)', textAlign: 'center', marginTop: 5, lineHeight: 1.5 }}>
+            Read-only access. Noa can never move or touch your money.
+          </div>
+          {bankStep === 'error' && (
+            <div style={{ fontSize: 11, color: '#E24B4A', textAlign: 'center', marginTop: 5 }}>{bankErrMsg}</div>
+          )}
+        </div>
+      )}
+
+      {/* ── Manual section divider ────────────────────────────────────── */}
+      {!bankConnected && bankStep !== 'picker' && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+          <div style={{ flex: 1, height: 1, background: 'rgba(232,221,208,0.08)' }} />
+          <div style={{ fontSize: 10, color: 'rgba(232,221,208,0.28)', letterSpacing: '0.5px', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Or add manually</div>
+          <div style={{ flex: 1, height: 1, background: 'rgba(232,221,208,0.08)' }} />
+        </div>
+      )}
+
+      {/* ── Existing accounts list ────────────────────────────────────── */}
       {accounts.map(a => (
         <div key={a.id} style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          background: 'rgba(200,184,154,0.08)', borderRadius: 10,
-          padding: '8px 12px', marginBottom: 7,
-          border: '1px solid rgba(200,184,154,0.15)',
+          background: a.fromBank ? 'rgba(124,174,158,0.07)' : 'rgba(200,184,154,0.08)',
+          borderRadius: 10, padding: '8px 12px', marginBottom: 7,
+          border: `1px solid ${a.fromBank ? 'rgba(124,174,158,0.2)' : 'rgba(200,184,154,0.15)'}`,
         }}>
           <div>
-            <div style={{ fontSize: 13, color: '#E8DDD0', fontWeight: 600 }}>{a.name}</div>
+            <div style={{ fontSize: 13, color: '#E8DDD0', fontWeight: 600 }}>
+              {a.fromBank && <span style={{ color: '#7CAE9E', marginRight: 4 }}>✓</span>}
+              {a.name}
+            </div>
             <div style={{ fontSize: 10, color: '#A89880' }}>{a.purpose}{a.balance > 0 ? ` · £${a.balance.toLocaleString('en-GB')}` : ''}</div>
           </div>
-          <button onClick={() => remove(a.id)} style={{ background: 'none', border: 'none', color: 'rgba(232,221,208,0.3)', fontSize: 18, cursor: 'pointer', padding: '0 4px', lineHeight: 1 }}>×</button>
+          {!a.fromBank && (
+            <button onClick={() => remove(a.id)} style={{ background: 'none', border: 'none', color: 'rgba(232,221,208,0.3)', fontSize: 18, cursor: 'pointer', padding: '0 4px', lineHeight: 1 }}>×</button>
+          )}
         </div>
       ))}
 
-      {/* Add form — shown if < 4 accounts */}
-      {accounts.length < 4 && (
+      {/* ── Manual add form — shown if < 4 accounts and not in picker ── */}
+      {!bankConnected && bankStep !== 'picker' && accounts.length < 4 && (
         <>
           {err && <div style={{ fontSize: 11, color: '#E24B4A', marginBottom: 5 }}>{err}</div>}
           <div style={{ display: 'flex', gap: 7, marginBottom: 7 }}>
@@ -943,7 +1141,7 @@ function AccountsStep({ accounts, onChange, onContinue, onSkip }) {
       <div style={{ display: 'flex', gap: 10 }}>
         <button onClick={onSkip} style={{ flex: 1, padding: '11px 0', background: 'transparent', border: '1px solid rgba(232,221,208,0.12)', borderRadius: 12, color: 'rgba(232,221,208,0.35)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Skip for now</button>
         <button onClick={onContinue} style={{ flex: 2, padding: '11px 0', background: 'rgba(200,184,154,0.18)', border: '1px solid rgba(200,184,154,0.35)', borderRadius: 12, color: '#C8B89A', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-          {accounts.length > 0 ? `Continue with ${accounts.length} account${accounts.length > 1 ? 's' : ''}` : 'Skip for now'}
+          {accounts.length > 0 ? `Continue with ${accounts.length} account${accounts.length > 1 ? 's' : ''}` : 'Continue'}
         </button>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
-import { getData, saveData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin, getGoals, saveGoals, getLastOpen, setLastOpen, getLastCeremonyYM, setLastCeremonyYM, getDebts, saveDebts, getChallenge, saveChallenge, getExpenseLog, saveExpenseLog, getEveningDate, setEveningDate, appendEveningLog, getUserName, setUserName, getDailyInsight, saveDailyInsight, getNotifPrefs, saveNotifPrefs, getNotifLast, saveNotifLast, savePushSub, getPrivacyMode, setPrivacyMode as savePrivacyMode, appendConvoMemory, getConvoMemory, clearConvoMemory, getAccounts, getFinancialPersonality, saveFinancialPersonality, getFirstWeekShown, markFirstWeekShown, getPlanType, getWaitlistEmail, saveWaitlistEmail, incrementPaywallViews, getMemoryStart, setMemoryStart, setAppStart } from '../storage';
+import { getData, saveData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin, getGoals, saveGoals, getLastOpen, setLastOpen, getLastCeremonyYM, setLastCeremonyYM, getDebts, saveDebts, getChallenge, saveChallenge, getExpenseLog, saveExpenseLog, getEveningDate, setEveningDate, appendEveningLog, getUserName, setUserName, getDailyInsight, saveDailyInsight, getNotifPrefs, saveNotifPrefs, getNotifLast, saveNotifLast, savePushSub, getPrivacyMode, setPrivacyMode as savePrivacyMode, appendConvoMemory, getConvoMemory, clearConvoMemory, getAccounts, saveAccounts, getFinancialPersonality, saveFinancialPersonality, getFirstWeekShown, markFirstWeekShown, getPlanType, getWaitlistEmail, saveWaitlistEmail, incrementPaywallViews, getMemoryStart, setMemoryStart, setAppStart, getBankingAccountIds, saveBankingAccountIds, getBankingInstitution, saveBankingInstitution, getBankingLastSync, setBankingLastSync, getBankingRequisition, saveBankingRequisition, getBankingPending, setBankingPending, clearBankingPending, clearBanking } from '../storage';
 import Orb from '../Orb';
 import { speak as voiceSpeak, stopSpeaking } from '../voice';
 
@@ -498,6 +498,14 @@ export default function VelaCore({ onReset }) {
   // Task 2 — Conversation Memory: toast state
   const [convoCleared, setConvoCleared]        = useState(false);
 
+  // Open Banking — Nordigen integration state
+  const [bankConnected, setBankConnected]   = useState(() => !!getBankingInstitution());
+  const [bankInstitution, setBankInstitution] = useState(() => getBankingInstitution());
+  const [bankLastSync, setBankLastSyncState]  = useState(() => getBankingLastSync());
+  const [bankSyncing, setBankSyncing]         = useState(false);
+  const [bankSyncErr, setBankSyncErr]         = useState('');
+  const [showBankConnect, setShowBankConnect] = useState(false);
+
   // Bank Account Allocation — read accounts from storage
   const accounts = getAccounts();
   // Payday Plan modal state
@@ -549,6 +557,103 @@ export default function VelaCore({ onReset }) {
       if (p) { saveFinancialPersonality(p); setFinancialPersonality(p); }
     }
   }, [expenseLog.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Open Banking — complete pending Nordigen OAuth or auto-sync on mount
+  useEffect(() => {
+    const reqId   = getBankingRequisition();
+    const pending = getBankingPending();
+    if (reqId && pending) {
+      clearBankingPending();
+      completeBankFromRequisition(reqId);
+      return;
+    }
+    if (bankConnected) {
+      const last = getBankingLastSync();
+      if (last) {
+        const hoursSince = (Date.now() - new Date(last).getTime()) / 3600000;
+        if (hoursSince > 24) syncBankAccounts();
+      } else {
+        syncBankAccounts();
+      }
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function completeBankFromRequisition(reqId) {
+    setBankSyncing(true);
+    try {
+      const cr = await fetch('/api/banking/connect', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ action: 'complete', requisitionId: reqId }),
+      });
+      const cd = await cr.json();
+      if (!cd.accountIds || cd.accountIds.length === 0) return;
+      saveBankingAccountIds(cd.accountIds);
+      const inst = getBankingInstitution();
+      setBankInstitution(inst);
+      setBankConnected(true);
+      await syncBankAccounts(cd.accountIds);
+    } catch (e) {
+      console.error('[completeBankFromRequisition]', e);
+    } finally {
+      setBankSyncing(false);
+    }
+  }
+
+  async function syncBankAccounts(overrideIds) {
+    const accountIds = overrideIds || getBankingAccountIds();
+    if (!accountIds || accountIds.length === 0) return;
+    setBankSyncing(true);
+    setBankSyncErr('');
+    try {
+      const [ar, tr] = await Promise.all([
+        fetch('/api/banking/accounts', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ accountIds }),
+        }),
+        fetch('/api/banking/transactions', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ accountIds }),
+        }),
+      ]);
+      const ad = await ar.json();
+      const td = await tr.json();
+
+      if (ad.accounts && ad.accounts.length > 0) {
+        // Persist live account names/balances so buildPrompt picks them up
+        const mapped = ad.accounts.map(a => ({
+          id: a.id, name: a.name, purpose: 'Bank Account', balance: a.balance, fromBank: true,
+        }));
+        saveAccounts(mapped);
+      }
+
+      if (td.transactions && td.transactions.length > 0) {
+        // Keep manual entries, replace bank entries
+        const manual  = getExpenseLog().filter(e => !e.fromBank);
+        const entries = td.transactions.map(tx => ({
+          id:       `bank_${tx.date}_${Math.random().toString(36).slice(2, 7)}`,
+          amount:   tx.amount,
+          category: tx.category,
+          note:     tx.description,
+          date:     tx.date,
+          fromBank: true,
+        }));
+        const merged = [...manual, ...entries];
+        saveExpenseLog(merged);
+        setExpenseLog(merged);
+      }
+
+      setBankingLastSync();
+      setBankLastSyncState(getBankingLastSync());
+    } catch (e) {
+      console.error('[syncBankAccounts]', e);
+      setBankSyncErr('Sync failed. Check your connection.');
+    } finally {
+      setBankSyncing(false);
+    }
+  }
 
   // Task 2 — First Week Plan: show once on first dashboard load (new user)
   useEffect(() => {
@@ -1199,7 +1304,11 @@ export default function VelaCore({ onReset }) {
 
     // ── Recent transactions (last 7 days) ───────────────────────────
     const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
-    const recentTx = getExpenseLog().filter(e => e.date >= sevenDaysAgo);
+    const allLog    = getExpenseLog();
+    const recentTx  = allLog.filter(e => e.date >= sevenDaysAgo);
+    const bankInst  = getBankingInstitution();
+    const hasBank   = !!bankInst && getBankingAccountIds().length > 0;
+    const txSource  = hasBank ? `Open Banking (${bankInst}, automatic)` : 'manual entry';
     const txByCategory = recentTx.reduce((acc, e) => {
       const cat = (e.category || 'essentials').toLowerCase();
       const key = cat === 'lifestyle' ? 'Lifestyle' : cat === 'savings' ? 'Savings' : 'Essentials';
@@ -1368,9 +1477,13 @@ ${(() => {
 2. When user asks what they can afford, use IN MY POCKET: £${inMyPocket}/day.
 3. Reference Baby Step ${babyStep} when giving savings, debt, or investment advice.
 4. If payday ≤ 3 days away, lead with the Payday Routine allocation.
-5. End financial advice with: ⚖️ Guidance only — not FCA-regulated advice.${moodTone}${recentTx.length > 0 ? `
+5. End financial advice with: ⚖️ Guidance only — not FCA-regulated advice.${moodTone}${hasBank ? `
 
-══ RECENT TRANSACTIONS (last 7 days — ${recentTx.length} logged, £${txTotal.toFixed(2)} total) ══
+══ OPEN BANKING CONNECTION ══
+Data source: ${txSource}
+Bank transactions are real, verified data — reference them with confidence. When the user asks about spending, use these figures directly. Do NOT say "based on what you've told me" — say "your ${bankInst} data shows…"` : ''}${recentTx.length > 0 ? `
+
+══ RECENT TRANSACTIONS (last 7 days — ${recentTx.length} transactions, £${txTotal.toFixed(2)} total | source: ${txSource}) ══
 ${txLines.join('\n')}
 Use this data for specific, proactive comments — e.g. "you've spent £${txTotal.toFixed(2)} this week."` : ''}${memoryBlock}`;
   }
@@ -2896,6 +3009,55 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
               )}
             </div>
 
+            {/* Open Banking — connected bank or connect prompt */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 12, color: 'rgba(232,221,208,0.32)', letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: 10 }}>Open Banking</div>
+              {bankConnected ? (
+                <div style={{ padding: '10px 14px', borderRadius: 12, background: 'rgba(124,174,158,0.08)', border: '1px solid rgba(124,174,158,0.2)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <div>
+                      <div style={{ fontSize: 13, color: GREEN, fontWeight: 600 }}>✓ {bankInstitution} connected</div>
+                      <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.38)', marginTop: 2 }}>
+                        {bankLastSync
+                          ? `Synced ${new Date(bankLastSync).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`
+                          : 'Not yet synced'}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => { if (!bankSyncing) syncBankAccounts(); }}
+                      disabled={bankSyncing}
+                      style={{ background: 'rgba(124,174,158,0.12)', border: '1px solid rgba(124,174,158,0.25)', borderRadius: 8, padding: '5px 12px', color: GREEN, fontSize: 12, fontWeight: 600, cursor: bankSyncing ? 'default' : 'pointer', fontFamily: 'inherit', opacity: bankSyncing ? 0.55 : 1 }}
+                    >{bankSyncing ? 'Syncing…' : 'Sync now'}</button>
+                  </div>
+                  {bankSyncErr && <div style={{ fontSize: 11, color: '#E24B4A', marginBottom: 6 }}>{bankSyncErr}</div>}
+                  <button
+                    onClick={() => {
+                      clearBanking();
+                      setBankConnected(false);
+                      setBankInstitution('');
+                      setBankLastSyncState('');
+                      setBankSyncErr('');
+                      // Clear bank-sourced expense entries
+                      const manual = getExpenseLog().filter(e => !e.fromBank);
+                      saveExpenseLog(manual);
+                      setExpenseLog(manual);
+                    }}
+                    style={{ background: 'none', border: 'none', padding: 0, color: 'rgba(226,75,74,0.55)', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'underline' }}
+                  >Disconnect bank</button>
+                </div>
+              ) : (
+                <>
+                  <button
+                    onClick={() => { setShowSettings(false); setShowBankConnect(true); }}
+                    style={{ width: '100%', padding: '10px 0', background: 'rgba(124,174,158,0.08)', border: '1px solid rgba(124,174,158,0.22)', borderRadius: 12, color: GREEN, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+                  >🔗 Connect your bank</button>
+                  <div style={{ fontSize: 10, color: 'rgba(232,221,208,0.26)', textAlign: 'center', marginTop: 5, lineHeight: 1.5 }}>
+                    Read-only access. Noa can never move or touch your money.
+                  </div>
+                </>
+              )}
+            </div>
+
             <SettingsBtn onClick={saveSettings} color={PURPLE} text="Save" />
 
             {/* Task 3 — Upgrade Noa */}
@@ -2951,6 +3113,23 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
             )}
           </div>
         </div>
+      )}
+
+      {/* ══════════════════════════════════════════
+          BANK CONNECT MODAL
+      ══════════════════════════════════════════ */}
+      {showBankConnect && (
+        <BankConnectModal
+          onClose={() => setShowBankConnect(false)}
+          onConnected={(inst, accountIds) => {
+            saveBankingInstitution(inst);
+            saveBankingAccountIds(accountIds);
+            setBankInstitution(inst);
+            setBankConnected(true);
+            setShowBankConnect(false);
+            syncBankAccounts(accountIds);
+          }}
+        />
       )}
 
       {/* ══════════════════════════════════════════
@@ -3701,6 +3880,90 @@ function Label({ children }) {
   return (
     <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.4)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.6px', fontWeight: 600 }}>
       {children}
+    </div>
+  );
+}
+
+// ── Bank Connect Modal ───────────────────────────────────────────────────────
+const BANK_LIST = [
+  { id: 'MONZO_MONZO',               name: 'Monzo',    emoji: '🔶' },
+  { id: 'STARLING_SRLGGB3L',         name: 'Starling', emoji: '🌟' },
+  { id: 'REVOLUT_REVOGB21',          name: 'Revolut',  emoji: '🔵' },
+  { id: 'BARCLAYS_BARCGB22',         name: 'Barclays', emoji: '🦅' },
+  { id: 'HSBC_PERSONAL_HSBCGB2LXXX', name: 'HSBC',    emoji: '🔴' },
+  { id: 'NATWEST_NWBKGB2L',          name: 'NatWest',  emoji: '🏦' },
+  { id: 'LLOYDS_LOYDGB2L',           name: 'Lloyds',   emoji: '🐎' },
+];
+
+function BankConnectModal({ onClose, onConnected }) {
+  const [step, setStep]     = useState('picker'); // picker | loading | error
+  const [bankName, setBankName] = useState('');
+  const [errMsg, setErrMsg] = useState('');
+
+  async function connect(bank) {
+    setBankName(bank.name);
+    setStep('loading');
+    saveBankingInstitution(bank.name);
+    try {
+      const redirectUri = window.location.origin + '/';
+      const r = await fetch('/api/banking/connect', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ action: 'initiate', institutionId: bank.id, redirectUri }),
+      });
+      const d = await r.json();
+      if (!d.link || !d.requisitionId) throw new Error('No link returned');
+      saveBankingRequisition(d.requisitionId);
+      setBankingPending();
+      window.location.href = d.link;
+    } catch (e) {
+      setStep('error');
+      setErrMsg('Could not start connection. Check your internet and try again.');
+    }
+  }
+
+  return (
+    <div
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.82)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, zIndex: 70 }}
+    >
+      <div style={{ background: 'rgba(16,14,36,0.97)', border: '1px solid rgba(200,184,154,0.22)', borderRadius: 26, padding: 28, width: '100%', maxWidth: 320, animation: 'cardIn 0.28s ease-out' }}>
+        <div style={{ fontSize: 17, fontWeight: 700, color: '#E8DDD0', marginBottom: 6 }}>Connect your bank</div>
+        <div style={{ fontSize: 12, color: 'rgba(232,221,208,0.38)', marginBottom: 20, lineHeight: 1.5 }}>
+          Read-only access. Noa can never move or touch your money.
+        </div>
+
+        {step === 'loading' && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 0' }}>
+            <div style={{ width: 18, height: 18, borderRadius: '50%', border: '2px solid rgba(200,184,154,0.2)', borderTopColor: '#C8B89A', animation: 'noaOrbPulse 0.8s linear infinite', flexShrink: 0 }} />
+            <div style={{ fontSize: 13, color: 'rgba(232,221,208,0.6)' }}>Connecting {bankName}…</div>
+          </div>
+        )}
+
+        {step === 'picker' && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
+            {BANK_LIST.map(b => (
+              <button key={b.id} onClick={() => connect(b)} style={{
+                padding: '10px 8px', borderRadius: 12, background: 'rgba(200,184,154,0.07)',
+                border: '1px solid rgba(200,184,154,0.18)', color: '#E8DDD0',
+                fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
+                display: 'flex', alignItems: 'center', gap: 8,
+              }}>
+                <span style={{ fontSize: 17, lineHeight: 1 }}>{b.emoji}</span>
+                <span>{b.name}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {step === 'error' && (
+          <div style={{ fontSize: 12, color: '#E24B4A', marginBottom: 16, lineHeight: 1.5 }}>{errMsg}</div>
+        )}
+
+        <button onClick={onClose} style={{ width: '100%', padding: 11, background: 'none', border: 'none', color: 'rgba(232,221,208,0.3)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
+          Cancel
+        </button>
+      </div>
     </div>
   );
 }
