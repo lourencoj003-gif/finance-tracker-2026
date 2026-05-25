@@ -2,6 +2,120 @@
 
 ---
 
+## Session: 2026-05-25 (Open Banking + Safari fixes)
+
+### Overview
+
+Two-task session. Task 1 fixed mobile Safari PWA layout (white bar, keyboard overlay). Task 2 wired full Nordigen Open Banking read-only integration. All committed and pushed to `main`.
+
+**Build:** 114.49 kB gzip (main) + 2 lazy chunks — compiled successfully, zero warnings.
+
+**Commits:**
+- `0487768` — fix: mobile Safari white bar, keyboard zoom, input bar visibility
+- `2f12d2d` — feat: Nordigen Open Banking — connect flow, auto-populate accounts, real transaction sync, settings disconnect
+
+---
+
+### TASK 1 — Mobile Safari PWA Fixes ✅
+
+**Files:** `public/index.html`, `src/vela/screens/VelaCore.js`
+
+- White bar at bottom: `background-color: #000` on `html`/`body`/`#root`; `height: 100dvh` on `html`
+- Keyboard overlay: extended `visualViewport` listener to compute `kbHeight = max(0, innerHeight - vv.height - vv.offsetTop)`; chat + detail panels changed from `position: absolute` to `position: fixed` with explicit `height: ${vpH}px`; input bar `paddingBottom` switches based on `kbHeight > 10`
+- `-webkit-text-size-adjust: 100%` on inputs to prevent iOS font size adjustment
+
+---
+
+### TASK 2 — Nordigen Open Banking (Read-Only) ✅
+
+**Files:** `api/banking/connect.js`, `api/banking/accounts.js`, `api/banking/transactions.js`, `src/vela/storage.js`, `src/vela/screens/Onboarding.js`, `src/vela/screens/VelaCore.js`, `.env.example`
+
+#### API Endpoints (Vercel serverless, `api/banking/`)
+
+| File | Method | Purpose |
+|------|--------|---------|
+| `connect.js` | POST `action=initiate` | Gets Nordigen API token, creates requisition, returns OAuth link + requisitionId |
+| `connect.js` | POST `action=complete` | Fetches requisition by ID, returns `accountIds[]` after user bank auth |
+| `accounts.js` | POST | Fetches live balances per account ID (`interimAvailable` → `closingBooked`) |
+| `transactions.js` | POST | Fetches 30-day transactions, categorises to Essentials/Lifestyle/Savings, infers income from credits > £500 |
+
+#### Transaction Auto-Categorisation
+
+| Category | Keywords matched |
+|----------|-----------------|
+| `savings` | pension, ISA, Vanguard, Hargreaves, Moneybox, Trading 212 |
+| `lifestyle` | Deliveroo, Netflix, Spotify, Amazon Prime, pub, restaurant, café, gym, hotel, ASOS, H&M |
+| `essentials` | everything else (rent, supermarket, bills, transport, insurance) |
+
+#### Storage Keys Added (`src/vela/storage.js`)
+
+| Key | Purpose |
+|-----|---------|
+| `vela_banking_requisition` | Nordigen requisition ID — stored before OAuth redirect |
+| `vela_banking_accounts_ids` | JSON array of Nordigen account IDs |
+| `vela_banking_last_sync` | ISO timestamp of last successful sync |
+| `vela_banking_institution` | Human name of connected bank (e.g. "Monzo") |
+| `vela_nordigen_pending` | `'1'` while OAuth flow is in progress — detected on app return |
+
+Helpers: `getBankingAccountIds`, `saveBankingAccountIds`, `getBankingInstitution`, `saveBankingInstitution`, `setBankingLastSync`, `getBankingLastSync`, `getBankingRequisition`, `saveBankingRequisition`, `getBankingPending`, `setBankingPending`, `clearBankingPending`, `clearBanking`
+
+#### Onboarding — AccountsStep
+
+- "Connect your bank" teal button above manual entry
+- Privacy disclaimer: *"Read-only access. Noa can never move or touch your money."*
+- Bank picker: 7 UK institutions (Monzo, Starling, Revolut, Barclays, HSBC, NatWest, Lloyds) displayed in a 2-column grid
+- OAuth flow: calls `/api/banking/connect` → stores requisitionId + sets pending flag → `window.location.href = d.link` (user authenticates with bank)
+- On return: `useEffect` detects `vela_nordigen_pending = '1'` + stored requisitionId → calls complete → fetches accounts + transactions → populates accounts list with green ✓ badges + saves 30-day expense log
+- Manual entry still available below "Or add manually" divider
+- Connected state: green banner showing bank name + "Accounts and transactions imported"
+
+#### VelaCore.js — Settings + Auto-Sync
+
+Banking state: `bankConnected`, `bankInstitution`, `bankLastSync`, `bankSyncing`, `bankSyncErr`, `showBankConnect`
+
+Mount `useEffect`:
+1. If `vela_nordigen_pending + vela_banking_requisition` → calls `completeBankFromRequisition(reqId)` (handles redirect returns from settings-initiated connects)
+2. Else if bank connected → auto-syncs if `lastSync` is > 24h ago or missing
+
+`syncBankAccounts(optionalIds)`:
+- Parallel fetch of balances + transactions
+- `saveAccounts(mapped)` — updates named accounts (used in payday allocation)
+- Merges bank transactions with manual entries (keeps manual, replaces `fromBank: true` entries)
+- Updates `expenseLog` state so UI reflects live data immediately
+
+Settings section (between "Clear conversation" and "Save"):
+- **Connected:** green card — bank name + last sync time + "Sync now" button + "Disconnect bank" link
+  - Disconnect clears all `vela_banking_*` keys + removes `fromBank` expense entries
+- **Not connected:** "🔗 Connect your bank" button → opens `BankConnectModal`
+
+`BankConnectModal` component (module-level, outside VelaCore function):
+- Same bank picker UI as onboarding (2-column grid)
+- Loading spinner during `initiate` call
+- Navigates to Nordigen link; `onConnected` callback fires after `completeBankFromRequisition` resolves
+
+#### buildPrompt() Update
+
+When `getBankingInstitution()` returns a value:
+```
+══ OPEN BANKING CONNECTION ══
+Data source: Open Banking (Monzo, automatic)
+Bank transactions are real, verified data — reference them with confidence.
+When the user asks about spending, use these figures directly.
+Do NOT say "based on what you've told me" — say "your Monzo data shows…"
+```
+Transaction section header updated: `(source: Open Banking (Monzo, automatic))` vs `(source: manual entry)`
+
+#### Environment Variables
+
+```env
+NORDIGEN_SECRET_ID=...
+NORDIGEN_SECRET_KEY=...
+```
+Both needed in Vercel → Settings → Environment Variables. Instructions in `.env.example`.
+Source: `bankaccountdata.gocardless.com` → Dashboard → User Secrets.
+
+---
+
 ## Session: 2026-05-25 (intelligence upgrade, monetisation loop, first week plan, share feature)
 
 ### Overview
