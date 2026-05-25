@@ -61,7 +61,24 @@
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Noa loading skeleton — removed by React on first mount -->
+      <div id="noa-skeleton" style="position:fixed;inset:0;background:#111318;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:9999;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;">
+        <div id="noa-sk-orb" style="width:60px;height:60px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#d8cebe,#C8B89A 55%,#7a6a52);animation:noaOrbPulse 2.4s ease-in-out infinite;box-shadow:0 0 18px 6px rgba(200,184,154,0.28);"></div>
+        <div style="font-size:9px;letter-spacing:0.18em;color:rgba(200,184,154,0.38);text-transform:uppercase;animation:noaBlink 2.4s ease-in-out infinite;">noa</div>
+        <div style="position:absolute;bottom:32px;left:0;right:0;text-align:center;font-size:10px;letter-spacing:0.05em;color:rgba(232,221,208,0.14);">Your Financial Navigator</div>
+      </div>
+      <style>
+        @keyframes noaOrbPulse {
+          0%,100% { transform:scale(1);   box-shadow:0 0 18px 6px rgba(200,184,154,0.28); }
+          50%     { transform:scale(1.08);box-shadow:0 0 28px 10px rgba(200,184,154,0.50); }
+        }
+        @keyframes noaBlink {
+          0%,100% { opacity:0.38; }
+          50%     { opacity:0.65; }
+        }
+      </style>
+    </div>
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function () {

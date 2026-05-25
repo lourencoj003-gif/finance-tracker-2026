@@ -14,6 +14,14 @@ export default function App() {
     window.visualViewport ? Math.round(window.visualViewport.height) : null
   );
 
+  // Remove the inline loading skeleton the moment React hydrates
+  useEffect(() => {
+    const sk = document.getElementById('noa-skeleton');
+    if (sk) sk.style.opacity = '0';
+    const t = setTimeout(() => { const el = document.getElementById('noa-skeleton'); if (el) el.remove(); }, 400);
+    return () => clearTimeout(t);
+  }, []);
+
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
