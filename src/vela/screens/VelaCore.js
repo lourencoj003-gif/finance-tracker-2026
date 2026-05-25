@@ -2589,6 +2589,8 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
               <button
                 onClick={() => {
                   clearConvoMemory();
+                  localStorage.removeItem(HISTORY_KEY);
+                  setCards([]);
                   setConvoCleared(true);
                   setTimeout(() => setConvoCleared(false), 2200);
                 }}
