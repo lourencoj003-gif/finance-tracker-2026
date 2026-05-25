@@ -431,6 +431,9 @@ export default function VelaCore({ onReset }) {
   const [vpH, setVpH] = useState(
     window.visualViewport ? Math.round(window.visualViewport.height) : null
   );
+  // Keyboard height: positive when software keyboard is open; 0 otherwise.
+  // = window.innerHeight (layout viewport) minus visualViewport.height (visible area)
+  const [kbHeight, setKbHeight] = useState(0);
 
   // PWA install prompt (ITEM 8)
   const [showPwaBanner, setShowPwaBanner]   = useState(false);
@@ -737,7 +740,15 @@ export default function VelaCore({ onReset }) {
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
-    const update = () => { window.scrollTo(0, 0); setVpH(Math.round(vv.height)); };
+    const update = () => {
+      window.scrollTo(0, 0);
+      const newH = Math.round(vv.height);
+      setVpH(newH);
+      // Keyboard height = layout viewport (window.innerHeight) minus visual viewport
+      // minus any offsetTop (handles panning). Always >= 0.
+      const kb = Math.max(0, Math.round(window.innerHeight - vv.height - (vv.offsetTop || 0)));
+      setKbHeight(kb);
+    };
     vv.addEventListener('resize', update);
     vv.addEventListener('scroll', update);
     return () => { vv.removeEventListener('resize', update); vv.removeEventListener('scroll', update); };
@@ -2451,12 +2462,15 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
 
       {/* ══════════════════════════════════════════
           DETAIL VIEW — lazy-loaded, slides up, swipe down to dismiss
+          position: fixed so it covers the full visible viewport correctly on iOS
       ══════════════════════════════════════════ */}
       <div
         onTouchStart={onTouchStart}
         onTouchEnd={e => onSwipeEnd(e, true)}
         style={{
-          position: 'absolute', inset: 0, zIndex: 10, background: BG,
+          position: 'fixed', top: 0, left: 0, right: 0,
+          height: vpH ? `${vpH}px` : '100dvh',
+          zIndex: 10, background: BG,
           transform: detailOpen ? 'translateY(0)' : 'translateY(100%)',
           transition: SLIDE,
         }}
@@ -2481,9 +2495,14 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
 
       {/* ══════════════════════════════════════════
           CHAT OVERLAY — full conversational UI
+          position: fixed so it's always sized to the actual visible viewport,
+          not the parent container — this keeps the input bar above the keyboard.
       ══════════════════════════════════════════ */}
       <div style={{
-        position: 'absolute', inset: 0, zIndex: 20, background: BG,
+        position: 'fixed',
+        top: 0, left: 0, right: 0,
+        height: vpH ? `${vpH}px` : '100dvh',
+        zIndex: 20, background: BG,
         transform: chatOpen ? 'translateY(0)' : 'translateY(100%)',
         transition: SLIDE,
         display: 'flex', flexDirection: 'column',
@@ -2571,12 +2590,16 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
           ))}
         </div>
 
-        {/* ── Input bar ── */}
+        {/* ── Input bar ──
+             paddingBottom adjusts dynamically:
+             · kbHeight > 10: keyboard is open — minimal padding (home bar is hidden under keyboard)
+             · otherwise: safe-area-inset-bottom to clear the home indicator bar
+        ── */}
         <div style={{
           flexShrink: 0,
           display: 'flex', alignItems: 'center', gap: 8,
           paddingTop: 10,
-          paddingBottom: 'max(14px, calc(env(safe-area-inset-bottom) + 8px))',
+          paddingBottom: kbHeight > 10 ? '10px' : 'max(14px, calc(env(safe-area-inset-bottom) + 8px))',
           paddingLeft: 12, paddingRight: 12,
           background: BG,
           borderTop: '1px solid rgba(232,221,208,0.06)',
