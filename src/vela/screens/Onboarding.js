@@ -5,6 +5,8 @@ import { speak as voiceSpeak, stopSpeaking } from '../voice';
 import Orb from '../Orb';
 
 const PURPLE = '#C8B89A';
+const GREEN  = '#7CAE9E';
+const AMBER  = '#C9A96E';
 const BG     = '#111318';
 
 const KEYFRAMES = `
@@ -44,12 +46,13 @@ const Q = [
   },
   {
     id: 'income',
-    ask: ({ name }) => `Nice to meet you, ${name}. What's your monthly take-home pay after tax?`,
-    ph:  'e.g. £2,500',
+    type: 'income',
+    ask: ({ name }) => `Nice to meet you, ${name}. Where does your monthly income come from — and how much do you take home after tax?`,
+    ph:  '',
   },
   {
     id: 'payday',
-    ask: () => "What day of the month does your salary land?",
+    ask: () => "What day of the month does your main salary land?",
     ph:  'e.g. 25th, or "last day of month"',
   },
   {
@@ -118,13 +121,22 @@ function splitSentences(text) {
   return (text.match(/[^.!?]+[.!?]*/g) || [text]).map(s => s.trim()).filter(Boolean);
 }
 
+// Format ordinal for payday display
+function ordinalDay(n) {
+  if (n === 1 || n === 21 || n === 31) return `${n}st`;
+  if (n === 2 || n === 22) return `${n}nd`;
+  if (n === 3 || n === 23) return `${n}rd`;
+  return `${n}th`;
+}
+
 export default function Onboarding({ onDone }) {
   const [step, setStep]         = useState(0);
   const [input, setInput]       = useState('');
   const [inputError, setInputError] = useState('');
   const [history, setHistory]   = useState([]); // stack of { step, data, input } for back navigation
-  const [data, setData]         = useState({ name: '', income: 0, payday: 25, expenses: 0, expenseDetails: '', lifestyleSpend: '', debt: 0, goal: '', savings: 0 });
+  const [data, setData]         = useState({ name: '', income: 0, incomeSources: [], payday: 25, expenses: 0, expenseDetails: '', lifestyleSpend: '', debt: 0, goal: '', savings: 0 });
   const [accountDraft, setAccountDraft] = useState([]);  // accounts being built on step 4
+  const [incomeDraft, setIncomeDraft]   = useState([]);  // income sources being built on step 1
   const [building, setBuilding] = useState(false);
   const [orbState, setOrbState] = useState('idle');
   const [currentQ, setCurrentQ] = useState('');
@@ -132,6 +144,8 @@ export default function Onboarding({ onDone }) {
   const [expanding, setExpanding] = useState(false);
   const [finaleMsg, setFinaleMsg] = useState('');    // Feature 4 — personalised 3-sentence portrait
   const [showFinale, setShowFinale] = useState(false);
+  const [savedData, setSavedData] = useState(null);  // Task 3 — stored for confirmation screen
+  const [savedAccounts, setSavedAccounts] = useState([]);
   const finaleSpokenRef = useRef(false);
   const [vpH, setVpH]           = useState(
     window.visualViewport ? Math.round(window.visualViewport.height) : null
@@ -176,27 +190,16 @@ export default function Onboarding({ onDone }) {
     });
   }
 
-  // Feature 4 — speak the finale portrait, then auto-proceed to dashboard
+  // Feature 4 — speak the finale portrait, then show confirmation screen
   useEffect(() => {
     if (!showFinale || !finaleMsg || finaleSpokenRef.current) return;
     finaleSpokenRef.current = true;
     setOrbState('speaking');
     voiceSpeak(finaleMsg, {
       onStart: () => setOrbState('speaking'),
-      onEnd: () => {
-        setOrbState('idle');
-        setTimeout(() => { setExpanding(true); setTimeout(onDone, 1600); }, 800);
-      },
-      onError: () => {
-        setOrbState('idle');
-        setTimeout(() => { setExpanding(true); setTimeout(onDone, 1600); }, 800);
-      },
+      onEnd:   () => setOrbState('idle'),
+      onError: () => setOrbState('idle'),
     });
-    // Fallback: always proceed after 8 seconds regardless
-    const fallback = setTimeout(() => {
-      if (!expanding) { setExpanding(true); setTimeout(onDone, 1600); }
-    }, 8000);
-    return () => clearTimeout(fallback);
   }, [showFinale]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function goBack() {
@@ -215,13 +218,30 @@ export default function Onboarding({ onDone }) {
 
   // Advance from the accounts step (step 4) — saves accounts and moves forward
   function advanceFromAccounts(accs) {
-    saveAccounts(accs);
+    setSavedAccounts(accs);
     setHistory(h => [...h, { step, data: { ...data }, prevInput: '' }]);
     const next = step + 1;
     setStep(next);
     setOrbState('thinking');
     setTimeout(() => {
       const q = Q[next].ask(data);
+      setCurrentQ(q);
+      setCardKey(k => k + 1);
+      speak(q);
+    }, 650);
+  }
+
+  // Advance from the income step (step 1) — saves income sources and moves forward
+  function advanceFromIncome(sources) {
+    const total = sources.reduce((s, src) => s + src.amount, 0);
+    const nd = { ...data, income: total, incomeSources: sources };
+    setData(nd);
+    setHistory(h => [...h, { step, data: { ...data }, prevInput: '' }]);
+    const next = step + 1;
+    setStep(next);
+    setOrbState('thinking');
+    setTimeout(() => {
+      const q = Q[next].ask(nd);
       setCurrentQ(q);
       setCardKey(k => k + 1);
       speak(q);
@@ -242,7 +262,7 @@ export default function Onboarding({ onDone }) {
 
     const nd = { ...data };
     if      (step === 0) { nd.name = val; setUserName(val); }
-    else if (step === 1) { nd.income = parseAmount(val); }
+    // step 1 = income — handled via advanceFromIncome, not send()
     else if (step === 2) { nd.payday = parsePayday(val); }
     else if (step === 3) {
       // Sum ALL expense amounts listed (e.g. "£900 rent, £60 Netflix, £40 gym" → 1000)
@@ -314,6 +334,7 @@ export default function Onboarding({ onDone }) {
 
     saveData(d);
     saveInsights(insights.slice(0, 3));
+    saveAccounts(savedAccounts);
     markReady();
     markOnboardingDone();
 
@@ -348,11 +369,12 @@ export default function Onboarding({ onDone }) {
     }
 
     setFinaleMsg(portrait);
+    setSavedData(d);
 
     const elapsed = Date.now() - started;
     await new Promise(r => setTimeout(r, Math.max(0, 1200 - elapsed)));
 
-    // Show the finale screen — speak, then proceed after speech or 6s max
+    // Show the finale screen (portrait + summary)
     setShowFinale(true);
   }
 
@@ -360,23 +382,68 @@ export default function Onboarding({ onDone }) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
   }
 
+  // Task 3 — "Edit details" from finale: reset onboarding to step 0
+  function handleEditDetails() {
+    stopSpeaking();
+    setShowFinale(false);
+    setBuilding(false);
+    buildingRef.current = false;
+    setStep(0);
+    setData({ name: '', income: 0, incomeSources: [], payday: 25, expenses: 0, expenseDetails: '', lifestyleSpend: '', debt: 0, goal: '', savings: 0 });
+    setIncomeDraft([]);
+    setAccountDraft([]);
+    setSavedAccounts([]);
+    setHistory([]);
+    setInput('');
+    setInputError('');
+    finaleSpokenRef.current = false;
+    const q = Q[0].ask({});
+    setCurrentQ(q);
+    setCardKey(k => k + 1);
+    setTimeout(() => speak(q), 400);
+  }
+
   const containerH = vpH ? `${vpH}px` : '100dvh';
+  // Total steps that have a visible dot in the progress bar
+  const totalDots = Q.length;
 
   return (
     <div style={{ position: 'relative', height: containerH, background: BG, overflow: 'hidden', fontFamily: 'inherit' }}>
 
-      {/* Progress dots + back button */}
-      <div style={{ position: 'absolute', top: 'max(env(safe-area-inset-top), 24px)', left: 0, right: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, zIndex: 5, paddingLeft: 52, paddingRight: 52 }}>
-        {Q.map((_, i) => (
-          <div key={i} style={{
-            width: i < step ? 18 : 6, height: 6, borderRadius: 3,
-            background: i < step ? PURPLE : 'rgba(232,221,208,0.15)',
-            transition: 'all 0.4s ease',
-          }} />
-        ))}
-      </div>
+      {/* ── Progress indicator ── */}
+      {!building && !showFinale && (
+        <div style={{
+          position: 'absolute', top: 'max(env(safe-area-inset-top), 20px)',
+          left: 0, right: 0, zIndex: 5,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+          paddingLeft: 52, paddingRight: 52,
+        }}>
+          {/* Dot row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            {Q.map((_, i) => (
+              <div key={i} style={{
+                width:  i === step ? 28 : i < step ? 20 : 7,
+                height: i === step ? 8  : i < step ? 6  : 7,
+                borderRadius: 4,
+                background: i === step
+                  ? PURPLE
+                  : i < step
+                    ? 'rgba(200,184,154,0.55)'
+                    : 'rgba(232,221,208,0.13)',
+                transition: 'all 0.35s ease',
+                boxShadow: i === step ? '0 0 8px 2px rgba(200,184,154,0.35)' : 'none',
+              }} />
+            ))}
+          </div>
+          {/* Step counter text */}
+          <div style={{ fontSize: 10, color: 'rgba(232,221,208,0.28)', letterSpacing: '0.05em' }}>
+            Step {step + 1} of {totalDots}
+          </div>
+        </div>
+      )}
+
       {/* Back button — only visible when step > 0 and not building */}
-      {step > 0 && !building && (
+      {step > 0 && !building && !showFinale && (
         <button
           onClick={goBack}
           style={{
@@ -389,29 +456,31 @@ export default function Onboarding({ onDone }) {
       )}
 
       {/* ── Orb section ── */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '48%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20 }}>
+      {!showFinale && (
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '48%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20 }}>
 
-        {/* Living planet orb */}
-        <Orb size={140} state={orbState} />
+          {/* Living planet orb */}
+          <Orb size={140} state={orbState} />
 
-        {/* Orb status */}
-        <div style={{ minHeight: 30, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {orbState === 'speaking' ? (
-            <WaveBars />
-          ) : orbState === 'thinking' ? (
-            <div style={{ color: 'rgba(232,221,208,0.4)', fontSize: 13, letterSpacing: '0.5px', animation: 'blink 1.6s ease-in-out infinite' }}>
-              {building ? 'Building your picture…' : 'Processing…'}
-            </div>
-          ) : (
-            <div style={{ color: 'rgba(232,221,208,0.2)', fontSize: 12, letterSpacing: '0.3px' }}>
-              {!building && step < Q.length ? `${step + 1} of ${Q.length}` : ''}
-            </div>
-          )}
+          {/* Orb status */}
+          <div style={{ minHeight: 30, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {orbState === 'speaking' ? (
+              <WaveBars />
+            ) : orbState === 'thinking' ? (
+              <div style={{ color: 'rgba(232,221,208,0.4)', fontSize: 13, letterSpacing: '0.5px', animation: 'blink 1.6s ease-in-out infinite' }}>
+                {building ? 'Building your picture…' : 'Processing…'}
+              </div>
+            ) : (
+              <div style={{ color: 'rgba(232,221,208,0.2)', fontSize: 12, letterSpacing: '0.3px' }}>
+                {!building && step < Q.length ? '' : ''}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ── Question card ── */}
-      {currentQ && (
+      {currentQ && !showFinale && (
         <div style={{
           position: 'absolute',
           top: '48%',
@@ -451,8 +520,17 @@ export default function Onboarding({ onDone }) {
         </div>
       )}
 
+      {/* ── Income step UI (step 1) ── */}
+      {!building && !showFinale && step === 1 && Q[1]?.type === 'income' && (
+        <IncomeStep
+          sources={incomeDraft}
+          onChange={setIncomeDraft}
+          onContinue={() => advanceFromIncome(incomeDraft)}
+        />
+      )}
+
       {/* ── Accounts step UI (step 4) ── */}
-      {!building && step === 4 && Q[4]?.type === 'accounts' && (
+      {!building && !showFinale && step === 4 && Q[4]?.type === 'accounts' && (
         <AccountsStep
           accounts={accountDraft}
           onChange={setAccountDraft}
@@ -462,7 +540,7 @@ export default function Onboarding({ onDone }) {
       )}
 
       {/* ── Input bar ── */}
-      {!building && step < Q.length && Q[step]?.type !== 'accounts' && (
+      {!building && !showFinale && step < Q.length && Q[step]?.type !== 'accounts' && Q[step]?.type !== 'income' && (
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0,
           display: 'flex', flexDirection: 'column', gap: 0,
@@ -510,43 +588,85 @@ export default function Onboarding({ onDone }) {
         </div>
       )}
 
-      {/* ── Feature 4: Finale — Noa's personalised financial portrait ── */}
-      {showFinale && !expanding && (
+      {/* ── Task 3 — "Your Noa is ready" finale + confirmation screen ── */}
+      {showFinale && !expanding && savedData && (
         <div style={{
           position: 'absolute', inset: 0, zIndex: 150, background: BG,
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          padding: '0 28px',
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          overflowY: 'auto', padding: '0 24px',
+          paddingTop: 'max(env(safe-area-inset-top), 40px)',
+          paddingBottom: 'max(env(safe-area-inset-bottom), 24px)',
           animation: 'expandFadeIn 0.6s ease-out',
         }}>
-          <Orb size={100} state={orbState} />
-          <div style={{ height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 20 }}>
-            {orbState === 'speaking' ? (
-              <WaveBars />
-            ) : (
-              <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.28)', letterSpacing: '0.4px' }}>Noa</div>
-            )}
+          {/* Orb */}
+          <Orb size={96} state={orbState} />
+          <div style={{ height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 16 }}>
+            {orbState === 'speaking' ? <WaveBars /> : <div style={{ fontSize: 10, color: 'rgba(232,221,208,0.28)', letterSpacing: '0.4px' }}>Noa</div>}
           </div>
+
+          {/* Portrait text */}
           {finaleMsg && (
             <div style={{
-              marginTop: 28,
-              fontSize: 17, color: '#E8DDD0', lineHeight: 1.72, fontWeight: 300,
+              marginTop: 20,
+              fontSize: 16, color: '#E8DDD0', lineHeight: 1.72, fontWeight: 300,
               textAlign: 'center', letterSpacing: '0.01em',
               animation: 'sentenceIn 0.8s ease-out',
-              maxWidth: 340,
+              maxWidth: 320,
             }}>
               <AnimatedText key="finale" text={finaleMsg} />
             </div>
           )}
+
+          {/* ── Summary: what Noa knows ── */}
+          <div style={{
+            marginTop: 28, width: '100%', maxWidth: 360,
+            background: 'rgba(232,221,208,0.04)',
+            border: '1px solid rgba(232,221,208,0.1)',
+            borderRadius: 20, padding: '16px 20px',
+            animation: 'cardIn 0.5s ease-out 0.3s both',
+          }}>
+            <div style={{ fontSize: 9, color: 'rgba(232,221,208,0.32)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 14 }}>
+              What Noa knows
+            </div>
+            <SummaryRow label="Name" value={savedData.name || '—'} />
+            {/* Income sources */}
+            {savedData.incomeSources && savedData.incomeSources.length > 0
+              ? savedData.incomeSources.map((src, i) => (
+                  <SummaryRow key={i} label={src.label} value={`£${src.amount.toLocaleString('en-GB')}/mo`} color={GREEN} />
+                ))
+              : <SummaryRow label="Monthly income" value={`£${(savedData.income || 0).toLocaleString('en-GB')}`} color={GREEN} />
+            }
+            {savedData.incomeSources && savedData.incomeSources.length > 1 && (
+              <SummaryRow label="Total income" value={`£${(savedData.income || 0).toLocaleString('en-GB')}/mo`} color={GREEN} bold />
+            )}
+            <SummaryRow label="Payday" value={`${ordinalDay(savedData.payday || 25)} of each month`} />
+            {savedData.goal && <SummaryRow label="Goal" value={savedData.goal.length > 36 ? savedData.goal.slice(0, 36) + '…' : savedData.goal} />}
+            {savedAccounts.length > 0 && (
+              <SummaryRow label="Accounts" value={`${savedAccounts.length} account${savedAccounts.length > 1 ? 's' : ''} added`} color={AMBER} />
+            )}
+          </div>
+
+          {/* CTA buttons */}
           <button
             onClick={() => { setExpanding(true); setTimeout(onDone, 1600); }}
             style={{
-              marginTop: 36, padding: '13px 32px',
-              background: 'rgba(200,184,154,0.12)',
-              border: '1px solid rgba(200,184,154,0.3)',
-              borderRadius: 14, color: PURPLE, fontSize: 15, fontWeight: 600,
+              marginTop: 24, width: '100%', maxWidth: 360, padding: '15px 32px',
+              background: 'rgba(200,184,154,0.18)',
+              border: '1px solid rgba(200,184,154,0.42)',
+              borderRadius: 16, color: PURPLE, fontSize: 16, fontWeight: 700,
               cursor: 'pointer', letterSpacing: '0.05em',
             }}
-          >Let's get to work</button>
+          >Let's get to work →</button>
+
+          <button
+            onClick={handleEditDetails}
+            style={{
+              marginTop: 10, width: '100%', maxWidth: 360, padding: '11px 0',
+              background: 'none', border: '1px solid rgba(232,221,208,0.1)',
+              borderRadius: 14, color: 'rgba(232,221,208,0.38)', fontSize: 13,
+              cursor: 'pointer',
+            }}
+          >Edit details</button>
         </div>
       )}
 
@@ -566,6 +686,20 @@ export default function Onboarding({ onDone }) {
           }} />
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Summary row helper ──────────────────────────────────────────────
+function SummaryRow({ label, value, color, bold }) {
+  return (
+    <div style={{
+      display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+      paddingTop: 7, paddingBottom: 7,
+      borderBottom: '1px solid rgba(232,221,208,0.05)',
+    }}>
+      <div style={{ fontSize: 12, color: 'rgba(232,221,208,0.38)' }}>{label}</div>
+      <div style={{ fontSize: 13, fontWeight: bold ? 700 : 500, color: color || '#E8DDD0', textAlign: 'right', maxWidth: '62%' }}>{value}</div>
     </div>
   );
 }
@@ -606,6 +740,125 @@ function AnimatedText({ text }) {
         <span key={i} style={{ animation: 'sentenceIn 0.6s ease-out', display: 'inline' }}>{s} </span>
       ))}
     </>
+  );
+}
+
+// ── Income step — multiple income sources ───────────────────────────
+const INCOME_LABELS = ['Salary', 'Freelance', 'Side job', 'Other'];
+
+function IncomeStep({ sources, onChange, onContinue }) {
+  const [label, setLabel]     = useState('Salary');
+  const [customLabel, setCustomLabel] = useState('');
+  const [amount, setAmount]   = useState('');
+  const [err, setErr]         = useState('');
+
+  const total = sources.reduce((s, src) => s + src.amount, 0);
+
+  function addSource() {
+    const a = parseFloat(amount);
+    if (!amount || isNaN(a) || a <= 0) { setErr('Enter a valid amount'); return; }
+    const lbl = label === 'Other' && customLabel.trim() ? customLabel.trim() : label;
+    onChange([...sources, { id: Date.now(), label: lbl, amount: a }]);
+    setAmount(''); setCustomLabel(''); setLabel('Salary'); setErr('');
+  }
+
+  function remove(id) { onChange(sources.filter(s => s.id !== id)); }
+
+  return (
+    <div style={{
+      position: 'absolute', bottom: 0, left: 0, right: 0,
+      background: '#111318', borderTop: '1px solid rgba(232,221,208,0.07)',
+      padding: '14px 16px 0', boxSizing: 'border-box',
+      paddingBottom: 'max(14px, calc(env(safe-area-inset-bottom) + 8px))',
+      maxHeight: '54%', overflowY: 'auto',
+    }}>
+      {/* Running total */}
+      {total > 0 && (
+        <div style={{ textAlign: 'center', marginBottom: 10 }}>
+          <span style={{ fontSize: 11, color: 'rgba(232,221,208,0.34)' }}>Total: </span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: GREEN }}>£{total.toLocaleString('en-GB')}/month</span>
+        </div>
+      )}
+
+      {/* Existing sources */}
+      {sources.map(src => (
+        <div key={src.id} style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          background: 'rgba(124,174,158,0.08)', borderRadius: 10,
+          padding: '8px 12px', marginBottom: 7,
+          border: '1px solid rgba(124,174,158,0.18)',
+        }}>
+          <div>
+            <div style={{ fontSize: 13, color: '#E8DDD0', fontWeight: 600 }}>{src.label}</div>
+            <div style={{ fontSize: 11, color: GREEN }}>£{src.amount.toLocaleString('en-GB')}/month</div>
+          </div>
+          <button onClick={() => remove(src.id)} style={{ background: 'none', border: 'none', color: 'rgba(232,221,208,0.3)', fontSize: 18, cursor: 'pointer', padding: '0 4px', lineHeight: 1 }}>×</button>
+        </div>
+      ))}
+
+      {/* Add form */}
+      {sources.length < 5 && (
+        <>
+          {err && <div style={{ fontSize: 11, color: '#E24B4A', marginBottom: 5 }}>{err}</div>}
+          {/* Label chips */}
+          <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
+            {INCOME_LABELS.map(l => (
+              <button key={l} onClick={() => { setLabel(l); setErr(''); }} style={{
+                padding: '5px 12px', borderRadius: 20,
+                border: `1px solid ${label === l ? PURPLE : 'rgba(232,221,208,0.15)'}`,
+                background: label === l ? 'rgba(200,184,154,0.16)' : 'transparent',
+                color: label === l ? PURPLE : 'rgba(232,221,208,0.45)',
+                fontSize: 11, cursor: 'pointer', fontFamily: 'inherit',
+              }}>{l}</button>
+            ))}
+          </div>
+          {/* Custom label input when "Other" is selected */}
+          {label === 'Other' && (
+            <input
+              value={customLabel}
+              onChange={e => setCustomLabel(e.target.value)}
+              placeholder='Label (e.g. Rental income)…'
+              style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '0.5px solid rgba(232,221,208,0.2)', borderRadius: 10, padding: '9px 14px', color: '#E8DDD0', fontSize: 14, outline: 'none', fontFamily: 'inherit', marginBottom: 8, boxSizing: 'border-box' }}
+            />
+          )}
+          {/* Amount + add */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+            <input
+              value={amount}
+              onChange={e => { setAmount(e.target.value); setErr(''); }}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSource(); } }}
+              placeholder='Monthly amount (£)…'
+              type='number'
+              inputMode='decimal'
+              style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '0.5px solid rgba(232,221,208,0.2)', borderRadius: 10, padding: '10px 14px', color: '#E8DDD0', fontSize: 14, outline: 'none', fontFamily: 'inherit' }}
+            />
+            <button onClick={addSource} style={{
+              padding: '10px 18px', background: 'rgba(124,174,158,0.12)',
+              border: '1px solid rgba(124,174,158,0.28)', borderRadius: 10,
+              color: GREEN, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap',
+            }}>+ Add</button>
+          </div>
+        </>
+      )}
+
+      {/* Continue button */}
+      <button
+        onClick={() => {
+          if (sources.length === 0) { setErr('Add at least one income source'); return; }
+          onContinue();
+        }}
+        style={{
+          width: '100%', padding: '13px 0',
+          background: sources.length > 0 ? 'rgba(200,184,154,0.18)' : 'rgba(232,221,208,0.05)',
+          border: `1px solid ${sources.length > 0 ? 'rgba(200,184,154,0.38)' : 'rgba(232,221,208,0.1)'}`,
+          borderRadius: 12, color: sources.length > 0 ? PURPLE : 'rgba(232,221,208,0.3)',
+          fontSize: 14, fontWeight: 700, cursor: sources.length > 0 ? 'pointer' : 'default',
+          fontFamily: 'inherit',
+        }}
+      >
+        {sources.length > 0 ? `Continue — £${total.toLocaleString('en-GB')}/month total` : 'Add an income source to continue'}
+      </button>
+    </div>
   );
 }
 
@@ -688,7 +941,7 @@ function AccountsStep({ accounts, onChange, onContinue, onSkip }) {
       )}
 
       <div style={{ display: 'flex', gap: 10 }}>
-        <button onClick={onSkip} style={{ flex: 1, padding: '11px 0', background: 'transparent', border: '1px solid rgba(232,221,208,0.12)', borderRadius: 12, color: 'rgba(232,221,208,0.35)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Skip</button>
+        <button onClick={onSkip} style={{ flex: 1, padding: '11px 0', background: 'transparent', border: '1px solid rgba(232,221,208,0.12)', borderRadius: 12, color: 'rgba(232,221,208,0.35)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Skip for now</button>
         <button onClick={onContinue} style={{ flex: 2, padding: '11px 0', background: 'rgba(200,184,154,0.18)', border: '1px solid rgba(200,184,154,0.35)', borderRadius: 12, color: '#C8B89A', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
           {accounts.length > 0 ? `Continue with ${accounts.length} account${accounts.length > 1 ? 's' : ''}` : 'Skip for now'}
         </button>
