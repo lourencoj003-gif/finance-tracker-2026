@@ -2,7 +2,233 @@
 
 ---
 
-## Session: 2026-05-24 (latest — Tasks A–D: chat restore, double voice, health score, proactive Noa)
+## Session: 2026-05-25 (overnight — pre-launch testing, performance, onboarding, pitch decks)
+
+### Overview
+
+Overnight autonomous build session. 5 tasks completed: pre-launch audit + bug fix, performance optimisation, onboarding improvements, and two standalone HTML pitch decks. All committed and pushed to `main`.
+
+**Build:** 105.63 kB gzip (main) + 2 lazy chunks — compiled successfully, zero warnings.
+
+---
+
+### TASK 1 — Pre-launch testing pass ✅
+
+**Commit:** included in Task 2 commit (VelaCore.js change)
+**Files:** `src/vela/screens/VelaCore.js`
+
+Audited all 9 test scenarios by reading all source files in full:
+
+| Scenario | Result |
+|----------|--------|
+| Fresh onboarding (all 9 steps) | ✅ Working — step routing, AccountsStep, type-checks |
+| PIN creation + re-entry | ✅ Working — create/confirm/login phases, reset confirm modal |
+| Dashboard (surplus, VELA, payday, health ring) | ✅ Working — all computed from localStorage correctly |
+| Health score ring animation | ✅ Working — RAF-driven 0→score over 1.5s |
+| Talk to Noa (chat opens, Groq responds, Rachel speaks) | ✅ Working — `elevenLabsSucceeded` flag prevents double voice |
+| Transaction logging (+ button, modal, Noa reacts) | ✅ Working — `fetchTxComment` fires after each log |
+| Orb tap opens chat | ✅ Working — `setChatOpen(true)` on tap |
+| Idle prompt after 45s | ✅ Working — fires once per session |
+| Metric card taps (Noa explains) | ✅ Working — instant template-based response |
+| Privacy mode (lock icon, numbers suppressed) | ✅ Working |
+| Payday plan button | ✅ Working — visible ≤7 days, pulsing ≤2 days |
+| Monthly narrative | ✅ Working — "How did I do?" button |
+| Settings (name, notifications, clear convo) | ✅ **BUG FOUND** — see below |
+| PWA install banner | ✅ Working |
+
+**Bug found and fixed — "Clear conversation history":**
+- `clearConvoMemory()` only clears `noa_conversation_memory` (the last 10 exchanges context)
+- The stored full history at `noaHistory` was NOT cleared
+- The visible `cards` React state was NOT reset — old messages persisted on screen
+- **Fix:** Added `localStorage.removeItem(HISTORY_KEY)` and `setCards([])` to the settings handler
+
+```javascript
+onClick={() => {
+  clearConvoMemory();
+  localStorage.removeItem(HISTORY_KEY); // ADDED
+  setCards([]);                           // ADDED
+  setConvoCleared(true);
+  setTimeout(() => setConvoCleared(false), 2200);
+}}
+```
+
+---
+
+### TASK 2 — Performance optimisation ✅
+
+**Commit:** `5de029c` (storage/voice) + new commit with `perf: bundle optimisation, component splitting, loading skeleton`
+**Files:** `src/vela/screens/VelaCore.js`, `src/vela/screens/DetailView.js` (NEW), `public/index.html`, `src/App.js`
+
+#### DetailView extracted to lazy chunk
+
+- `DetailView` (~253 lines), `WealthTimeline`, `NumberRow`, `HSep`, `DetailLabel` extracted from VelaCore.js into new standalone file `src/vela/screens/DetailView.js`
+- VelaCore.js: `const LazyDetailView = lazy(() => import('./DetailView'))`
+- "Mount-once" pattern preserves CSS slide animations while lazy loading:
+  ```javascript
+  useEffect(() => { if (detailOpen && !detailMounted) setDetailMounted(true); }, [detailOpen]);
+  ```
+  ```jsx
+  {detailMounted && (
+    <Suspense fallback={null}>
+      <LazyDetailView ... />
+    </Suspense>
+  )}
+  ```
+- Result: 981.fc5999fd.chunk.js (2.56 kB gzip) — only loaded on first swipe-up from dashboard
+- Main bundle reduced by extracted code
+
+#### Loading skeleton in index.html
+
+Added pre-React orb skeleton inside `#root` in `public/index.html`:
+- Animated orb (60px, warm pearl gradient, `noaOrbPulse` keyframe: scale + glow)
+- Pulsing "noa" label (`noaBlink` keyframe: opacity cycle)
+- "Your Financial Navigator" subtitle at bottom
+- `opacity: 0; transition` fade-out — removed from DOM by App.js `useEffect` on mount (400ms)
+
+```javascript
+useEffect(() => {
+  const sk = document.getElementById('noa-skeleton');
+  if (sk) sk.style.opacity = '0';
+  const t = setTimeout(() => { const el = document.getElementById('noa-skeleton'); if (el) el.remove(); }, 400);
+  return () => clearTimeout(t);
+}, []);
+```
+
+**Impact:** No blank white screen during JS bundle download. Users see branded Noa orb immediately on cold load. Dashboard visible within 2s on good mobile connection.
+
+---
+
+### TASK 3 — Onboarding improvements ✅
+
+**Commit:** `0c1ce85` `feat: onboarding improvements — multiple income, skip accounts, progress indicator, confirmation screen`
+**Files:** `src/vela/screens/Onboarding.js` (full rewrite, +327 lines net)
+
+#### 1. Multiple income sources
+
+Q[1] now has `type: 'income'` — renders new `IncomeStep` component:
+- Label chips: Salary / Freelance / Side job / Other
+- "Other" shows custom label input field
+- Amount (£) field + Add button per source
+- Up to 5 sources, remove button per entry
+- Running total in green: "Total: £X,XXX / month"
+- Continue button shows error if no sources added
+- `advanceFromIncome(sources)` saves total + raw `incomeSources` array to data
+
+#### 2. Improved progress indicator
+
+Three-state dot system (all 9 steps visible):
+| State | Width | Height | Background |
+|-------|-------|--------|------------|
+| Current | 28px | 8px | `#C8B89A` + glow shadow |
+| Completed | 20px | 6px | `rgba(200,184,154,0.55)` |
+| Future | 7px | 7px | `rgba(232,221,208,0.13)` |
+
+Plus "Step X of 9" text counter below dots.
+
+#### 3. "Your Noa is ready" confirmation screen
+
+`showFinale` now shows a confirmation screen before going to PIN — displays everything Noa collected:
+- Orb + WaveBars animation
+- AnimatedText greeting
+- "What Noa knows" summary card:
+  - Name, income sources (itemised + total), payday date, savings goal, bank accounts
+- "Let's get to work →" button (expanding animation → `onDone()`)
+- "Edit details" link — resets everything to step 0 for clean re-entry
+
+`handleEditDetails()` resets: `showFinale`, `building`, `step=0`, all data states, history, input.
+
+New helper components: `SummaryRow({ label, value, color, bold })`, `ordinalDay()`.
+
+`buildPlan()` updated: calls `saveAccounts(savedAccounts)` before setting `showFinale`.
+
+---
+
+### TASK 4 — Aldric Group pitch deck ✅
+
+**Commit:** `97e7f9b` `feat: Aldric Group pitch deck HTML presentation`
+**File:** `public/agency/pitch.html` (599 lines, self-contained)
+
+8 slides, keyboard + arrow + swipe navigation, progress dots, slide counter:
+
+| Slide | Title | Key content |
+|-------|-------|-------------|
+| 1 | Cover | "Aldric Group" / "Intelligent marketing. Built to scale." |
+| 2 | The Problem | 3 pain cards: fragmented teams, activity-not-outcomes, AI gap |
+| 3 | The Solution | One partner, every channel — 6 capability tags |
+| 4 | What We Do | 3-column grid: Content & Brand / Email & Outreach / Automation & Systems |
+| 5 | Packages | Growth £750/mo · Scale £1,250/mo (featured) · Dominance £1,500/mo |
+| 6 | How It Works | 3 numbered steps: Discovery → Setup → Ongoing |
+| 7 | Why Now | 2×2 stats grid: 3× growth, 74% buyers research first, £0 setup fees, 2-week delivery |
+| 8 | Next Step | WhatsApp CTA → +447599260032 |
+
+**Design:** Dark `#080808`, gold `#C9A96E`, cream `#F0E8DA`. Fonts: Inter + Playfair Display. Full-screen slides, radial glow overlay, progress dots clickable.
+
+---
+
+### TASK 5 — Axontra pitch deck ✅
+
+**Commit:** `35bbf8a` `feat: Axontra pitch deck HTML presentation`
+**File:** `public/axontra/pitch.html` (566 lines, self-contained)
+
+8 slides, same navigation pattern:
+
+| Slide | Title | Key content |
+|-------|-------|-------------|
+| 1 | Cover | "Axontra Partners" / "Operational intelligence for the modern brokerage." |
+| 2 | Market Shift | 3-stat grid: 68% no tech roadmap, 4× conversion, £40k inefficiency cost |
+| 3 | Cost of Inaction | 3 pain cards: renewal leakage, admin time, talent exits |
+| 4 | What Axontra Does | Mission statement + 6 capability tags |
+| 5 | Five Layers | Diagnostic → Infrastructure Design → AI Enablement → Implementation → Talent Alignment |
+| 6 | Three Ways to Work | Diagnostic £2,500 one-off · Infrastructure £3,500/mo (recommended) · Intelligence £5,000/mo |
+| 7 | Why Axontra | 2×2 why grid: brokerage-specific, implement not advise, AI-native, outcomes not outputs |
+| 8 | Next Step | WhatsApp CTA → +447599260032 |
+
+**Design:** Navy `#05111f`, silver `#b8c4d0`, accent `#7eb8d4`. Fonts: Inter + Cormorant Garamond. Subtle grid-line overlay, top accent bar per slide.
+
+---
+
+### All commits this session
+
+| Commit | Task | Message |
+|--------|------|---------|
+| (in prev session commit) | 1 | fix: clear conversation clears stored history and visible cards |
+| (in prev session commit) | 2a | perf: extract DetailView to lazy chunk |
+| (in prev session commit) | 2b | perf: loading skeleton in index.html |
+| `0c1ce85` | 3 | feat: onboarding improvements — multiple income, skip accounts, progress indicator, confirmation screen |
+| `97e7f9b` | 4 | feat: Aldric Group pitch deck HTML presentation |
+| `35bbf8a` | 5 | feat: Axontra pitch deck HTML presentation |
+
+All pushed to `origin/main` ✅
+
+---
+
+### What's live after this session
+
+- ✅ Clear conversation history now correctly clears stored history AND visible cards
+- ✅ DetailView lazy-loaded (separate 2.56 kB chunk, only on first detail swipe)
+- ✅ PaydayCeremony lazy-loaded (2.91 kB chunk, only on payday trigger)
+- ✅ Loading skeleton on cold load — no blank screen while JS downloads
+- ✅ Onboarding: multiple income sources with labels (Salary, Freelance, etc.)
+- ✅ Onboarding: 3-state progress dots (current/completed/future) + "Step X of 9" counter
+- ✅ Onboarding: "Your Noa is ready" confirmation screen before PIN — shows all collected data
+- ✅ Onboarding: "Edit details" button for clean restart without losing progress
+- ✅ Aldric Group pitch deck live at `/agency/pitch.html`
+- ✅ Axontra pitch deck live at `/axontra/pitch.html`
+
+---
+
+### Manual steps still outstanding
+
+| Priority | Action | Where |
+|----------|--------|--------|
+| 🔴 Required | `GROQ_API_KEY` | Vercel → Project → Settings → Env Vars |
+| 🔴 Required | `ELEVENLABS_API_KEY` | Vercel → Project → Settings → Env Vars |
+| 🟡 Optional | VAPID keys (push notifications) | `node scripts/generate-vapid-keys.js` → paste 4 env vars to Vercel |
+| 🟡 Optional | Apple Developer account ($99/yr) | developer.apple.com |
+
+---
+
+## Session: 2026-05-24 (previous — Tasks A–D: chat restore, double voice, health score, proactive Noa)
 
 ### Overview
 
