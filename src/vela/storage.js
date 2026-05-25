@@ -33,6 +33,14 @@ const K = {
   PRIVACY_MODE:   'vela_privacy_mode',      // Task 1 — Privacy Mode
   CONV_MEMORY:    'noa_conversation_memory', // Task 2 — Conversation Memory
   ACCOUNTS:       'vela_accounts',           // Task 2 — Bank Account Allocation
+  // Intelligence + monetisation additions
+  FINANCIAL_PERSONALITY: 'vela_financial_personality',
+  FIRST_WEEK:     'vela_first_week_shown',
+  PLAN_TYPE:      'vela_plan_type',          // 'free' | 'noa' | 'pro'
+  WAITLIST_EMAIL: 'vela_waitlist_email',
+  PAYWALL_VIEWS:  'vela_paywall_views',
+  MEMORY_START:   'vela_memory_start',       // ISO date memory period started
+  APP_START:      'vela_app_start',          // ISO date of first install
 };
 
 export const getPin              = ()    => localStorage.getItem(K.PIN);
@@ -144,3 +152,31 @@ export const appendConvoMemory = (user, noa) => {
   mem.push({ user, noa, ts: Date.now() });
   saveConvoMemory(mem);
 };
+
+// Financial personality — detected after 5+ transactions
+export const getFinancialPersonality  = ()    => localStorage.getItem(K.FINANCIAL_PERSONALITY);
+export const saveFinancialPersonality = (p)   => localStorage.setItem(K.FINANCIAL_PERSONALITY, p);
+
+// First Week Plan — shown once after first dashboard load
+export const getFirstWeekShown  = ()  => localStorage.getItem(K.FIRST_WEEK) === '1';
+export const markFirstWeekShown = ()  => localStorage.setItem(K.FIRST_WEEK, '1');
+
+// Plan type — 'free' (default), 'noa', 'pro'
+export const getPlanType  = ()    => localStorage.getItem(K.PLAN_TYPE) || 'free';
+export const savePlanType = (t)   => localStorage.setItem(K.PLAN_TYPE, t);
+
+// Waitlist email capture
+export const getWaitlistEmail  = ()  => localStorage.getItem(K.WAITLIST_EMAIL) || '';
+export const saveWaitlistEmail = (e) => localStorage.setItem(K.WAITLIST_EMAIL, e);
+
+// Paywall banner view count
+export const getPaywallViews      = ()  => parseInt(localStorage.getItem(K.PAYWALL_VIEWS) || '0', 10);
+export const incrementPaywallViews = () => localStorage.setItem(K.PAYWALL_VIEWS, String(getPaywallViews() + 1));
+
+// Memory period tracking — when current 7-day free period started
+export const getMemoryStart  = ()  => localStorage.getItem(K.MEMORY_START) || '';
+export const setMemoryStart  = ()  => localStorage.setItem(K.MEMORY_START, new Date().toISOString().slice(0, 10));
+
+// App start date — set once on first install
+export const getAppStart  = ()  => localStorage.getItem(K.APP_START) || '';
+export const setAppStart  = ()  => { if (!localStorage.getItem(K.APP_START)) localStorage.setItem(K.APP_START, new Date().toISOString().slice(0, 10)); };
