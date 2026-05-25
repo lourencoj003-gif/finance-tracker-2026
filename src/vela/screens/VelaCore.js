@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
-import { getData, saveData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin, getGoals, saveGoals, getLastOpen, setLastOpen, getLastCeremonyYM, setLastCeremonyYM, getDebts, saveDebts, getChallenge, saveChallenge, getExpenseLog, saveExpenseLog, getEveningDate, setEveningDate, appendEveningLog, getUserName, setUserName, getDailyInsight, saveDailyInsight, getNotifPrefs, saveNotifPrefs, getNotifLast, saveNotifLast, savePushSub, getPrivacyMode, setPrivacyMode as savePrivacyMode, appendConvoMemory, getConvoMemory, clearConvoMemory, getAccounts } from '../storage';
+import { getData, saveData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin, getGoals, saveGoals, getLastOpen, setLastOpen, getLastCeremonyYM, setLastCeremonyYM, getDebts, saveDebts, getChallenge, saveChallenge, getExpenseLog, saveExpenseLog, getEveningDate, setEveningDate, appendEveningLog, getUserName, setUserName, getDailyInsight, saveDailyInsight, getNotifPrefs, saveNotifPrefs, getNotifLast, saveNotifLast, savePushSub, getPrivacyMode, setPrivacyMode as savePrivacyMode, appendConvoMemory, getConvoMemory, clearConvoMemory, getAccounts, getFinancialPersonality, saveFinancialPersonality, getFirstWeekShown, markFirstWeekShown, getPlanType, getWaitlistEmail, saveWaitlistEmail, incrementPaywallViews, getMemoryStart, setMemoryStart, setAppStart } from '../storage';
 import Orb from '../Orb';
 import { speak as voiceSpeak, stopSpeaking } from '../voice';
 
@@ -324,6 +324,52 @@ function calcVelaScore({ income, expenses, debt, streak }) {
   return Math.max(0, Math.min(100, pts.savings + pts.debt + pts.streak + pts.pace));
 }
 
+// ── Financial Personality Detection ──────────────────────────────────
+// Requires 5+ transactions. Returns one of:
+//   'Spender' | 'Saver' | 'Balanced' | 'Inconsistent' | null
+function detectFinancialPersonality(expenseLog, income, expenses) {
+  if (!expenseLog || expenseLog.length < 5) return null;
+  const thisMonth = new Date().toISOString().slice(0, 7);
+  const log = expenseLog.filter(e => e.date && e.date.startsWith(thisMonth));
+  if (log.length < 3) {
+    // Fall back to all-time data if current month is sparse
+    const allLog = expenseLog;
+    if (allLog.length < 5) return null;
+    // Use all-time totals
+    const lifestyle = allLog.filter(e => e.category === 'lifestyle').reduce((s, e) => s + e.amount, 0);
+    const total = allLog.reduce((s, e) => s + e.amount, 0);
+    if (total === 0) return null;
+    const lifestylePct = (lifestyle / total) * 100;
+    const savingsRate = income > 0 ? ((income - expenses) / income) * 100 : 0;
+    if (lifestylePct > 40) return 'Spender';
+    if (savingsRate > 20) return 'Saver';
+    return 'Balanced';
+  }
+  const lifestyleSpend = log.filter(e => e.category === 'lifestyle').reduce((s, e) => s + e.amount, 0);
+  const total          = log.reduce((s, e) => s + e.amount, 0);
+  if (total === 0) return null;
+  const lifestylePct = (lifestyleSpend / total) * 100;
+  const surplus      = income - expenses;
+  const savingsRate  = income > 0 ? (surplus / income) * 100 : 0;
+  // Weekly variance check for 'Inconsistent'
+  const weeks = {};
+  log.forEach(e => {
+    const d = new Date(e.date);
+    const wk = Math.floor((d.getDate() - 1) / 7);
+    weeks[wk] = (weeks[wk] || 0) + e.amount;
+  });
+  const wkVals = Object.values(weeks);
+  if (wkVals.length >= 2) {
+    const mean = wkVals.reduce((s, v) => s + v, 0) / wkVals.length;
+    const variance = wkVals.reduce((s, v) => s + (v - mean) ** 2, 0) / wkVals.length;
+    const cv = mean > 0 ? Math.sqrt(variance) / mean : 0;
+    if (cv > 0.55) return 'Inconsistent';
+  }
+  if (lifestylePct > 42) return 'Spender';
+  if (savingsRate > 20)  return 'Saver';
+  return 'Balanced';
+}
+
 export default function VelaCore({ onReset }) {
   const data     = getData() || {};
   const insights = getInsights() || [];
@@ -415,6 +461,29 @@ export default function VelaCore({ onReset }) {
   const [notifPrefs, setNotifPrefsState]      = useState(() => getNotifPrefs());
   const swRegRef                               = useRef(null);
 
+  // Task 1 — Financial personality (detected after 5+ transactions; stored for display + Groq context)
+  // eslint-disable-next-line no-unused-vars
+  const [financialPersonality, setFinancialPersonality] = useState(() => getFinancialPersonality());
+
+  // Task 2 — First Week Plan
+  const [showFirstWeek, setShowFirstWeek]     = useState(false);
+  const [firstWeekText, setFirstWeekText]     = useState('');
+  const [firstWeekLoading, setFirstWeekLoading] = useState(false);
+  const firstWeekSpokenRef                    = useRef(false);
+
+  // Task 3 — Monetisation: memory paywall + upgrade screen
+  const [showUpgrade, setShowUpgrade]         = useState(false);
+  const [memoryBannerDays, setMemoryBannerDays] = useState(0);
+  const [waitlistEmail, setWaitlistEmail]     = useState(() => getWaitlistEmail());
+  const [waitlistSubmitted, setWaitlistSubmitted] = useState(() => !!getWaitlistEmail());
+  const [planType]                            = useState(() => getPlanType());
+
+  // Task 4 — Share Noa
+  const [showShare, setShowShare]             = useState(false);
+  const [shareQuote, setShareQuote]           = useState('');
+  const [shareQuoteLoading, setShareQuoteLoading] = useState(false);
+  const [shareCopied, setShareCopied]         = useState(false);
+
   // Task 1 — Privacy Mode
   const [privacyMode, setPrivacyModeState]     = useState(() => getPrivacyMode());
   const privacyModeRef                         = useRef(getPrivacyMode());
@@ -468,6 +537,48 @@ export default function VelaCore({ onReset }) {
 
   // Lazy-mount DetailView the first time the user swipes up — keeps it mounted after
   useEffect(() => { if (detailOpen && !detailMounted) setDetailMounted(true); }, [detailOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Task 1 — Financial personality detection (runs when transaction count changes)
+  useEffect(() => {
+    const log = getExpenseLog();
+    if (log.length >= 5) {
+      const p = detectFinancialPersonality(log, income, expenses);
+      if (p) { saveFinancialPersonality(p); setFinancialPersonality(p); }
+    }
+  }, [expenseLog.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Task 2 — First Week Plan: show once on first dashboard load (new user)
+  useEffect(() => {
+    if (getFirstWeekShown()) return;
+    const history = loadHistory();
+    if (history.length > 8) { markFirstWeekShown(); return; } // skip for non-new users
+    setAppStart();
+    // Delay 2.5s to let dashboard settle before triggering
+    const tid = setTimeout(() => fetchFirstWeekPlan(), 2500);
+    return () => clearTimeout(tid);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Task 3 — Memory reset / paywall banner check
+  useEffect(() => {
+    if (planType !== 'free') return;
+    const today = new Date().toISOString().slice(0, 10);
+    let start = getMemoryStart();
+    if (!start) { setMemoryStart(); return; } // first run: set start, nothing to show yet
+    const msStart = new Date(start).getTime();
+    const msToday = new Date(today).getTime();
+    const daysSince = Math.round((msToday - msStart) / 86400000);
+    const daysLeft = 7 - daysSince;
+    if (daysSince >= 7) {
+      // Reset memory
+      clearConvoMemory();
+      localStorage.removeItem(HISTORY_KEY);
+      setCards([]);
+      setMemoryStart();
+    } else if (daysLeft <= 3 && daysLeft > 0) {
+      setMemoryBannerDays(daysLeft);
+      incrementPaywallViews();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── PWA install prompt — show once after 2nd visit ────────────────
   useEffect(() => {
@@ -1198,12 +1309,49 @@ Step 4: Invest 15% of income (£${Math.round(income * 0.15).toLocaleString('en-G
 Step 5: Specific goal-based saving
 → This user is on STEP ${babyStep}
 
-══ UK BENCHMARKS (context only — do not apply demographic labels without knowing the user's age) ══
-• UK average savings rate: ~8% of take-home pay
+══ UK BENCHMARKS (use these to contextualise — say "above/below UK average", never apply age labels) ══
+• UK average savings rate: ~8% of take-home pay → ${savingsRate > 8 ? `This user saves ${savingsRate}% — that's genuinely above average` : savingsRate === 8 ? 'This user is exactly at the UK average' : `This user saves ${savingsRate}% — below the UK average`}
+• UK average monthly eating out spend: ~£180/month
+• UK average monthly rent: ~£1,200/month
+• UK average take-home pay: ~£2,500/month → This user earns £${income.toFixed(0)}/month
 • UK average consumer debt: ~£6,500
 • ISA: £20,000/year tax-free allowance — all growth sheltered from Capital Gains Tax
 • Pension: 20% tax relief added automatically (40% for higher-rate taxpayers)
-
+${income > 0 ? `Use these benchmarks naturally in responses: "You're saving ${savingsRate}%. Average in the UK is 8%. ${savingsRate > 16 ? "That's genuinely rare." : savingsRate > 8 ? "That's above average." : "Room to grow."}"` : ''}
+${(() => {
+  const fp = getFinancialPersonality();
+  if (!fp) return '';
+  const fpDesc = {
+    Spender:      'lifestyle spending is notably high — be warm but direct about the cost of impulse spending',
+    Saver:        'naturally saves well — acknowledge this, focus on optimising where savings go',
+    Balanced:     'broadly on track across categories — reinforce the habit, look for the next level',
+    Inconsistent: 'spending varies significantly week to week — help build consistency and predictability',
+  };
+  return `\n══ FINANCIAL PERSONALITY ══\nUser's financial personality: ${fp} — ${fpDesc[fp] || fp}\nReference this naturally: e.g. "You're a ${fp} by nature — ${fp === 'Saver' ? 'this month is a bit out of character' : 'that shows up in the numbers'}."\n`;
+})()}
+${(() => {
+  const proximityLines = [];
+  if (surplus > 0) {
+    if (debt > 0) {
+      const monthsLeft = debt / surplus;
+      if (monthsLeft <= 3) {
+        const weeksLeft = Math.round(monthsLeft * 4.33);
+        proximityLines.push(`🎯 GOAL PROXIMITY — DEBT: User is ~${weeksLeft} week${weeksLeft !== 1 ? 's' : ''} from clearing £${debt.toLocaleString('en-GB')} debt. Shift to motivational tone: "You're weeks away from being debt-free. Don't stop now."`);
+      }
+    }
+    goals.forEach(g => {
+      const rem = g.target - (g.saved || 0);
+      if (rem > 0) {
+        const monthsLeft = rem / surplus;
+        if (monthsLeft <= 3) {
+          const weeksLeft = Math.round(monthsLeft * 4.33);
+          proximityLines.push(`🎯 GOAL PROXIMITY — "${g.name}": ~${weeksLeft} week${weeksLeft !== 1 ? 's' : ''} away (£${rem.toLocaleString('en-GB')} remaining). Be encouraging: "Nearly there."`);
+        }
+      }
+    });
+  }
+  return proximityLines.length > 0 ? `\n${proximityLines.join('\n')}\n` : '';
+})()}
 ══ COACHING RULES ══
 1. Use only the user's actual £ figures. Never invent hypothetical numbers.
 2. When user asks what they can afford, use IN MY POCKET: £${inMyPocket}/day.
@@ -1224,6 +1372,119 @@ Use this data for specific, proactive comments — e.g. "you've spent £${txTota
     saveNotifPrefs(notifPrefs);
     setShowSettings(false);
     setShowResetConfirm(false);
+  }
+
+  // Task 2 — First Week Plan: one-time post-onboarding spoken briefing
+  async function fetchFirstWeekPlan() {
+    const d = getData() || {};
+    const name = getUserName() || '';
+    const { income: inc = 0, expenses: exp = 0, debt: dbt = 0, goal: gl = '', payday: pd = 25 } = d;
+    const surp = inc - exp;
+    const accs = getAccounts();
+    const accsText = accs.length > 0 ? accs.map(a => `${a.name} (${a.purpose})`).join(', ') : 'not set up yet';
+    const goalsData = getGoals();
+    const goalText = goalsData.length > 0 ? goalsData.map(g => `${g.name} (£${g.target.toLocaleString('en-GB')})`).join(', ') : (gl || 'none stated');
+    const prompt = `You are Noa — sharp, warm, dry, direct. ${name ? `You're speaking to ${name}.` : ''} Generate a First Week Plan — exactly 4 sentences, each on a new line. No labels, no numbering. Just the sentences.
+
+Sentence 1: What you now know about them — reference income (£${inc}/month take-home), ${surp > 0 ? `surplus (£${surp.toFixed(0)}/month)` : `deficit (£${Math.abs(surp).toFixed(0)}/month shortfall)`}, ${dbt > 0 ? `debt (£${dbt.toLocaleString('en-GB')})` : 'no debt'}, payday on the ${pd === 1 ? '1st' : pd === 2 ? '2nd' : pd === 3 ? '3rd' : pd + 'th'}, goal: ${goalText}, accounts: ${accsText}.
+Sentence 2: The single biggest financial risk for them this month — specific to their numbers. No generic advice.
+Sentence 3: The one concrete action they must take this week — name it with a £ amount or a specific step.
+Sentence 4: What success looks like by month end — measurable. End this sentence with: "Guidance only — not FCA-regulated advice."
+
+Noa voice — dry, warm, no filler, short sentences, real numbers only.`;
+
+    setFirstWeekLoading(true);
+    try {
+      const ctrl = new AbortController();
+      const to = setTimeout(() => ctrl.abort(), 14000);
+      const res = await fetch('/api/chat', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ financialContext: prompt, messages: [{ role: 'user', content: 'Give me my first week plan.' }] }),
+        signal: ctrl.signal,
+      });
+      clearTimeout(to);
+      const json = await res.json();
+      const text = (json.text || '').trim();
+      if (text) {
+        setFirstWeekText(text);
+        setShowFirstWeek(true);
+        markFirstWeekShown();
+        setTimeout(() => {
+          if (!firstWeekSpokenRef.current) { firstWeekSpokenRef.current = true; speak(text); }
+        }, 600);
+      } else throw new Error('empty');
+    } catch {
+      const surpStr = surp > 0 ? `£${surp.toFixed(0)}/month surplus` : `a £${Math.abs(surp).toFixed(0)}/month deficit to close`;
+      const fb = [
+        `${name ? name + ', I' : 'I'}'ve got your picture: £${inc.toLocaleString('en-GB')}/month coming in, ${surpStr}.`,
+        dbt > 0 ? `Your biggest risk this month is the £${dbt.toLocaleString('en-GB')} debt sitting in the background — it costs you every day you don't address it.` : `Your biggest risk is letting the surplus disappear without putting it somewhere specific.`,
+        `This week: ${surp > 0 ? `move £${Math.round(surp * 0.5).toLocaleString('en-GB')} into savings or debt before anything else — make it disappear before it gets spent.` : 'track every outgoing — you need to know exactly where the money is going.'}`,
+        `By month end, you should know exactly what you've spent in every category. Guidance only — not FCA-regulated advice.`,
+      ].join(' ');
+      setFirstWeekText(fb);
+      setShowFirstWeek(true);
+      markFirstWeekShown();
+      setTimeout(() => {
+        if (!firstWeekSpokenRef.current) { firstWeekSpokenRef.current = true; speak(fb); }
+      }, 600);
+    } finally {
+      setFirstWeekLoading(false);
+    }
+  }
+
+  // Task 4 — Generate shareable Noa quote
+  async function generateShareQuote() {
+    setShareQuoteLoading(true);
+    const fp = getFinancialPersonality();
+    const promptCtx = `You are Noa. Generate ONE witty, non-sensitive shareable quote about financial personality and money habits — suitable for social media. No specific £ numbers. Max 14 words. Dry British wit. ${fp ? `Lean into the "${fp}" personality type if natural.` : ''} Style examples:
+— "Turns out knowing where your money goes actually helps."
+— "A Saver in a world designed to make you spend. Rare."
+— "Payday lands. Half of it had plans before I did."
+— "Apparently 'I'll sort it later' is not a savings strategy."
+Output the quote only — no quotes around it, no emoji.`;
+    try {
+      const ctrl = new AbortController();
+      const to = setTimeout(() => ctrl.abort(), 8000);
+      const res = await fetch('/api/chat', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ financialContext: promptCtx, messages: [{ role: 'user', content: 'Generate a shareable quote.' }] }),
+        signal: ctrl.signal,
+      });
+      clearTimeout(to);
+      const json = await res.json();
+      const q = (json.text || '').trim().replace(/^["'"'«»]|["'"'«»]$/g, '');
+      setShareQuote(q || (fp ? `A natural ${fp} in a world designed to make you spend.` : 'Managing money is mostly about knowing where it went.'));
+    } catch {
+      setShareQuote(fp ? `A natural ${fp} in a world designed to make you spend.` : 'Managing money is mostly about knowing where it went.');
+    } finally {
+      setShareQuoteLoading(false);
+    }
+  }
+
+  // Task 4 — Web Share API / clipboard fallback
+  async function doShare() {
+    const vScore = calcVelaScore({ income, expenses, debt, streak });
+    const mood   = calcMood({ income, expenses, surplus: income - expenses, savingsGoal: goals.length > 0 ? goals[0].target : 0, savingsBalance: savings });
+    const moodLabel = MOOD_CFG[mood]?.label || 'STEADY';
+    const url    = 'https://finance-tracker-2026-navy.vercel.app/noa-landing/';
+    const text   = `${shareQuote}\n\nMy Noa score: ${vScore}/100 · ${moodLabel}\nManage your money with Noa →`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'Meet Noa — my financial navigator', text, url });
+      } else {
+        await navigator.clipboard.writeText(`${text} ${url}`);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2800);
+      }
+    } catch (e) {
+      if (e?.name !== 'AbortError') {
+        try {
+          await navigator.clipboard.writeText(`${text} ${url}`);
+          setShareCopied(true);
+          setTimeout(() => setShareCopied(false), 2800);
+        } catch { /* silent */ }
+      }
+    }
   }
 
   // Feature 7 — Check client-side scheduled notifications on app open
@@ -2613,6 +2874,28 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
             </div>
 
             <SettingsBtn onClick={saveSettings} color={PURPLE} text="Save" />
+
+            {/* Task 3 — Upgrade Noa */}
+            <SettingsBtn
+              onClick={() => { setShowSettings(false); setShowUpgrade(true); }}
+              color="rgba(201,169,110,0.1)"
+              border="rgba(201,169,110,0.3)"
+              textColor={AMBER}
+              text="✦ Upgrade Noa"
+            />
+
+            {/* Task 4 — Share Noa */}
+            <SettingsBtn
+              onClick={() => {
+                setShowSettings(false);
+                if (!shareQuote) generateShareQuote();
+                setShowShare(true);
+              }}
+              color="rgba(124,174,158,0.08)"
+              border="rgba(124,174,158,0.22)"
+              textColor={GREEN}
+              text="↗ Share Noa"
+            />
             {showResetConfirm ? (
               <>
                 <div style={{ fontSize: 13, color: '#E24B4A', textAlign: 'center', marginBottom: 12, lineHeight: 1.5 }}>
@@ -2782,6 +3065,323 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
           >×</button>
         </div>
       )}
+
+      {/* ══════════════════════════════════════════
+          MEMORY RESET BANNER (Task 3)
+          Subtle cream top banner — appears up to 3 days before free-tier reset.
+      ══════════════════════════════════════════ */}
+      {memoryBannerDays > 0 && !localStorage.getItem('noa_banner_dismissed') && (
+        <div style={{
+          position: 'absolute',
+          top: 'max(env(safe-area-inset-top), 0px)',
+          left: 0, right: 0,
+          zIndex: 120,
+          background: 'rgba(232,221,208,0.07)',
+          borderBottom: '1px solid rgba(200,184,154,0.18)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          padding: '10px 16px',
+          display: 'flex', alignItems: 'center', gap: 10,
+          animation: 'cardIn 0.4s ease-out',
+        }}>
+          <div style={{ flex: 1, fontSize: 12, color: 'rgba(232,221,208,0.72)', lineHeight: 1.45 }}>
+            Noa's memory resets in <strong style={{ color: AMBER }}>{memoryBannerDays} day{memoryBannerDays !== 1 ? 's' : ''}</strong>. Upgrade to keep your full financial history.
+          </div>
+          <button
+            onClick={() => setShowUpgrade(true)}
+            style={{ flexShrink: 0, padding: '5px 12px', background: 'rgba(201,169,110,0.15)', border: '1px solid rgba(201,169,110,0.32)', borderRadius: 8, color: AMBER, fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
+          >Upgrade</button>
+          <button
+            onClick={() => { localStorage.setItem('noa_banner_dismissed', '1'); setMemoryBannerDays(0); }}
+            style={{ flexShrink: 0, background: 'none', border: 'none', color: 'rgba(232,221,208,0.28)', fontSize: 18, cursor: 'pointer', padding: 2, lineHeight: 1 }}
+          >×</button>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════
+          FIRST WEEK PLAN MODAL (Task 2)
+          Full-screen, spoken once, never shown again.
+      ══════════════════════════════════════════ */}
+      {showFirstWeek && (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 200,
+          background: BG,
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          padding: '40px 28px',
+          animation: 'cardIn 0.4s ease-out',
+        }}>
+          {/* Orb */}
+          <div style={{
+            width: 64, height: 64, borderRadius: '50%',
+            background: 'radial-gradient(circle at 35% 35%, #d8cebe, #C8B89A 55%, #7a6a52)',
+            boxShadow: '0 0 28px 10px rgba(200,184,154,0.42)',
+            animation: 'orbSpeaking 0.38s ease-in-out infinite',
+            marginBottom: 28, flexShrink: 0,
+          }} />
+
+          <div style={{ fontSize: 10, color: 'rgba(200,184,154,0.5)', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 20 }}>
+            Your First Week Plan
+          </div>
+
+          {firstWeekLoading ? (
+            <div style={{ fontSize: 15, color: 'rgba(232,221,208,0.5)', animation: 'blink 1.6s ease-in-out infinite', textAlign: 'center' }}>
+              Noa is reading your situation…
+            </div>
+          ) : (
+            <div style={{ maxWidth: 320, width: '100%' }}>
+              {firstWeekText.split('\n').filter(s => s.trim()).map((sentence, i) => (
+                <div key={i} style={{
+                  fontSize: i === 0 ? 16 : 14,
+                  fontWeight: i === 0 ? 600 : 400,
+                  color: i === 0 ? '#E8DDD0' : 'rgba(232,221,208,0.68)',
+                  lineHeight: 1.6,
+                  marginBottom: 14,
+                  paddingLeft: i > 0 ? 14 : 0,
+                  borderLeft: i > 0 ? '2px solid rgba(200,184,154,0.25)' : 'none',
+                  animation: `cardIn 0.4s ease-out ${i * 0.12}s both`,
+                }}>
+                  {sentence}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!firstWeekLoading && (
+            <button
+              onClick={() => setShowFirstWeek(false)}
+              style={{
+                marginTop: 32,
+                background: 'rgba(200,184,154,0.12)', border: '1px solid rgba(200,184,154,0.28)',
+                borderRadius: 24, color: PURPLE,
+                fontSize: 14, fontWeight: 600,
+                padding: '12px 36px', cursor: 'pointer',
+                letterSpacing: '0.03em',
+              }}
+            >
+              Let's get started →
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════
+          UPGRADE MODAL (Task 3)
+          Premium dark modal. Three tiers. "Coming soon" with waitlist capture.
+      ══════════════════════════════════════════ */}
+      {showUpgrade && (
+        <div
+          onClick={e => { if (e.target === e.currentTarget) setShowUpgrade(false); }}
+          style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, zIndex: 210 }}
+        >
+          <div style={{
+            background: 'rgba(12,10,22,0.98)', border: '1px solid rgba(200,184,154,0.2)',
+            borderRadius: 28, padding: '28px 24px', width: '100%', maxWidth: 340,
+            backdropFilter: 'blur(28px)', WebkitBackdropFilter: 'blur(28px)',
+            animation: 'cardIn 0.28s ease-out',
+            maxHeight: '85vh', overflowY: 'auto',
+          }}>
+            {/* Header */}
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
+              <div style={{
+                width: 44, height: 44, borderRadius: '50%', margin: '0 auto 14px',
+                background: 'radial-gradient(circle at 35% 35%, #d8cebe, #C8B89A 55%, #7a6a52)',
+                boxShadow: '0 0 20px 6px rgba(200,184,154,0.32)',
+              }} />
+              <div style={{ fontSize: 20, fontWeight: 700, color: '#E8DDD0', letterSpacing: '-0.01em' }}>Upgrade Noa</div>
+              <div style={{ fontSize: 13, color: 'rgba(232,221,208,0.45)', marginTop: 6, lineHeight: 1.5 }}>
+                Memory that never resets. Smarter insights.
+              </div>
+            </div>
+
+            {/* Tiers */}
+            {[
+              {
+                name: 'Free Trial',
+                price: '14 days',
+                sub: 'Full access to explore',
+                color: 'rgba(232,221,208,0.12)',
+                border: 'rgba(232,221,208,0.14)',
+                features: ['All core features', 'Voice responses', 'Transaction logging', 'Memory resets every 7 days'],
+                current: planType === 'free',
+                textColor: 'rgba(232,221,208,0.7)',
+              },
+              {
+                name: 'Noa',
+                price: '£6.99',
+                sub: 'per month',
+                color: 'rgba(200,184,154,0.1)',
+                border: 'rgba(200,184,154,0.35)',
+                featured: true,
+                features: ['Full app + ElevenLabs voice', 'Memory that never resets', 'Financial personality tracking', 'UK benchmark comparisons'],
+                textColor: PURPLE,
+              },
+              {
+                name: 'Noa Pro',
+                price: '£9.99',
+                sub: 'per month',
+                color: 'rgba(201,169,110,0.08)',
+                border: 'rgba(201,169,110,0.28)',
+                features: ['Everything in Noa', 'Priority AI responses', 'Spending pattern predictions', 'Advanced goal tracking'],
+                textColor: AMBER,
+              },
+            ].map((tier) => (
+              <div key={tier.name} style={{
+                background: tier.color, border: `1px solid ${tier.border}`,
+                borderRadius: 18, padding: '18px 18px', marginBottom: 14,
+                position: 'relative',
+              }}>
+                {tier.featured && (
+                  <div style={{ position: 'absolute', top: -10, right: 16, background: PURPLE, color: BG, fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', padding: '3px 10px', borderRadius: 100 }}>MOST POPULAR</div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: tier.textColor }}>{tier.name}</div>
+                  <div>
+                    <span style={{ fontSize: 18, fontWeight: 700, color: '#E8DDD0' }}>{tier.price}</span>
+                    <span style={{ fontSize: 11, color: 'rgba(232,221,208,0.38)', marginLeft: 4 }}>{tier.sub}</span>
+                  </div>
+                </div>
+                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 14px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+                  {tier.features.map(f => (
+                    <li key={f} style={{ fontSize: 12, color: 'rgba(232,221,208,0.55)', display: 'flex', alignItems: 'flex-start', gap: 7 }}>
+                      <span style={{ color: tier.textColor, flexShrink: 0, marginTop: 1 }}>✓</span>{f}
+                    </li>
+                  ))}
+                </ul>
+                {!tier.current && (
+                  <div style={{ fontSize: 10, color: 'rgba(232,221,208,0.28)', textAlign: 'center', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>Coming soon</div>
+                )}
+                {tier.current ? (
+                  <div style={{ textAlign: 'center', fontSize: 12, color: 'rgba(232,221,208,0.35)', padding: '6px 0' }}>Your current plan</div>
+                ) : (
+                  <div>
+                    {waitlistSubmitted ? (
+                      <div style={{ textAlign: 'center', fontSize: 12, color: GREEN, padding: '6px 0' }}>✓ You're on the waitlist</div>
+                    ) : (
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <input
+                          value={waitlistEmail}
+                          onChange={e => setWaitlistEmail(e.target.value)}
+                          placeholder="your@email.com"
+                          style={{ flex: 1, background: 'rgba(232,221,208,0.07)', border: '1px solid rgba(232,221,208,0.12)', borderRadius: 9, padding: '8px 10px', color: '#E8DDD0', fontSize: 12, outline: 'none', fontFamily: 'inherit' }}
+                        />
+                        <button
+                          onClick={() => {
+                            if (waitlistEmail.includes('@')) {
+                              saveWaitlistEmail(waitlistEmail);
+                              setWaitlistSubmitted(true);
+                            }
+                          }}
+                          style={{ flexShrink: 0, padding: '8px 12px', background: `rgba(200,184,154,0.15)`, border: `1px solid ${tier.border}`, borderRadius: 9, color: tier.textColor, fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
+                        >Notify me</button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+
+            <button
+              onClick={() => setShowUpgrade(false)}
+              style={{ width: '100%', padding: 12, background: 'none', border: 'none', color: 'rgba(232,221,208,0.28)', fontSize: 14, cursor: 'pointer', marginTop: 4 }}
+            >
+              Maybe later
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════
+          SHARE NOA MODAL (Task 4)
+          Styled share card preview → Web Share API / clipboard fallback.
+      ══════════════════════════════════════════ */}
+      {showShare && (() => {
+        const vScore = calcVelaScore({ income, expenses, debt, streak });
+        const mood   = calcMood({ income, expenses, surplus: income - expenses, savingsGoal: goals.length > 0 ? goals[0].target : 0, savingsBalance: savings });
+        const moodLabel = MOOD_CFG[mood]?.label || 'STEADY';
+        const moodColor = MOOD_CFG[mood]?.labelColor || 'rgba(232,221,208,0.32)';
+        const fp = getFinancialPersonality();
+        return (
+          <div
+            onClick={e => { if (e.target === e.currentTarget) setShowShare(false); }}
+            style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.9)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, zIndex: 210 }}
+          >
+            {/* Card preview */}
+            <div style={{
+              background: 'linear-gradient(145deg, #1a1520, #111318)',
+              border: '1px solid rgba(200,184,154,0.22)',
+              borderRadius: 24, padding: '32px 28px',
+              width: '100%', maxWidth: 300,
+              textAlign: 'center',
+              boxShadow: '0 0 48px 8px rgba(200,184,154,0.07)',
+              marginBottom: 24,
+            }}>
+              {/* Orb */}
+              <div style={{
+                width: 56, height: 56, borderRadius: '50%', margin: '0 auto 16px',
+                background: 'radial-gradient(circle at 35% 35%, #d8cebe, #C8B89A 55%, #7a6a52)',
+                boxShadow: '0 0 22px 8px rgba(200,184,154,0.38)',
+              }} />
+              {/* Noa wordmark */}
+              <div style={{ fontSize: 28, fontWeight: 300, color: '#E8DDD0', letterSpacing: '0.3em', marginBottom: 4 }}>noa</div>
+              <div style={{ fontSize: 8, color: 'rgba(200,184,154,0.4)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 20 }}>Your Financial Navigator</div>
+              {/* Score + mood */}
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginBottom: 20 }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: '#E8DDD0' }}>{vScore}</div>
+                  <div style={{ fontSize: 9, color: 'rgba(232,221,208,0.32)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>VELA Score</div>
+                </div>
+                {fp && (
+                  <div style={{ width: 1, background: 'rgba(232,221,208,0.1)', alignSelf: 'stretch' }} />
+                )}
+                {fp && (
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: PURPLE }}>{fp}</div>
+                    <div style={{ fontSize: 9, color: 'rgba(232,221,208,0.32)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Personality</div>
+                  </div>
+                )}
+              </div>
+              {/* Mood label */}
+              <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.16em', color: moodColor, textTransform: 'uppercase', marginBottom: 18 }}>{moodLabel}</div>
+              {/* Quote */}
+              {shareQuoteLoading ? (
+                <div style={{ fontSize: 12, color: 'rgba(232,221,208,0.3)', animation: 'blink 1.4s ease-in-out infinite', marginBottom: 16 }}>Writing your quote…</div>
+              ) : (
+                <div style={{ fontSize: 13, color: 'rgba(232,221,208,0.65)', fontStyle: 'italic', lineHeight: 1.6, marginBottom: 16, paddingTop: 14, borderTop: '1px solid rgba(232,221,208,0.07)' }}>
+                  "{shareQuote || 'Managing money is mostly about knowing where it went.'}"
+                </div>
+              )}
+              {/* URL badge */}
+              <div style={{ fontSize: 9, color: 'rgba(232,221,208,0.18)', letterSpacing: '0.06em' }}>finance-tracker-2026-navy.vercel.app</div>
+            </div>
+
+            {/* Action buttons */}
+            <button
+              onClick={doShare}
+              disabled={shareQuoteLoading}
+              style={{
+                width: '100%', maxWidth: 300,
+                padding: '14px 0', background: 'rgba(200,184,154,0.15)',
+                border: '1px solid rgba(200,184,154,0.32)', borderRadius: 14,
+                color: PURPLE, fontSize: 15, fontWeight: 600,
+                cursor: shareQuoteLoading ? 'default' : 'pointer',
+                opacity: shareQuoteLoading ? 0.5 : 1,
+                marginBottom: 10,
+                transition: 'opacity 0.15s',
+              }}
+            >
+              {shareCopied ? '✓ Copied to clipboard' : '↗ Share Noa'}
+            </button>
+
+            <button
+              onClick={() => setShowShare(false)}
+              style={{ background: 'none', border: 'none', color: 'rgba(232,221,208,0.3)', fontSize: 14, cursor: 'pointer', padding: 8 }}
+            >
+              Cancel
+            </button>
+          </div>
+        );
+      })()}
 
       {/* ══════════════════════════════════════════
           DUAL-FAIL OVERLAY (Task 4d)
