@@ -2,6 +2,194 @@
 
 ---
 
+## Session: 2026-05-25 (intelligence upgrade, monetisation loop, first week plan, share feature)
+
+### Overview
+
+4-task session building Noa's intelligence layer, monetisation infrastructure, and growth mechanics. All committed and pushed to `main`.
+
+**Build:** 110.95 kB gzip (main) + 2 lazy chunks — compiled successfully, zero warnings.
+
+---
+
+### TASK 1 — Noa Intelligence Upgrade ✅
+
+**Commits:** `2ab4cb5` (storage) + `2122226` (VelaCore)
+**Files:** `src/vela/storage.js`, `src/vela/screens/VelaCore.js`
+
+#### UK Benchmarks injected into every Groq call
+
+The `══ UK BENCHMARKS ══` section in `buildPrompt()` now includes:
+- UK average monthly eating out: **£180/month**
+- UK average monthly rent: **£1,200/month**
+- UK average take-home: **£2,500/month** (compared to user's actual income inline)
+- UK average savings rate: **~8%** — with an inline comparison already computed: `"This user saves X% — that's genuinely above/below average"`
+- Live instruction to Noa: `"You're saving ${savingsRate}%. Average in the UK is 8%. That's genuinely rare."` — exact words to use
+
+#### Financial Personality Detection
+
+New `detectFinancialPersonality(expenseLog, income, expenses)` pure function. Requires 5+ transactions. Returns one of:
+
+| Type | Trigger condition |
+|------|------------------|
+| `Spender` | Lifestyle spend > 42% of total logged spend |
+| `Saver` | Savings rate > 20% of income |
+| `Inconsistent` | Weekly spend coefficient of variation > 0.55 |
+| `Balanced` | None of the above |
+
+- Falls back to all-time data if current month has < 3 entries
+- Stored in `localStorage.vela_financial_personality`
+- Injected into `buildPrompt()` with personality-specific tone instruction: *"You're a Saver by nature. This month is a bit out of character."*
+- Re-detected in `useEffect` every time `expenseLog.length` changes (≥5 entries)
+
+#### Goal Proximity Awareness
+
+`buildPrompt()` now computes `proximityLines` — if surplus > 0:
+- **Debt clearance within 90 days** (months = debt / surplus ≤ 3): injects `"🎯 GOAL PROXIMITY — DEBT: User is ~X weeks from clearing debt. Shift to motivational tone."`
+- **Each savings goal within 90 days** (months = remaining / surplus ≤ 3): injects `"🎯 GOAL PROXIMITY — 'Goal name': ~X weeks away. Be encouraging."`
+- Noa's tone automatically shifts to motivational when these lines are present
+
+---
+
+### TASK 2 — First Week Plan ✅
+
+**Commit:** `2122226`
+**Files:** `src/vela/screens/VelaCore.js`
+
+#### What it does
+
+One-time, post-onboarding spoken briefing. Shows on first dashboard load for new users (history ≤ 8 messages), never again.
+
+#### Groq prompt
+
+Sends full onboarding context (income, surplus, debt, payday date, goal, bank accounts). Requests exactly 4 sentences:
+1. What Noa now knows — income, surplus/deficit, debt, payday, goal, accounts
+2. Biggest financial risk this month — specific to their numbers
+3. Single most important action this week — with a £ amount
+4. What success looks like by month end — measurable + FCA disclaimer
+
+#### Implementation
+
+- `fetchFirstWeekPlan()` called 2.5s after first mount via `useEffect`
+- Full-screen modal: dark BG, speaking orb, 4-sentence styled text (sentence 1 larger + bold, sentences 2–4 indented with left border)
+- Spoken aloud via Rachel TTS (`firstWeekSpokenRef` prevents double-speak)
+- "Let's get started →" dismiss button
+- Fallback text if Groq unavailable — uses locally computed surplus + context
+- `markFirstWeekShown()` called immediately when response arrives — never repeats
+- Storage key: `vela_first_week_shown`
+
+---
+
+### TASK 3 — Monetisation Layer ✅
+
+**Commit:** `2122226`
+**Files:** `src/vela/storage.js`, `src/vela/screens/VelaCore.js`
+
+#### Memory Reset System (Free Tier)
+
+- `vela_memory_start` key: set on first VelaCore mount if not already set
+- On every mount: if plan is `'free'` and days since start ≥ 7 → clears `noaHistory`, `noa_conversation_memory`, React `cards` state, resets memory start date
+- Banner logic: if `daysLeft <= 3` → sets `memoryBannerDays` state, calls `incrementPaywallViews()`
+- Banner dismissed forever via `noa_banner_dismissed` in localStorage
+
+#### Memory Banner (visible 3 days before reset)
+
+Warm, non-alarming top banner on dashboard:
+- Text: *"Noa's memory resets in X days. Upgrade to keep your full financial history."*
+- Amber "Upgrade" pill button → opens Upgrade modal
+- × dismiss button
+- Positioned at safe-area-inset-top, glass blur effect
+
+#### Upgrade Screen
+
+Full-screen premium modal — three tiers:
+
+| Tier | Price | Key feature |
+|------|-------|-------------|
+| Free Trial | 14 days | Current plan indicator — no upsell |
+| Noa | £6.99/mo | Full app + permanent memory |
+| Noa Pro | £9.99/mo | Above + predictions + priority AI |
+
+- No payment processing — all upgrade buttons show **"Coming soon"**
+- Each paid tier has inline **email capture**: input + "Notify me" button
+- Email saved to `vela_waitlist_email` — shown as `"✓ You're on the waitlist"` on submit
+- Single email field shared across tiers (entering once marks all as submitted)
+- Accessible from: Settings → "✦ Upgrade Noa" button
+
+#### New Storage Keys
+
+| Key | Type | Purpose |
+|-----|------|---------|
+| `vela_financial_personality` | string | Saver/Spender/Balanced/Inconsistent |
+| `vela_first_week_shown` | '1' | First Week Plan displayed flag |
+| `vela_plan_type` | string | 'free' \| 'noa' \| 'pro' (default 'free') |
+| `vela_waitlist_email` | string | Email from upgrade waitlist capture |
+| `vela_paywall_views` | number | Banner impression count (analytics) |
+| `vela_memory_start` | ISO date | Start of current 7-day free memory period |
+| `vela_app_start` | ISO date | First install date |
+
+---
+
+### TASK 4 — Share Noa ✅
+
+**Commit:** `2122226`
+**Files:** `src/vela/screens/VelaCore.js`
+
+#### Share Quote Generation (`generateShareQuote()`)
+
+Groq call requesting one witty 14-word max non-sensitive quote. No specific £ numbers. Lean into personality type if detected. Style examples baked into prompt:
+- *"A natural Saver in a world designed to make you spend. Rare."*
+- *"Payday lands. Half of it had plans before I did."*
+
+Quote stripped of surrounding quotes/marks before storing in `shareQuote` state.
+
+#### Share Card (CSS preview)
+
+Beautiful dark card shown before sharing:
+- Warm pearl orb (56px, radial gradient, glow)
+- "noa" wordmark + "Your Financial Navigator" sub
+- VELA score (large bold) + financial personality type (if detected)
+- Mood label (colour-matched to current state)
+- Italic quote in bordered section
+- Site URL badge at bottom
+
+#### Sharing (`doShare()`)
+
+- **`navigator.share`** (iOS native share sheet): title + quote text + VELA score + landing page URL
+- **Clipboard fallback**: `navigator.clipboard.writeText()` — button text changes to "✓ Copied to clipboard" for 2.8s
+- AbortError (user cancelled share) handled silently
+
+#### Settings entry points
+
+- **"✦ Upgrade Noa"** — amber styled button → opens Upgrade modal
+- **"↗ Share Noa"** — green styled button → triggers `generateShareQuote()` then opens Share modal
+
+---
+
+### Commits this session
+
+| Commit | What |
+|--------|------|
+| `2ab4cb5` | wip: save partial intelligence + monetisation foundations (storage.js) |
+| `2122226` | feat: complete intelligence + monetisation loop — personality, benchmarks, first week plan, paywall, share |
+
+All pushed to `origin/main` ✅
+
+---
+
+### What's working after this session
+
+- ✅ Noa benchmarks UK averages (eating out £180, rent £1,200, take-home £2,500) in every response
+- ✅ Noa detects and names your financial personality type after 5+ transactions
+- ✅ Noa's tone shifts to motivational when you're within 90 days of a financial goal
+- ✅ First Week Plan — full-screen, spoken, one-time, personalised from onboarding data
+- ✅ Memory reset banner — 3 days warning before free-tier 7-day reset
+- ✅ Upgrade screen — 3-tier pricing, "Coming soon", email waitlist capture
+- ✅ Share Noa — AI quote + styled card preview + Web Share API / clipboard fallback
+- ✅ Settings has Upgrade and Share entry points
+
+---
+
 ## Session: 2026-05-25 (overnight — pre-launch testing, performance, onboarding, pitch decks)
 
 ### Overview
