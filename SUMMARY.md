@@ -2,6 +2,130 @@
 
 ---
 
+## Session: 2026-05-26 (Plaid migration — replace Nordigen end-to-end)
+
+### Overview
+
+Complete migration from Nordigen (GoCardless) to Plaid for Open Banking. All Nordigen references eliminated from API layer, storage, VelaCore.js, and Onboarding.js. Plaid Link CDN flow replaces the Nordigen OAuth redirect pattern.
+
+**Commit:** `b7498a3` — feat: complete Plaid migration — VelaCore and Onboarding updated
+**Build:** 116.08 kB gzip (−526 B) — zero warnings
+
+---
+
+### API Changes
+
+| File | Change | Detail |
+|------|--------|--------|
+| `api/banking/connect.js` | ❌ Deleted | Nordigen OAuth endpoint — no longer needed |
+| `api/banking/link-token.js` | ✅ Created | `POST /api/banking/link-token` → `{ link_token }` via `createLinkToken()` in provider.js |
+| `api/banking/exchange.js` | ✅ Created | `POST /api/banking/exchange` → exchanges `publicToken`, fetches accounts + transactions in one shot → `{ accessToken, institution, accounts, transactions, inferredIncome }` |
+| `api/banking/accounts.js` | ♻️ Replaced | Now takes `{ accessToken }` instead of `{ accountIds }`, uses `getAccounts(accessToken)` from provider.js |
+| `api/banking/transactions.js` | ♻️ Replaced | Now takes `{ accessToken }`, uses `getTransactions(accessToken)` from provider.js, same categorisation (savings/lifestyle/essentials) |
+| `api/banking/provider.js` | ✅ Unchanged | Already Plaid — `createLinkToken`, `exchangePublicToken`, `getAccounts`, `getTransactions` |
+
+#### `api/banking/exchange.js` response shape
+```json
+{
+  "accessToken": "access-sandbox-...",
+  "institution": "Monzo",
+  "accounts": [{ "id", "name", "balance", "currency" }],
+  "transactions": [{ "date", "description", "amount", "category", "currency" }],
+  "summary": { "essentials": 0, "lifestyle": 0, "savings": 0 },
+  "inferredIncome": 0
+}
+```
+
+Plaid transaction amount convention: positive = debit (money out). exchange.js and transactions.js filter `tx.amount > 0 && !tx.pending` for expenses. Income inference: `tx.amount < 0 && |amount| > 500`.
+
+---
+
+### Storage Changes (`src/vela/storage.js`)
+
+**Removed:**
+- `BANKING_REQUISITION` key + `getBankingRequisition` / `saveBankingRequisition`
+- `BANKING_ACCOUNTS_IDS` key + `getBankingAccountIds` / `saveBankingAccountIds`
+- `BANKING_PENDING` key + `getBankingPending` / `setBankingPending` / `clearBankingPending`
+
+**Added:**
+- `BANKING_ACCESS_TOKEN: 'vela_banking_access_token'`
+- `getBankingAccessToken()` / `saveBankingAccessToken(t)`
+
+**Updated:**
+- `clearBanking()` now clears `[ACCESS_TOKEN, LAST_SYNC, INSTITUTION]` (removed requisition/accountIds/pending)
+
+**Kept:**
+- `getBankingInstitution` / `saveBankingInstitution`
+- `getBankingLastSync` / `setBankingLastSync`
+- `clearBanking`
+
+---
+
+### VelaCore.js Changes
+
+| What | Before | After |
+|------|--------|-------|
+| Import | Nordigen helpers (requisition, accountIds, pending) | Plaid helpers (accessToken) |
+| Mount useEffect | Checked pending Nordigen redirect → `completeBankFromRequisition()` | Auto-sync only if connected + stale |
+| `completeBankFromRequisition()` | Existed (Nordigen complete flow) | **Removed** |
+| `syncBankAccounts()` | Fetched with `accountIds` | Fetches with `accessToken` from localStorage |
+| `buildPrompt()` | `hasBank = !!bankInst && getBankingAccountIds().length > 0` | `hasBank = !!bankInst && !!getBankingAccessToken()` |
+| `BankConnectModal` | Nordigen 7-bank picker → `window.location.href = requisition link` | Plaid Link CDN flow (see below) |
+| `BANK_LIST` constant | Nordigen institution IDs | **Removed** |
+| `onConnected` callback | `(inst, accountIds)` | `(inst)` |
+
+#### New `BankConnectModal` flow (Plaid Link)
+1. User clicks "Connect your bank"
+2. Load `https://cdn.plaid.com/link/v2/stable/link-initialize.js` (skipped if already loaded)
+3. `POST /api/banking/link-token` → get `link_token`
+4. `window.Plaid.create({ token, onSuccess, onExit })` → `.open()`
+5. Plaid handles full bank selection + consent UI in their overlay
+6. `onSuccess(publicToken, metadata)`:
+   - `POST /api/banking/exchange` → get `{ accessToken, institution, accounts, transactions }`
+   - `saveBankingAccessToken(d.accessToken)` + `saveBankingInstitution(inst)`
+   - `setBankingLastSync()` + call `onConnected(inst)`
+7. `onExit(err)` → show error state or reset to idle
+
+---
+
+### Onboarding.js Changes (`AccountsStep`)
+
+| What | Before | After |
+|------|--------|-------|
+| Imports | Nordigen: `saveBankingRequisition, saveBankingAccountIds, setBankingPending, getBankingRequisition, getBankingPending, clearBankingPending` | Plaid: `saveBankingAccessToken, saveBankingInstitution, setBankingLastSync` |
+| `BANKS` array | 7 Nordigen institution IDs | **Removed** |
+| Bank connection | `initiateConnect(bank)` → server initiate → `window.location.href = link` | `openPlaidLink()` → same Plaid Link CDN flow |
+| Return redirect handler | `useEffect` checking `getBankingRequisition() + getBankingPending()` | **Removed** (no redirect — Plaid is in-page) |
+| UI | 2-column bank picker grid | Single "🔗 Connect your bank" button |
+
+`AccountsStep` bank states: `idle | loading | connected | error` (removed `picker` state, no longer needed).
+
+---
+
+### Environment Variables Required
+
+| Variable | Purpose |
+|----------|---------|
+| `PLAID_CLIENT_ID` | Plaid dashboard → Team Settings → Keys |
+| `PLAID_SECRET` | Plaid dashboard → Sandbox/Development/Production secret |
+
+`provider.js` defaults to `https://sandbox.plaid.com`. Change to `https://production.plaid.com` when going live.
+
+---
+
+### What's live after this session
+
+- ✅ Plaid Link replaces Nordigen OAuth bank picker in both Onboarding and Settings
+- ✅ All Nordigen references eliminated (0 results in codebase scan)
+- ✅ `api/banking/connect.js` deleted
+- ✅ `api/banking/link-token.js` + `api/banking/exchange.js` created
+- ✅ `api/banking/accounts.js` + `api/banking/transactions.js` use Plaid
+- ✅ `storage.js` cleaned — Nordigen keys removed, Plaid access token added
+- ✅ Sync Now button in Settings works with Plaid access token
+- ✅ Auto-sync on mount (if bank connected + last sync > 24h) works with Plaid
+
+---
+
 ## Session: 2026-05-26 (sinking funds pots, app switch blur, weekly check-in, manifest icons)
 
 ### Overview
