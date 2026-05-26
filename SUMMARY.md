@@ -2,6 +2,115 @@
 
 ---
 
+## Session: 2026-05-26 (GitHub Pages + FitLink health, nutrition, XP)
+
+### Overview
+
+Three-task session. Task 1: GitHub Pages auto-deploy workflow + root listing page. Task 2: FitLink health and nutrition dashboard pages with API routes. Task 3: FitLink XP system — levels, streaks, daily snapshots, dashboard upgrade.
+
+**Note:** The GitHub Actions workflow file (`.github/workflows/deploy-sites.yml`) requires `workflow` scope on the GitHub PAT. Push it once the PAT is updated:
+```
+git push origin main
+```
+The PAT scope can be updated at: GitHub → Settings → Developer settings → Personal access tokens → Edit → check `workflow`.
+
+---
+
+### TASK 1 — GitHub Pages Deployment ✅ (workflow pending PAT scope)
+
+**Commits:** `fc93fd3` (pages-index.html pushed) + workflow file staged locally
+
+**Files:**
+- `.github/workflows/deploy-sites.yml` — on push to `main`, copies `public/agency/`, `public/axontra/`, `public/noa-landing/` to `_site/` and deploys to `gh-pages` branch via `JamesIves/github-pages-deploy-action@v4`
+- `pages-index.html` — dark, frameworkless listing page with cards linking to all three sites
+
+**Deployed URL (once gh-pages is created):** `https://lourencoj003-gif.github.io/finance-tracker-2026/`
+
+---
+
+### TASK 2 — FitLink Health + Nutrition Pages ✅
+
+**Commit:** `bbcd34b` (FitLink health + nutrition pages with API routes)
+
+**Files:**
+- `fitlink/app/dashboard/health/page.tsx` — 30-day Recharts AreaChart for steps, health log form (steps, water ml, sleep hrs, calories burned, resting HR), wearable sync placeholder, today's at-a-glance row
+- `fitlink/app/dashboard/nutrition/page.tsx` — 4 meal tabs (Breakfast/Lunch/Dinner/Snacks), calorie progress bar with goal, macro breakdown (protein/carbs/fat), food entry form with qty/unit selector
+- `fitlink/app/api/health-logs/route.ts` — GET (last 30 days, auth-gated) + POST (create/update today's log, finds-or-creates, auth-gated)
+- `fitlink/app/api/nutrition-logs/food-entries/route.ts` — GET (today's entries grouped by meal) + POST (find-or-create NutritionLog for meal, create FoodEntry, update NutritionLog totals, auth-gated)
+
+**Recharts install:** `recharts@^3.8.1` added to `fitlink/package.json`
+
+**Schema alignment:** Uses actual Prisma schema field names — `kcal`, `proteinG`, `carbsG`, `fatG` in FoodEntry; `mealType` in NutritionLog; `findFirst`/`create` pattern (no cuid-keyed upsert)
+
+---
+
+### TASK 3 — FitLink XP System ✅
+
+**Commit:** `9fb3e2e` (FitLink XP system — levels, streaks, daily snapshot)
+
+**Files:**
+
+#### `fitlink/lib/xp.ts` — XP constants and helpers
+| Constant/Helper | Detail |
+|----------------|--------|
+| `XP` object | 11 action values: WORKOUT_COMPLETE=100, TASK_COMPLETE=50, HEALTH_LOG=30, NUTRITION_LOG=20, STEPS_GOAL_HIT=40, WATER_GOAL_HIT=15, SLEEP_GOAL_HIT=20, CALORIES_GOAL_HIT=25, WEIGHT_LOGGED=10, STREAK_BONUS=25, FIRST_LOG_OF_DAY=10 |
+| `getStreakMultiplier(days)` | 1.0× (0-6d) / 1.25× (7-13d) / 1.5× (14-27d) / 2.0× (28+d) |
+| `LEVEL_THRESHOLDS` | Lv1=0, Lv2=200, Lv3=500, Lv4=1000, Lv5=2000, Lv6=3500, Lv7=5500, Lv8=8000, Lv9=11500, Lv10=15000 |
+| `LEVEL_TITLES` | Beginner → Rookie → Consistent → Dedicated → Athlete → Champion → Elite → Master → Legend → FitLink Pro |
+| `getLevelFromXp(xp)` | Returns level 1–10 from total XP |
+| `getLevelProgress(xp)` | Returns `{ current, required, pct }` — how far through current level |
+| `computeStreakFromSnapshots(snaps)` | Reads streakCount from most recent DailyProgressSnapshot |
+
+#### `fitlink/app/api/progress/route.ts` — GET full ProgressProfile
+Returns user xp, level, levelTitle, levelProgress, streakCount, streakMultiplier, ProgressProfile. Auth-gated.
+
+#### `fitlink/app/api/progress/award/route.ts` — POST award XP
+- Body: `{ reason: XpReason, referenceId?: string }`
+- Applies streak multiplier to `STREAK_BONUS` awards only
+- Atomically increments `User.xp`, syncs `User.level`
+- Creates `XpEvent` record
+- Upserts `DailyProgressSnapshot` for today (xpTotal, level, streakCount)
+- Increments streakCount by 1 on `STREAK_BONUS` award
+
+#### `fitlink/app/dashboard/page.tsx` — updated server component
+Added (fetched from DB on render, graceful fallback if no DB):
+- **Streak counter** (fire emoji + day count + multiplier badge)
+- **XP progress bar** (Lv.N + title + filled bar + "X XP to next level")
+- **Daily goals checklist** (5 goals: steps, water, sleep, 3 meals, health log) with check rings + mini progress bar + "+XP" labels + "all done" celebration banner
+- Stat rings now populated from today's `HealthLog` data
+- "Log Today" CTA now links to `/dashboard/health`
+- Tasks section shows real pending tasks from DB
+
+---
+
+### Commits this session
+
+| Commit | Task | Message |
+|--------|------|---------|
+| `fc93fd3` | 1 | feat: GitHub Pages root listing page |
+| `bbcd34b` | 2 | feat: FitLink health + nutrition pages with API routes |
+| `9fb3e2e` | 3 | feat: FitLink XP system — levels, streaks, daily snapshot |
+
+Tasks 2 + 3 pushed to `origin/main` ✅
+Task 1 workflow pending `workflow` PAT scope — `pages-index.html` pushed ✅
+
+---
+
+### What's live after this session
+
+- ✅ FitLink: health page — 30-day steps chart + log form + wearable sync placeholder
+- ✅ FitLink: nutrition page — 4 meal tabs + calorie progress + food entry form
+- ✅ FitLink: `/api/health-logs` — GET + POST, auth-gated
+- ✅ FitLink: `/api/nutrition-logs/food-entries` — GET + POST, auth-gated
+- ✅ FitLink: `lib/xp.ts` — all XP values, multipliers, level thresholds
+- ✅ FitLink: `/api/progress` — GET ProgressProfile + XP/level/streak
+- ✅ FitLink: `/api/progress/award` — POST award XP with streak multiplier
+- ✅ FitLink: dashboard — XP bar, level title, streak, daily goals checklist, real DB data
+- ✅ GitHub Pages: `pages-index.html` listing page committed + pushed
+- ⏳ GitHub Pages: workflow file created locally — needs PAT `workflow` scope to push
+
+---
+
 ## Session: 2026-05-26 (Audit & Verification)
 
 ### Overview
