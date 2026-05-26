@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Axontra Partners — Operational intelligence for insurance brokerages. CRM, workflow, and AI enablement." />
+  <title>Axontra Partners — Operational Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,600;0,700;1,400;1,600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #05111f;
+      --bg2:      #071828;
+      --bg3:      #0a1e30;
+      --bg4:      #0e2438;
+      --navy:     #112840;
+      --silver:   #b8c4d0;
+      --silver-lt:#d4dde6;
+      --white:    #f0f4f8;
+      --accent:   #7eb8d4;
+      --muted:    #4a6070;
+      --border:   rgba(184,196,208,0.12);
+      --border2:  rgba(184,196,208,0.07);
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--silver);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 22px 56px;
+      border-bottom: 1px solid var(--border2);
+      background: rgba(5,17,31,0.94);
+      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    }
+    .nav-logo-wrap { display: flex; align-items: baseline; gap: 2px; }
+    .nav-logo {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 21px; font-weight: 600;
+      color: var(--white); letter-spacing: 0.04em;
+      text-decoration: none;
+    }
+    .nav-logo-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); margin-left: 3px; margin-bottom: 3px; }
+    .nav-links { display: flex; gap: 40px; align-items: center; }
+    .nav-links a {
+      font-size: 12px; font-weight: 500; color: var(--muted);
+      text-decoration: none; letter-spacing: 0.06em; text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--silver); }
+    .nav-cta {
+      padding: 9px 22px;
+      border: 1px solid var(--border);
+      color: var(--silver-lt) !important;
+      font-size: 12px !important; font-weight: 500 !important;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      border-radius: 2px;
+      text-decoration: none;
+      transition: all 0.2s !important;
+    }
+    .nav-cta:hover { background: rgba(184,196,208,0.07) !important; border-color: rgba(184,196,208,0.3) !important; }
+
+    /* HELPERS */
+    .label {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.3em;
+      text-transform: uppercase; color: var(--accent);
+      margin-bottom: 18px; display: block;
+    }
+    .divider { width: 40px; height: 1px; background: var(--accent); opacity: 0.4; margin-bottom: 32px; }
+
+    /* HERO */
+    .hero {
+      min-height: 100vh;
+      display: grid; place-items: center;
+      padding: 160px 56px 100px;
+      position: relative; overflow: hidden;
+      text-align: center;
+    }
+    .hero-grid-bg {
+      position: absolute; inset: 0; pointer-events: none; opacity: 0.03;
+      background-image:
+        linear-gradient(rgba(184,196,208,1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(184,196,208,1) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    .hero-glow {
+      position: absolute; top: -10%; left: 50%; transform: translateX(-50%);
+      width: 900px; height: 600px; border-radius: 50%;
+      background: radial-gradient(ellipse, rgba(126,184,212,0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-inner { position: relative; max-width: 860px; }
+    .hero-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 7px 18px;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.2em;
+      text-transform: uppercase; color: var(--accent);
+      margin-bottom: 36px;
+    }
+    .hero-pill-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--accent); animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    h1 {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: clamp(38px, 6.5vw, 74px);
+      font-weight: 700; color: var(--white);
+      line-height: 1.08; letter-spacing: -0.02em;
+      margin-bottom: 28px;
+    }
+    h1 .ital { font-style: italic; font-weight: 400; color: var(--silver-lt); }
+    .hero-sub {
+      font-size: clamp(15px, 1.8vw, 18px); font-weight: 300;
+      color: rgba(184,196,208,0.5);
+      max-width: 620px; margin: 0 auto 48px; line-height: 1.8;
+    }
+    .hero-ctas { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+    .btn-p {
+      padding: 15px 34px; background: var(--accent); color: var(--bg);
+      font-size: 12px; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; border-radius: 2px;
+      text-decoration: none; transition: all 0.2s;
+      display: inline-block;
+    }
+    .btn-p:hover { background: var(--silver-lt); }
+    .btn-g {
+      padding: 15px 34px; background: transparent; color: var(--silver);
+      font-size: 12px; font-weight: 500; letter-spacing: 0.08em;
+      text-transform: uppercase; border-radius: 2px;
+      border: 1px solid var(--border);
+      text-decoration: none; transition: all 0.2s;
+      display: inline-block;
+    }
+    .btn-g:hover { border-color: rgba(184,196,208,0.3); background: rgba(184,196,208,0.04); }
+
+    .hero-metrics {
+      display: flex; justify-content: center; gap: 0;
+      margin-top: 80px; border-top: 1px solid var(--border2);
+    }
+    .metric {
+      padding: 36px 48px; border-right: 1px solid var(--border2); text-align: center;
+    }
+    .metric:last-child { border-right: none; }
+    .metric-val {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 40px; font-weight: 700; color: var(--white);
+      line-height: 1; margin-bottom: 6px;
+    }
+    .metric-label { font-size: 11px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+
+    /* SECTIONS */
+    section { padding: 110px 56px; max-width: 1200px; margin: 0 auto; }
+    .section-wrap { }
+    .section-dark { background: var(--bg2); }
+
+    /* PROBLEM */
+    .problem-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: start; }
+    .problem-quote {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(24px, 3vw, 36px); font-style: italic;
+      color: var(--white); line-height: 1.5;
+      border-left: 2px solid var(--accent); padding-left: 28px;
+      margin-bottom: 36px;
+    }
+    .problem-body { color: rgba(184,196,208,0.5); font-size: 15px; line-height: 1.9; }
+    .problem-body p + p { margin-top: 18px; }
+    .problem-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin-top: 48px; }
+    .pstat {
+      background: var(--bg3); padding: 28px 24px;
+    }
+    .pstat-num {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 42px; font-weight: 700; color: var(--accent);
+      line-height: 1; margin-bottom: 8px;
+    }
+    .pstat-label { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+    /* SERVICES */
+    .services-layout { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; margin-top: 56px; }
+    .service {
+      background: var(--bg3); padding: 44px 32px;
+      display: flex; flex-direction: column;
+      position: relative; transition: background 0.3s;
+    }
+    .service:hover { background: var(--bg4); }
+    .service.highlight {
+      background: var(--navy);
+      border: 1px solid rgba(126,184,212,0.2);
+    }
+    .service-level {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.3em;
+      text-transform: uppercase; color: var(--accent); margin-bottom: 12px;
+    }
+    .service-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 32px; font-weight: 700; color: var(--white);
+      margin-bottom: 4px; line-height: 1.1;
+    }
+    .service-price {
+      font-size: 22px; font-weight: 600; color: var(--silver-lt);
+      margin-bottom: 10px;
+    }
+    .service-price-note { font-size: 12px; color: var(--muted); margin-bottom: 32px; line-height: 1.5; }
+    hr.svc { border: none; border-top: 1px solid var(--border2); margin-bottom: 28px; }
+    .service-list { list-style: none; flex: 1; }
+    .service-list li {
+      font-size: 13px; color: rgba(184,196,208,0.6);
+      padding: 9px 0; display: flex; gap: 12px; align-items: flex-start;
+      border-bottom: 1px solid var(--border2);
+    }
+    .service-list li:last-child { border-bottom: none; }
+    .service-list li::before { content: '—'; color: var(--accent); flex-shrink: 0; }
+    .svc-cta {
+      display: block; text-align: center; text-decoration: none;
+      margin-top: 32px; padding: 13px;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; border: 1px solid var(--border);
+      color: var(--silver); transition: all 0.2s;
+    }
+    .svc-cta:hover { border-color: rgba(184,196,208,0.35); background: rgba(184,196,208,0.05); }
+    .service.highlight .svc-cta { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+    .service.highlight .svc-cta:hover { background: var(--silver-lt); }
+
+    /* WHY */
+    .why-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 80px; align-items: center; }
+    .why-left h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(30px,4vw,50px); font-weight: 700;
+      color: var(--white); line-height: 1.15; margin-bottom: 24px;
+    }
+    .why-body { font-size: 15px; color: rgba(184,196,208,0.5); line-height: 1.9; }
+    .why-body p + p { margin-top: 18px; }
+    .why-points { display: flex; flex-direction: column; gap: 2px; }
+    .why-point {
+      background: var(--bg3); padding: 28px 28px;
+      display: flex; gap: 20px; align-items: flex-start;
+    }
+    .why-point-num {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 28px; font-weight: 700; color: rgba(126,184,212,0.3);
+      flex-shrink: 0; line-height: 1; margin-top: 2px;
+    }
+    .why-point-title { font-size: 14px; font-weight: 600; color: var(--white); margin-bottom: 6px; }
+    .why-point-body { font-size: 13px; color: var(--muted); line-height: 1.7; }
+
+    /* CONTACT */
+    .contact-grid { display: grid; grid-template-columns: 1fr 1.3fr; gap: 80px; align-items: start; }
+    .contact-left h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(28px, 4vw, 46px); font-weight: 700;
+      color: var(--white); line-height: 1.2; margin-bottom: 20px;
+    }
+    .contact-left p { font-size: 15px; color: rgba(184,196,208,0.45); line-height: 1.8; margin-bottom: 32px; }
+    .contact-item { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 14px; }
+    .ci-icon { font-size: 14px; color: var(--accent); margin-top: 2px; flex-shrink: 0; }
+    .ci-text { font-size: 13px; color: rgba(184,196,208,0.45); line-height: 1.5; }
+
+    form { display: flex; flex-direction: column; gap: 14px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    label { font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 5px; }
+    input, select, textarea {
+      width: 100%; padding: 13px 16px;
+      background: var(--bg3); border: 1px solid var(--border2);
+      color: var(--silver-lt); font-family: 'Inter', sans-serif;
+      font-size: 13px; border-radius: 1px; outline: none;
+      transition: border-color 0.2s; -webkit-appearance: none; appearance: none;
+    }
+    input:focus, select:focus, textarea:focus { border-color: rgba(126,184,212,0.35); }
+    select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%234a6070'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
+    select option { background: #0a1e30; }
+    textarea { resize: vertical; min-height: 110px; line-height: 1.6; }
+    .form-submit {
+      padding: 15px; background: var(--accent);
+      color: var(--bg); font-size: 12px; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      border: none; border-radius: 1px; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .form-submit:hover { background: var(--silver-lt); }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--border2);
+      padding: 36px 56px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .footer-logo {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 17px; font-weight: 700; color: var(--white);
+    }
+    .footer-copy { font-size: 11px; color: var(--muted); }
+    .footer-links { display: flex; gap: 28px; }
+    .footer-links a { font-size: 11px; color: var(--muted); text-decoration: none; letter-spacing: 0.06em; text-transform: uppercase; }
+    .footer-links a:hover { color: var(--silver); }
+
+    /* STICKY NAV */
+    nav { transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease; }
+    nav.at-top { background: transparent !important; border-color: transparent !important; }
+    nav.scrolled { background: rgba(5,17,31,0.98) !important; border-color: rgba(184,196,208,0.12) !important; box-shadow: 0 1px 24px rgba(0,0,0,0.5); }
+
+    /* SCROLL FADE-IN */
+    .fade-up { opacity: 0; transform: translateY(28px); transition: opacity 0.65s ease, transform 0.65s ease; }
+    .fade-up.visible { opacity: 1; transform: translateY(0); }
+
+    /* ANIMATED DOT ON LOGO */
+    .nav-logo-dot { animation: pulse 2s ease-in-out infinite; }
+
+    /* PULL QUOTE */
+    .pull-quote-section { background: var(--bg2); }
+    .pull-quote-inner { max-width: 860px; margin: 0 auto; padding: 80px 56px; }
+    .pull-quote-text {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-style: italic; font-size: clamp(20px, 2.8vw, 32px);
+      font-weight: 400; color: var(--silver-lt);
+      line-height: 1.6; border-left: 3px solid rgba(126,184,212,0.45);
+      padding-left: 36px;
+    }
+    .pull-quote-attr { margin-top: 20px; padding-left: 36px; font-size: 12px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+
+    /* HERO METRIC COUNTER */
+    .metric-val[data-target] { cursor: default; }
+
+    /* FORM ERROR */
+    .field-error { font-size: 11px; color: #e66; margin-top: 5px; display: none; }
+    .field-error.show { display: block; }
+    input.invalid, select.invalid { border-color: rgba(220,80,80,0.5) !important; }
+
+    /* WHATSAPP */
+    .btn-whatsapp {
+      padding: 14px 28px; background: #25D366; color: #fff;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+      border-radius: 2px; text-decoration: none; transition: all 0.2s;
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-whatsapp:hover { background: #1ebe5a; transform: translateY(-1px); }
+    .btn-whatsapp-contact {
+      display: inline-flex; align-items: center; gap: 8px;
+      color: #25D366; font-size: 13px; font-weight: 600;
+      text-decoration: none; margin-top: 18px; transition: opacity 0.2s;
+    }
+    .btn-whatsapp-contact:hover { opacity: 0.75; }
+
+    @media (max-width: 1000px) {
+      .pull-quote-inner { padding: 60px 24px; }
+      nav { padding: 16px 24px; }
+      .nav-links { display: none; }
+      section { padding: 80px 24px; }
+      .hero { padding: 140px 24px 80px; }
+      .hero-metrics { flex-wrap: wrap; }
+      .metric { padding: 24px 32px; border-bottom: 1px solid var(--border2); }
+      .problem-layout { grid-template-columns: 1fr; gap: 40px; }
+      .services-layout { grid-template-columns: 1fr; }
+      .why-grid { grid-template-columns: 1fr; gap: 40px; }
+      .contact-grid { grid-template-columns: 1fr; gap: 40px; }
+      .form-row { grid-template-columns: 1fr; }
+      footer { flex-direction: column; gap: 14px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-logo-wrap">
+      <a href="#" class="nav-logo">Axontra Partners</a>
+      <div class="nav-logo-dot"></div>
+    </div>
+    <div class="nav-links">
+      <a href="#services">Services</a>
+      <a href="#why">Why Axontra</a>
+      <a href="#contact">Get In Touch</a>
+      <a href="#contact" class="nav-cta">Book a Call</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-grid-bg"></div>
+    <div class="hero-glow"></div>
+    <div class="hero-inner">
+      <div class="hero-pill">
+        <div class="hero-pill-dot"></div>
+        Operational Intelligence · Insurance Brokerages
+      </div>
+      <h1>Your market is changing<br /><span class="ital">faster than your workflows are.</span></h1>
+      <p class="hero-sub">Axontra helps brokerages operate at the standard the modern market demands — without disrupting how they actually work.</p>
+      <div class="hero-ctas">
+        <a href="#services" class="btn-p">See the Services</a>
+        <a href="#why" class="btn-g">Why Axontra</a>
+        <a href="https://wa.me/447700000000" target="_blank" rel="noopener" class="btn-whatsapp">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          Chat with us
+        </a>
+      </div>
+      <div class="hero-metrics">
+        <div class="metric">
+          <div class="metric-val" data-target="30" data-prefix="£" data-suffix="bn+">£0bn+</div>
+          <div class="metric-label">UK commercial insurance market</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val" data-target="67" data-suffix="%">0%</div>
+          <div class="metric-label">Brokers on manual workflows</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val" data-target="2.4" data-prefix="£" data-suffix="M avg">£0M avg</div>
+          <div class="metric-label">Annual revenue per broker</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val">0</div>
+          <div class="metric-label">Disruption to your ops</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROBLEM -->
+  <div class="section-dark fade-up" id="problem">
+    <section>
+      <div class="problem-layout">
+        <div>
+          <span class="label">The Market Reality</span>
+          <blockquote class="problem-quote">
+            "Underwriters are becoming data-driven. Brokers are still placing business the same way they did in 2015."
+          </blockquote>
+          <div class="problem-body">
+            <p>The market has shifted. Underwriters are deploying AI to assess submissions, model risk, and price with precision. The data they now expect from a broker is fundamentally different to what was acceptable five years ago.</p>
+            <p>Brokers that present clean, structured submissions with supporting data win terms faster and build deeper underwriter relationships. Those relying on relationship-led placement and manual CRM data are increasingly working at a disadvantage they haven't fully recognised yet.</p>
+            <p>The gap is growing. Axontra exists to close it.</p>
+          </div>
+        </div>
+        <div>
+          <div class="problem-stats">
+            <div class="pstat">
+              <div class="pstat-num">78%</div>
+              <div class="pstat-label">of brokers report CRM data too inconsistent for meaningful analytics</div>
+            </div>
+            <div class="pstat">
+              <div class="pstat-num">3×</div>
+              <div class="pstat-label">faster submission processing for data-led brokerages vs manual ones</div>
+            </div>
+            <div class="pstat">
+              <div class="pstat-num">60%</div>
+              <div class="pstat-label">of renewal losses attributed to inadequate client data at underwriter review</div>
+            </div>
+            <div class="pstat">
+              <div class="pstat-num">£0</div>
+              <div class="pstat-label">additional headcount required — we build into your existing team structure</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- SERVICES -->
+  <section id="services" class="fade-up">
+    <span class="label">Service Architecture</span>
+    <div class="divider"></div>
+    <h2 style="font-family:'Cormorant Garamond',serif;font-size:clamp(28px,4vw,50px);font-weight:700;color:var(--white);line-height:1.15;max-width:580px;">Three stages of operational transformation.</h2>
+
+    <div class="services-layout">
+      <!-- DIAGNOSTIC -->
+      <div class="service">
+        <div class="service-level">Stage 01</div>
+        <div class="service-name">Diagnostic</div>
+        <div class="service-price">£2,500</div>
+        <div class="service-price-note">One-off engagement · Delivered in 3–4 weeks</div>
+        <hr class="svc" />
+        <ul class="service-list">
+          <li>Full operational audit across all workflows</li>
+          <li>CRM and data quality assessment</li>
+          <li>Submission process benchmarking against market standard</li>
+          <li>Technology stack review</li>
+          <li>Board-ready report with findings</li>
+          <li>Prioritised recommendations with effort and ROI scores</li>
+          <li>90-minute debrief with leadership</li>
+        </ul>
+        <a href="#contact" class="svc-cta">Enquire →</a>
+      </div>
+
+      <!-- INFRASTRUCTURE -->
+      <div class="service highlight">
+        <div class="service-level">Stage 02</div>
+        <div class="service-name">Infrastructure</div>
+        <div class="service-price">£3,500/mo</div>
+        <div class="service-price-note">Ongoing engagement · Typically 4–6 months</div>
+        <hr class="svc" />
+        <ul class="service-list">
+          <li>CRM restructure and data layer rebuild</li>
+          <li>Workflow redesign — submission to renewal</li>
+          <li>Process documentation and SOPs</li>
+          <li>Team training and adoption support</li>
+          <li>Pipeline and forecasting model</li>
+          <li>Monthly operational review</li>
+          <li>Direct access to senior advisor</li>
+        </ul>
+        <a href="#contact" class="svc-cta">Enquire →</a>
+      </div>
+
+      <!-- INTELLIGENCE -->
+      <div class="service">
+        <div class="service-level">Stage 03</div>
+        <div class="service-name">Intelligence</div>
+        <div class="service-price">£5,000/mo</div>
+        <div class="service-price-note">Full-service engagement · 6+ months</div>
+        <hr class="svc" />
+        <ul class="service-list">
+          <li>AI enablement layer over existing infrastructure</li>
+          <li>Submission intelligence — structured data packaging</li>
+          <li>Market signal integration — loss ratio trends, sector shifts</li>
+          <li>Underwriter preference modelling</li>
+          <li>Decision support tooling for account executives</li>
+          <li>Weekly operational cadence call</li>
+          <li>Embedded delivery model — works within your team</li>
+        </ul>
+        <a href="#contact" class="svc-cta">Enquire →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- WHY AXONTRA -->
+  <div class="section-dark fade-up" id="why">
+    <section>
+      <div class="why-grid">
+        <div class="why-left">
+          <span class="label">Our Approach</span>
+          <h2>We don't come in and replace how you work.</h2>
+          <div class="why-body">
+            <p>We diagnose where value is being lost, redesign the systems underneath it, and introduce intelligence tools that make your team sharper — not different.</p>
+            <p>Most consultants deliver a report and leave. We stay until the work is embedded. Every recommendation is implemented alongside your team, not handed over.</p>
+            <p>We've worked inside brokerages. We know what adoption actually looks like — and we build for the reality of your environment, not the theory.</p>
+          </div>
+        </div>
+        <div class="why-points">
+          <div class="why-point">
+            <div class="why-point-num">01</div>
+            <div>
+              <div class="why-point-title">No disruption to daily operations</div>
+              <div class="why-point-body">Changes are designed around how your team actually works, not a theoretical ideal. Adoption is built in from day one.</div>
+            </div>
+          </div>
+          <div class="why-point">
+            <div class="why-point-num">02</div>
+            <div>
+              <div class="why-point-title">Sector-specific knowledge</div>
+              <div class="why-point-body">We understand placement cycles, underwriter relationships, and the commercial realities of running a brokerage. No learning curve on your time.</div>
+            </div>
+          </div>
+          <div class="why-point">
+            <div class="why-point-num">03</div>
+            <div>
+              <div class="why-point-title">Measurable outcomes, not consultancy theatre</div>
+              <div class="why-point-body">Every engagement is scoped with clear deliverables and success metrics agreed upfront. You always know what you're getting and when.</div>
+            </div>
+          </div>
+          <div class="why-point">
+            <div class="why-point-num">04</div>
+            <div>
+              <div class="why-point-title">Embedded, not just advisory</div>
+              <div class="why-point-body">Senior practitioners who have sat in the operational seat. We implement alongside your team, not above them.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- PULL QUOTE -->
+  <div class="pull-quote-section fade-up">
+    <div class="pull-quote-inner">
+      <p class="pull-quote-text">"The market is optimising decision-making on the underwriting side. But not information quality on the brokerage side. That's where Axontra sits."</p>
+      <div class="pull-quote-attr">— Axontra Partners</div>
+    </div>
+  </div>
+
+  <!-- CONTACT -->
+  <section id="contact" class="fade-up">
+    <div class="contact-grid">
+      <div class="contact-left">
+        <span class="label">Contact</span>
+        <h2>Start with a conversation.</h2>
+        <p>Tell us about your brokerage, your current setup, and where you see the gaps. We'll respond with a clear view of how we'd approach it — no proposals without a proper brief first.</p>
+        <div class="contact-item">
+          <span class="ci-icon">→</span>
+          <span class="ci-text">Initial call within 2 business days</span>
+        </div>
+        <div class="contact-item">
+          <span class="ci-icon">→</span>
+          <span class="ci-text">No engagement without a fit assessment first</span>
+        </div>
+        <div class="contact-item">
+          <span class="ci-icon">→</span>
+          <span class="ci-text">Diagnostic stage available as a standalone first step</span>
+        </div>
+        <div class="contact-item">
+          <span class="ci-icon">→</span>
+          <span class="ci-text">Strict NDA before any sensitive operational discussion</span>
+        </div>
+        <a href="https://wa.me/447700000000" target="_blank" rel="noopener" class="btn-whatsapp-contact">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          Chat with us on WhatsApp
+        </a>
+      </div>
+      <form id="axontra-form" action="mailto:enquiries@axontrapartners.com" method="post" enctype="text/plain">
+        <div class="form-row">
+          <div>
+            <label for="name">Your Name</label>
+            <input type="text" id="name" name="name" placeholder="e.g. James Harrington" />
+            <div class="field-error" id="name-error">Please enter your name</div>
+          </div>
+          <div>
+            <label for="firm">Firm Name</label>
+            <input type="text" id="firm" name="firm" placeholder="e.g. Harrington & Partners" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div>
+            <label for="role">Your Role</label>
+            <input type="text" id="role" name="role" placeholder="e.g. Managing Director" />
+          </div>
+          <div>
+            <label for="email">Email Address</label>
+            <input type="email" id="email" name="email" placeholder="james@harringtonpartners.com" />
+            <div class="field-error" id="email-error">Please enter a valid email address</div>
+          </div>
+        </div>
+        <div>
+          <label for="service">Which service are you exploring?</label>
+          <select id="service" name="service">
+            <option value="">Select a stage…</option>
+            <option value="Diagnostic — £2,500 one-off">Diagnostic — £2,500 one-off</option>
+            <option value="Infrastructure — £3,500/mo">Infrastructure — £3,500/mo</option>
+            <option value="Intelligence — £5,000/mo">Intelligence — £5,000/mo</option>
+            <option value="Not sure — need guidance">Not sure yet — need guidance</option>
+          </select>
+          <div class="field-error" id="service-error">Please select a service</div>
+        </div>
+        <div>
+          <label for="message">Tell us about your brokerage</label>
+          <textarea id="message" name="message" placeholder="Size of team, current challenges, what's not working, what you're trying to achieve…"></textarea>
+        </div>
+        <button type="button" onclick="submitAxontraForm()" class="form-submit">Submit Enquiry →</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-logo">Axontra Partners</div>
+    <div class="footer-copy">© 2026 Axontra Partners Limited. London. All rights reserved.</div>
+    <div class="footer-links">
+      <a href="#services">Services</a>
+      <a href="#contact">Contact</a>
+    </div>
+  </footer>
+
+  <script>
+    // Sticky nav
+    const nav = document.querySelector('nav');
+    function updateNav() {
+      nav.classList.toggle('scrolled', window.scrollY > 50);
+      nav.classList.toggle('at-top', window.scrollY <= 50);
+    }
+    updateNav();
+    window.addEventListener('scroll', updateNav, { passive: true });
+
+    // Scroll fade-in
+    const fadeEls = document.querySelectorAll('.fade-up');
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
+    }, { threshold: 0.07 });
+    fadeEls.forEach(el => observer.observe(el));
+
+    // Animated number counters
+    function animateCounter(el) {
+      const target  = parseFloat(el.dataset.target);
+      const prefix  = el.dataset.prefix  || '';
+      const suffix  = el.dataset.suffix  || '';
+      const isFloat = target % 1 !== 0;
+      const duration = 2000;
+      let start = null;
+      function step(ts) {
+        if (!start) start = ts;
+        const progress = Math.min(1, (ts - start) / duration);
+        const ease = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+        const current = isFloat ? (ease * target).toFixed(1) : Math.round(ease * target);
+        el.textContent = prefix + current + suffix;
+        if (progress < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+
+    // Run counters when hero metrics enter view
+    const counterEls = document.querySelectorAll('.metric-val[data-target]');
+    const counterObserver = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) { animateCounter(e.target); counterObserver.unobserve(e.target); }
+      });
+    }, { threshold: 0.5 });
+    counterEls.forEach(el => counterObserver.observe(el));
+
+    // Form validation
+    function submitAxontraForm() {
+      const nameEl    = document.getElementById('name');
+      const emailEl   = document.getElementById('email');
+      const serviceEl = document.getElementById('service');
+      let valid = true;
+      [nameEl, emailEl, serviceEl].forEach(el => el.classList.remove('invalid'));
+      document.querySelectorAll('.field-error').forEach(e => e.classList.remove('show'));
+      if (!nameEl.value.trim()) { nameEl.classList.add('invalid'); document.getElementById('name-error').classList.add('show'); valid = false; }
+      const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailEl.value.trim() || !re.test(emailEl.value)) { emailEl.classList.add('invalid'); document.getElementById('email-error').classList.add('show'); valid = false; }
+      if (!serviceEl.value) { serviceEl.classList.add('invalid'); document.getElementById('service-error').classList.add('show'); valid = false; }
+      if (valid) { document.getElementById('axontra-form').submit(); }
+      else { document.querySelector('.invalid').scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    }
+    ['name','email','service'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('input', function() {
+        this.classList.remove('invalid');
+        const err = document.getElementById(id + '-error');
+        if (err) err.classList.remove('show');
+      });
+    });
+  </script>
+</body>
+</html>
