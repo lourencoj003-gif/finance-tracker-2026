@@ -1,109 +1,69 @@
 // api/banking/transactions.js
-// Fetch last 30 days of transactions from Nordigen, auto-categorise to
-// Essentials / Lifestyle / Savings, and infer recurring income.
+// Fetch last 30 days of transactions from a Plaid-connected bank.
+// Categorises to Essentials / Lifestyle / Savings and infers income.
 //
 // POST /api/banking/transactions
-//   { accountIds: ['id1', ...] }
-//   → { transactions: [...], summary: { essentials, lifestyle, savings }, inferredIncome }
+//   { accessToken }
+//   → { transactions, summary, inferredIncome }
 
-const NORDIGEN_BASE = 'https://bankaccountdata.gocardless.com/api/v2';
+import { getTransactions } from './provider.js';
 
-async function getNordigenToken() {
-  const r = await fetch(`${NORDIGEN_BASE}/token/new/`, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body:    JSON.stringify({
-      secret_id:  process.env.NORDIGEN_SECRET_ID,
-      secret_key: process.env.NORDIGEN_SECRET_KEY,
-    }),
-  });
-  if (!r.ok) throw new Error(`Nordigen token error: ${r.status}`);
-  const d = await r.json();
-  return d.access;
-}
+// Map a transaction name/Plaid category to Essentials | Lifestyle | Savings
+function categorise(name = '', plaidCategory = []) {
+  const d = (name + ' ' + plaidCategory.join(' ')).toLowerCase();
 
-// Map a transaction description to Essentials / Lifestyle / Savings
-function categorise(desc = '') {
-  const d = desc.toLowerCase();
-
-  if (/pension|isa|saving|invest|vanguard|hargreaves|moneybox|trading 212|freetrade|nutmeg/i.test(d)) {
+  if (/pension|isa|saving|invest|vanguard|hargreaves|moneybox|trading 212|freetrade|nutmeg|wealthify|moneyfarm/i.test(d)) {
     return 'savings';
   }
   if (
-    /deliveroo|uber eats|just eat|menulog|netflix|spotify|amazon prime|disney\+|apple tv|cinema|cineworld|odeon|vue|pub|bar\b|restaurant|bistro|brasserie|café|cafe|coffee|starbucks|costa|pret|gym|fitness|leisure|hotel|airbnb|holiday|travel|booking\.com|expedia|fashion|asos|zara|h&m|primark|next\b|topshop|beauty|salon|barber|hair/i.test(d)
+    /deliveroo|uber eats|just eat|menulog|netflix|spotify|amazon prime|disney\+|apple tv|cinema|cineworld|odeon|vue|pub\b|bar\b|restaurant|bistro|brasserie|café|cafe|coffee|starbucks|costa|pret|gym|fitness|leisure|hotel|airbnb|holiday|travel|booking\.com|expedia|fashion|asos|zara|h&m|primark|next\b|topshop|beauty|salon|barber|hair/i.test(d)
   ) {
     return 'lifestyle';
   }
-  // Default: essentials (rent, supermarket, bills, insurance, transport)
   return 'essentials';
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-
-  const { accountIds } = req.body || {};
-  if (!accountIds || !Array.isArray(accountIds) || accountIds.length === 0) {
-    return res.status(400).json({ error: 'Missing or empty accountIds array' });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const dateTo   = new Date().toISOString().slice(0, 10);
-  const dateFrom = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+  const { accessToken } = req.body || {};
+  if (!accessToken) {
+    return res.status(400).json({ error: 'Missing accessToken' });
+  }
 
   try {
-    const token = await getNordigenToken();
-    const expenses        = [];
-    const incomeCandidates = [];
+    const rawTxs = await getTransactions(accessToken);
 
-    await Promise.all(accountIds.map(async (id) => {
-      const r = await fetch(
-        `${NORDIGEN_BASE}/accounts/${id}/transactions/?date_from=${dateFrom}&date_to=${dateTo}`,
-        { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } }
-      );
-      if (!r.ok) return;
-
-      const data   = await r.json();
-      const booked = data.transactions?.booked || [];
-
-      booked.forEach(tx => {
-        const amount = parseFloat(tx.transactionAmount?.amount || 0);
-        const desc   =
-          tx.remittanceInformationUnstructured ||
-          tx.creditorName ||
-          tx.debtorName   ||
-          tx.additionalInformation ||
-          'Transaction';
-
-        if (amount < 0) {
-          // Debit — expense
-          expenses.push({
-            date:        tx.bookingDate || tx.valueDate || dateTo,
-            description: desc,
-            amount:      parseFloat(Math.abs(amount).toFixed(2)),
-            category:    categorise(desc),
-            currency:    tx.transactionAmount?.currency || 'GBP',
-          });
-        } else if (amount > 500) {
-          // Large credit — potential salary / recurring income
-          incomeCandidates.push(amount);
-        }
-      });
-    }));
-
-    // Sort newest first
-    expenses.sort((a, b) => (a.date < b.date ? 1 : -1));
+    // Debits only (Plaid: positive amount = money out of account)
+    const transactions = rawTxs
+      .filter(tx => tx.amount > 0 && !tx.pending)
+      .map(tx => ({
+        date:        tx.date,
+        description: tx.name || tx.merchant_name || 'Transaction',
+        amount:      parseFloat(Math.abs(tx.amount).toFixed(2)),
+        category:    categorise(tx.name || tx.merchant_name || '', tx.category || []),
+        currency:    tx.iso_currency_code || 'GBP',
+      }))
+      .sort((a, b) => (a.date < b.date ? 1 : -1));
 
     // Category totals
-    const summary = expenses.reduce((acc, tx) => {
+    const summary = transactions.reduce((acc, tx) => {
       acc[tx.category] = parseFloat(((acc[tx.category] || 0) + tx.amount).toFixed(2));
       return acc;
     }, {});
 
-    // Best-guess monthly income (largest single credit ≥ £500 in the period)
-    const inferredIncome = incomeCandidates.length > 0
-      ? parseFloat(Math.max(...incomeCandidates).toFixed(2))
-      : 0;
+    // Infer income: largest single credit > £500
+    const inferredIncome = rawTxs
+      .filter(tx => tx.amount < 0 && Math.abs(tx.amount) > 500)
+      .reduce((max, tx) => Math.max(max, Math.abs(tx.amount)), 0);
 
-    res.json({ transactions: expenses, summary, inferredIncome });
+    res.json({
+      transactions,
+      summary,
+      inferredIncome: parseFloat(inferredIncome.toFixed(2)),
+    });
   } catch (err) {
     console.error('[banking/transactions]', err.message);
     res.status(500).json({ error: err.message });

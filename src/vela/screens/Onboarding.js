@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { parseAmount, parseDebt } from '../scoring';
-import { saveData, saveInsights, markReady, markOnboardingDone, setUserName, saveAccounts, saveExpenseLog, saveBankingRequisition, saveBankingAccountIds, saveBankingInstitution, setBankingLastSync, setBankingPending, getBankingRequisition, getBankingPending, clearBankingPending } from '../storage';
+import { saveData, saveInsights, markReady, markOnboardingDone, setUserName, saveAccounts, saveExpenseLog, saveBankingAccessToken, saveBankingInstitution, setBankingLastSync } from '../storage';
 import { speak as voiceSpeak, stopSpeaking } from '../voice';
 import Orb from '../Orb';
 
@@ -864,124 +864,113 @@ function IncomeStep({ sources, onChange, onContinue }) {
 
 const PURPOSES = ['Bills and Essentials', 'Daily Spending', 'Savings', 'Investments'];
 
-// Nordigen institution IDs for the most common UK banks
-const BANKS = [
-  { id: 'MONZO_MONZO',              name: 'Monzo',    emoji: '🔶' },
-  { id: 'STARLING_SRLGGB3L',        name: 'Starling', emoji: '🌟' },
-  { id: 'REVOLUT_REVOGB21',         name: 'Revolut',  emoji: '🔵' },
-  { id: 'BARCLAYS_BARCGB22',        name: 'Barclays', emoji: '🦅' },
-  { id: 'HSBC_PERSONAL_HSBCGB2LXXX', name: 'HSBC',   emoji: '🔴' },
-  { id: 'NATWEST_NWBKGB2L',         name: 'NatWest',  emoji: '🏦' },
-  { id: 'LLOYDS_LOYDGB2L',          name: 'Lloyds',   emoji: '🐎' },
-];
-
 function AccountsStep({ accounts, onChange, onContinue, onSkip }) {
   const [name, setName]       = useState('');
   const [purpose, setPurpose] = useState(PURPOSES[0]);
   const [balance, setBalance] = useState('');
   const [err, setErr]         = useState('');
 
-  // Banking connection: 'idle' | 'picker' | 'loading' | 'connected' | 'error'
-  const [bankStep, setBankStep]           = useState('idle');
-  const [bankName, setBankName]           = useState('');
-  const [bankErrMsg, setBankErrMsg]       = useState('');
-  const connectedRef = useRef(false);
+  // Plaid connection state: 'idle' | 'loading' | 'connected' | 'error'
+  const [bankStep, setBankStep]     = useState('idle');
+  const [bankName, setBankName]     = useState('');
+  const [bankErrMsg, setBankErrMsg] = useState('');
 
-  // On mount — check if we're returning from a Nordigen OAuth redirect
-  useEffect(() => {
-    if (connectedRef.current) return;
-    const reqId   = getBankingRequisition();
-    const pending = getBankingPending();
-    if (reqId && pending) {
-      connectedRef.current = true;
-      setBankName(localStorage.getItem('vela_banking_institution') || 'Your bank');
-      setBankStep('loading');
-      completeBankConnect(reqId);
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  async function completeBankConnect(reqId) {
-    try {
-      clearBankingPending();
-      const cr = await fetch('/api/banking/connect', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ action: 'complete', requisitionId: reqId }),
-      });
-      const cd = await cr.json();
-      if (!cd.accountIds || cd.accountIds.length === 0) {
-        setBankStep('error');
-        setBankErrMsg('Bank not connected yet — please try again.');
-        return;
-      }
-      saveBankingAccountIds(cd.accountIds);
-
-      // Fetch balances
-      const ar = await fetch('/api/banking/accounts', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ accountIds: cd.accountIds }),
-      });
-      const ad = await ar.json();
-      if (ad.accounts && ad.accounts.length > 0) {
-        const built = ad.accounts.map(a => ({
-          id:       a.id,
-          name:     a.name,
-          purpose:  'Bank Account',
-          balance:  a.balance,
-          fromBank: true,
-        }));
-        onChange(built);
-      }
-
-      // Fetch + store last 30 days of transactions
-      const tr = await fetch('/api/banking/transactions', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ accountIds: cd.accountIds }),
-      });
-      const td = await tr.json();
-      if (td.transactions && td.transactions.length > 0) {
-        const entries = td.transactions.map(tx => ({
-          id:       `bank_${tx.date}_${Math.random().toString(36).slice(2, 7)}`,
-          amount:   tx.amount,
-          category: tx.category,
-          note:     tx.description,
-          date:     tx.date,
-          fromBank: true,
-        }));
-        saveExpenseLog(entries);
-      }
-
-      setBankingLastSync();
-      setBankStep('connected');
-    } catch (e) {
-      console.error('[completeBankConnect]', e);
-      setBankStep('error');
-      setBankErrMsg('Connection failed — please try again.');
-    }
-  }
-
-  async function initiateConnect(bank) {
+  // Open Plaid Link: load CDN script → get link_token → open Plaid UI → exchange on success
+  async function openPlaidLink() {
     setBankStep('loading');
-    setBankName(bank.name);
-    saveBankingInstitution(bank.name);
+    setBankErrMsg('');
     try {
-      const redirectUri = window.location.origin + '/';
-      const r = await fetch('/api/banking/connect', {
+      // 1. Load Plaid Link SDK from CDN
+      if (!window.Plaid) {
+        await new Promise((resolve, reject) => {
+          const s = document.createElement('script');
+          s.src    = 'https://cdn.plaid.com/link/v2/stable/link-initialize.js';
+          s.onload = resolve;
+          s.onerror = () => reject(new Error('Failed to load Plaid Link script'));
+          document.head.appendChild(s);
+        });
+      }
+
+      // 2. Get link_token from server
+      const ltRes = await fetch('/api/banking/link-token', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ action: 'initiate', institutionId: bank.id, redirectUri }),
       });
-      const d = await r.json();
-      if (!d.link || !d.requisitionId) throw new Error('No link returned from server');
-      saveBankingRequisition(d.requisitionId);
-      setBankingPending();
-      window.location.href = d.link; // navigate to bank consent screen
+      const { link_token, error: ltErr } = await ltRes.json();
+      if (ltErr || !link_token) throw new Error(ltErr || 'No link_token returned');
+
+      // 3. Open Plaid Link
+      setBankStep('idle');
+      const plaidHandler = window.Plaid.create({
+        token: link_token,
+
+        onSuccess: async (publicToken, metadata) => {
+          setBankStep('loading');
+          const inst = metadata?.institution?.name || 'Your bank';
+          setBankName(inst);
+          try {
+            // Exchange public_token and fetch accounts + transactions in one shot
+            const exRes = await fetch('/api/banking/exchange', {
+              method:  'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body:    JSON.stringify({ publicToken, institutionName: inst }),
+            });
+            const d = await exRes.json();
+            if (d.error) throw new Error(d.error);
+
+            // Persist Plaid access token + institution
+            saveBankingAccessToken(d.accessToken);
+            saveBankingInstitution(inst);
+            setBankingLastSync();
+
+            // Auto-populate accounts list from bank data
+            if (d.accounts && d.accounts.length > 0) {
+              const built = d.accounts.map(a => ({
+                id:       a.id,
+                name:     a.name,
+                purpose:  'Bank Account',
+                balance:  a.balance,
+                fromBank: true,
+              }));
+              onChange(built);
+            }
+
+            // Store 30-day transaction history
+            if (d.transactions && d.transactions.length > 0) {
+              const entries = d.transactions.map(tx => ({
+                id:       `bank_${tx.date}_${Math.random().toString(36).slice(2, 7)}`,
+                amount:   tx.amount,
+                category: tx.category,
+                note:     tx.description,
+                date:     tx.date,
+                fromBank: true,
+              }));
+              saveExpenseLog(entries);
+            }
+
+            setBankStep('connected');
+          } catch (e) {
+            console.error('[AccountsStep onSuccess]', e);
+            setBankStep('error');
+            setBankErrMsg('Connected but could not import data. Continue manually below.');
+          }
+        },
+
+        onExit: (exitErr) => {
+          if (exitErr) {
+            setBankStep('error');
+            setBankErrMsg('Connection cancelled. You can try again or add accounts manually.');
+          } else {
+            setBankStep('idle');
+          }
+        },
+      });
+
+      plaidHandler.open();
     } catch (e) {
-      console.error('[initiateConnect]', e);
+      console.error('[AccountsStep openPlaidLink]', e);
       setBankStep('error');
-      setBankErrMsg('Could not start connection — check internet and try again.');
+      setBankErrMsg('Could not start connection — check your internet and try again.');
     }
   }
 
@@ -1005,7 +994,7 @@ function AccountsStep({ accounts, onChange, onContinue, onSkip }) {
       overflowY: 'auto', maxHeight: '72vh',
     }}>
 
-      {/* ── Open Banking section ─────────────────────────────────────── */}
+      {/* ── Plaid Open Banking section ───────────────────────────────── */}
       {bankConnected ? (
         /* Connected state */
         <div style={{
@@ -1016,11 +1005,11 @@ function AccountsStep({ accounts, onChange, onContinue, onSkip }) {
           <div style={{ fontSize: 18, lineHeight: 1 }}>✅</div>
           <div>
             <div style={{ fontSize: 13, color: '#7CAE9E', fontWeight: 600 }}>{bankName} connected</div>
-            <div style={{ fontSize: 10, color: 'rgba(232,221,208,0.38)' }}>Accounts and transactions imported</div>
+            <div style={{ fontSize: 10, color: 'rgba(232,221,208,0.38)' }}>Accounts and transactions imported via Plaid</div>
           </div>
         </div>
       ) : bankStep === 'loading' ? (
-        /* Loading state */
+        /* Loading / exchanging */
         <div style={{
           display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12,
           padding: '10px 14px', borderRadius: 12,
@@ -1028,34 +1017,13 @@ function AccountsStep({ accounts, onChange, onContinue, onSkip }) {
         }}>
           <div style={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid rgba(200,184,154,0.2)', borderTopColor: '#C8B89A', animation: 'noaOrbPulse 0.8s linear infinite', flexShrink: 0 }} />
           <div style={{ fontSize: 13, color: 'rgba(232,221,208,0.6)' }}>
-            {bankName ? `Connecting ${bankName}…` : 'Completing connection…'}
+            {bankName ? `Importing from ${bankName}…` : 'Connecting…'}
           </div>
-        </div>
-      ) : bankStep === 'picker' ? (
-        /* Bank picker */
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.38)', marginBottom: 8, letterSpacing: '0.6px', textTransform: 'uppercase' }}>Choose your bank</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7 }}>
-            {BANKS.map(b => (
-              <button key={b.id} onClick={() => initiateConnect(b)} style={{
-                padding: '9px 8px', borderRadius: 10, background: 'rgba(200,184,154,0.07)',
-                border: '1px solid rgba(200,184,154,0.18)', color: '#E8DDD0',
-                fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
-                display: 'flex', alignItems: 'center', gap: 7, textAlign: 'left',
-              }}>
-                <span style={{ fontSize: 16, lineHeight: 1 }}>{b.emoji}</span>
-                <span>{b.name}</span>
-              </button>
-            ))}
-          </div>
-          <button onClick={() => setBankStep('idle')} style={{ background: 'none', border: 'none', color: 'rgba(232,221,208,0.3)', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', marginTop: 6, padding: 0 }}>
-            Cancel
-          </button>
         </div>
       ) : (
-        /* Idle — show Connect button */
+        /* Idle or error — single Plaid Link button */
         <div style={{ marginBottom: 12 }}>
-          <button onClick={() => setBankStep('picker')} style={{
+          <button onClick={openPlaidLink} style={{
             width: '100%', padding: '11px 0',
             background: 'rgba(124,174,158,0.1)', border: '1px solid rgba(124,174,158,0.28)',
             borderRadius: 12, color: '#7CAE9E', fontSize: 14, fontWeight: 600,
@@ -1071,7 +1039,7 @@ function AccountsStep({ accounts, onChange, onContinue, onSkip }) {
       )}
 
       {/* ── Manual section divider ────────────────────────────────────── */}
-      {!bankConnected && bankStep !== 'picker' && (
+      {!bankConnected && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
           <div style={{ flex: 1, height: 1, background: 'rgba(232,221,208,0.08)' }} />
           <div style={{ fontSize: 10, color: 'rgba(232,221,208,0.28)', letterSpacing: '0.5px', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Or add manually</div>

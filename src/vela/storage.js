@@ -41,12 +41,10 @@ const K = {
   PAYWALL_VIEWS:  'vela_paywall_views',
   MEMORY_START:   'vela_memory_start',       // ISO date memory period started
   APP_START:      'vela_app_start',          // ISO date of first install
-  // Nordigen Open Banking
-  BANKING_REQUISITION:  'vela_banking_requisition',  // Nordigen requisition ID
-  BANKING_ACCOUNTS_IDS: 'vela_banking_accounts_ids', // JSON array of Nordigen account IDs
+  // Plaid Open Banking
+  BANKING_ACCESS_TOKEN: 'vela_banking_access_token', // Plaid access token (persisted for sync)
   BANKING_LAST_SYNC:    'vela_banking_last_sync',    // ISO timestamp of last sync
   BANKING_INSTITUTION:  'vela_banking_institution',  // e.g. 'Monzo'
-  BANKING_PENDING:      'vela_nordigen_pending',     // '1' while OAuth flow is in progress
 };
 
 export const getPin              = ()    => localStorage.getItem(K.PIN);
@@ -187,19 +185,14 @@ export const setMemoryStart  = ()  => localStorage.setItem(K.MEMORY_START, new D
 export const getAppStart  = ()  => localStorage.getItem(K.APP_START) || '';
 export const setAppStart  = ()  => { if (!localStorage.getItem(K.APP_START)) localStorage.setItem(K.APP_START, new Date().toISOString().slice(0, 10)); };
 
-// Nordigen Open Banking
-export const getBankingRequisition  = ()    => localStorage.getItem(K.BANKING_REQUISITION) || '';
-export const saveBankingRequisition = (id)  => localStorage.setItem(K.BANKING_REQUISITION, id);
-export const getBankingAccountIds   = ()    => { const r = localStorage.getItem(K.BANKING_ACCOUNTS_IDS); return r ? JSON.parse(r) : []; };
-export const saveBankingAccountIds  = (ids) => localStorage.setItem(K.BANKING_ACCOUNTS_IDS, JSON.stringify(ids));
+// Plaid Open Banking
+export const getBankingAccessToken  = ()    => localStorage.getItem(K.BANKING_ACCESS_TOKEN) || '';
+export const saveBankingAccessToken = (t)   => localStorage.setItem(K.BANKING_ACCESS_TOKEN, t);
 export const getBankingLastSync     = ()    => localStorage.getItem(K.BANKING_LAST_SYNC) || '';
 export const setBankingLastSync     = ()    => localStorage.setItem(K.BANKING_LAST_SYNC, new Date().toISOString());
 export const getBankingInstitution  = ()    => localStorage.getItem(K.BANKING_INSTITUTION) || '';
 export const saveBankingInstitution = (n)   => localStorage.setItem(K.BANKING_INSTITUTION, n);
-export const getBankingPending      = ()    => localStorage.getItem(K.BANKING_PENDING) === '1';
-export const setBankingPending      = ()    => localStorage.setItem(K.BANKING_PENDING, '1');
-export const clearBankingPending    = ()    => localStorage.removeItem(K.BANKING_PENDING);
 export const clearBanking           = ()    => {
-  [K.BANKING_REQUISITION, K.BANKING_ACCOUNTS_IDS, K.BANKING_LAST_SYNC, K.BANKING_INSTITUTION, K.BANKING_PENDING]
+  [K.BANKING_ACCESS_TOKEN, K.BANKING_LAST_SYNC, K.BANKING_INSTITUTION]
     .forEach(k => localStorage.removeItem(k));
 };
