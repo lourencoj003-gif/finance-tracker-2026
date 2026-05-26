@@ -2,6 +2,125 @@
 
 ---
 
+## Session: 2026-05-26 (sinking funds pots, app switch blur, weekly check-in, manifest icons)
+
+### Overview
+
+Four features shipped in one session. Build: 116.61 kB gzip (+2.12 kB over previous). Zero warnings.
+
+**Commit:** `59b3c57` — feat: sinking funds pots, app switch blur, weekly check-in upgrade, manifest PNG icons
+
+---
+
+### FEATURE 7 — App Switch Blur ✅
+
+**File:** `src/vela/screens/VelaCore.js`
+
+- `visibilitychange` event listener added on mount
+- When `document.hidden = true` → sets `appBlurred = true` → shows full-screen overlay
+- Overlay: `BG` (`#111318`) background, animated Noa orb (64px), "noa" wordmark
+- When user returns to app → `document.hidden = false` → overlay immediately removed
+- Prevents financial data showing in iOS/Android app switcher screenshots
+- z-index: 998 (above all modals except nothing)
+
+---
+
+### FEATURE 10 — Sinking Funds / Pots ✅
+
+**File:** `src/vela/screens/VelaCore.js`
+**Storage:** existing `vela_goals` key (getGoals/saveGoals)
+
+#### Dashboard Section — "My Pots"
+
+- Appears between Weekly Review and Weekly Challenge cards
+- Header: "MY POTS" label + "+ Add pot" button
+- Each pot card shows:
+  - Name + saved/target amounts
+  - Thin progress bar (PURPLE fill → GREEN when complete)
+  - `pct%` · `due [date]` · `£X/mo needed` (when target date is set)
+  - "+ Add funds" button (hidden when complete)
+  - `🎉` emoji prefix when complete
+- If no pots exist: dashed "+ Create a savings pot" placeholder button
+
+#### New Pot Modal
+
+Triggered by "+ Add pot" or the placeholder button:
+- Name field (free text)
+- Target amount (£, number)
+- Target date (optional, e.g. "August", "December 2026")
+- Validates name + target; error message inline
+- On create: saves goal, Noa speaks confirmation with monthly contribution calc
+
+#### Add Funds Modal
+
+Triggered by "+ Add funds" on any incomplete pot:
+- Shows current progress and amount remaining
+- Amount input (number)
+- On save:
+  - Updates `saved` field in goals array → `saveGoals` + `setGoals`
+  - **If complete:** `setCelebrate(true)` banner (3.5s) + Noa speaks "Amazing" response
+  - **If partial:** Noa speaks current % + amount remaining
+
+#### `monthsUntil(dateStr)` helper
+
+New pure function before `parseExpenseFromText`. Parses "August", "December 2026", etc. → returns months remaining. Falls back to 6 months if no date or unrecognised format.
+
+#### Goal structure (unchanged)
+```
+{ id, name, target, saved, createdAt, targetDate }
+```
+Compatible with existing NLP-detected goals from chat ("save £X for Y by Z").
+
+---
+
+### Weekly Check-In Upgrade ✅
+
+**File:** `src/vela/screens/VelaCore.js`
+
+Monday chat greeting now uses real data instead of estimates:
+
+| Before | After |
+|--------|-------|
+| `expenses / 4.33` estimate for last week | Actual last-7-days `expenseLog` sum |
+| Generic "on pace" line | Real top spend category from transactions |
+| No pot awareness | Shows how many pots are still in progress |
+
+New Monday message format:
+```
+Monday check-in[, Name]. £[lastWeekTotal] spent last week — mostly [topCategory].
+Monthly surplus £[X] — on track. [N] pot[s] still in progress. What's the focus this week?
+```
+
+---
+
+### manifest.json — PNG Icons ✅
+
+**File:** `public/manifest.json`
+
+Added proper PNG icon entries (all pre-existing Noa-branded files):
+
+| File | Sizes | Purpose |
+|------|-------|---------|
+| `logo192.png` | 192×192 | any |
+| `logo512.png` | 512×512 | any |
+| `apple-touch-icon.png` | 180×180 | any |
+| `noa-icon.svg` | any | maskable |
+| `favicon.ico` | 64/32/24/16px | — |
+
+Improves PWA install score on Chrome and Android. iOS home screen icon unchanged (still reads `apple-touch-icon` from `<link>` in `index.html`).
+
+---
+
+### What's live after this session
+
+- ✅ App switch blur — financial data hidden from iOS/Android app switcher
+- ✅ Sinking Funds Pots — create pots, track progress, add funds, celebrate completion
+- ✅ Monday check-in uses real weekly transaction data + pot progress
+- ✅ Manifest includes PNG icons for Chrome/Android PWA install
+- ✅ monthsUntil() helper for date-based monthly contribution calculations
+
+---
+
 ## Session: 2026-05-26 (GitHub Pages + FitLink health, nutrition, XP)
 
 ### Overview
