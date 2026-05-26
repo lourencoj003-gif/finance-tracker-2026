@@ -177,6 +177,19 @@ function parseGoalFromText(text) {
 }
 
 
+// Parse a month name / "Month Year" string → months remaining from today
+function monthsUntil(dateStr) {
+  if (!dateStr) return 6;
+  const MONTHS = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+  const now    = new Date();
+  const parts  = dateStr.toLowerCase().trim().split(/\s+/);
+  const mIdx   = MONTHS.findIndex(m => parts[0].startsWith(m));
+  if (mIdx === -1) return 6;
+  const yr   = parts[1] ? parseInt(parts[1], 10) : (mIdx <= now.getMonth() ? now.getFullYear() + 1 : now.getFullYear());
+  const diff = (new Date(yr, mIdx, 1).getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30.44);
+  return Math.max(1, Math.round(diff));
+}
+
 function parseExpenseFromText(text) {
   // "just spent £12 on coffee" | "spent 8 on lunch" | "£12 on coffee" | "I spent £50"
   const m = text.match(/(?:just\s+)?spent\s+£?\s*([\d]+(?:\.\d{1,2})?)\s*(?:on\s+([^,.!?]+))?/i)
@@ -513,6 +526,19 @@ export default function VelaCore({ onReset }) {
   const [paydayPlanText, setPaydayPlanText]     = useState('');
   const [paydayPlanLoading, setPaydayPlanLoading] = useState(false);
 
+  // FEATURE 7 — Screen blur on app switch
+  const [appBlurred, setAppBlurred] = useState(false);
+
+  // FEATURE 10 — Sinking funds / Pots
+  const [showPotsModal, setShowPotsModal]   = useState(false);
+  const [addFundsModal, setAddFundsModal]   = useState(null);   // goal id, or null
+  const [addFundsAmount, setAddFundsAmount] = useState('');
+  const [addFundsError, setAddFundsError]   = useState('');
+  const [newPotName, setNewPotName]         = useState('');
+  const [newPotTarget, setNewPotTarget]     = useState('');
+  const [newPotDate, setNewPotDate]         = useState('');
+  const [newPotError, setNewPotError]       = useState('');
+
   // Task 4d — Dual-failure state: shown when both Groq (chat) + ElevenLabs (voice) fail together
   const [dualFail, setDualFail]               = useState(false);
   const groqFailedRef                          = useRef(false);
@@ -545,6 +571,13 @@ export default function VelaCore({ onReset }) {
   useEffect(() => { privacyModeRef.current = privacyMode; }, [privacyMode]);
   // Keep chatOpenRef in sync so idle prompt timer can check it without stale closure
   useEffect(() => { chatOpenRef.current = chatOpen; }, [chatOpen]);
+
+  // FEATURE 7 — Hide financial data from iOS app switcher screenshot
+  useEffect(() => {
+    const handler = () => setAppBlurred(document.hidden);
+    document.addEventListener('visibilitychange', handler);
+    return () => document.removeEventListener('visibilitychange', handler);
+  }, []);
 
   // Lazy-mount DetailView the first time the user swipes up — keeps it mounted after
   useEffect(() => { if (detailOpen && !detailMounted) setDetailMounted(true); }, [detailOpen]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1001,11 +1034,22 @@ export default function VelaCore({ onReset }) {
     let msg;
     if (shouldShowCheckin()) {
       markCheckin();
-      const weeklySpend = (expenses / 4.33).toFixed(0);
+      // Use real last-7-days logged transactions for a genuine weekly summary
+      const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+      const lastWeekLog  = getExpenseLog().filter(e => e.date >= sevenDaysAgo);
+      const lastWeekTotal = lastWeekLog.reduce((s, e) => s + e.amount, 0);
+      const topCat = ['essentials', 'lifestyle', 'savings'].reduce((best, cat) => {
+        const tot = lastWeekLog.filter(e => e.category === cat).reduce((s, e) => s + e.amount, 0);
+        return tot > best.total ? { cat, total: tot } : best;
+      }, { cat: 'spending', total: 0 });
       const onTrackLine = surplus >= 0
-        ? `You're keeping £${surplus.toFixed(0)}/month — solid position.`
-        : `You're running a £${Math.abs(surplus).toFixed(0)}/month deficit — let's fix that this week.`;
-      msg = `Monday check-in${hi}. You're on pace to spend £${expenses.toFixed(0)} this month — roughly £${weeklySpend} last week. ${onTrackLine} What's the focus this week?`;
+        ? `Monthly surplus £${surplus.toFixed(0)} — on track.`
+        : `Running £${Math.abs(surplus).toFixed(0)}/month deficit — let's fix that.`;
+      const weekLine = lastWeekTotal > 0
+        ? `£${lastWeekTotal.toFixed(0)} spent last week — mostly ${topCat.cat}. `
+        : '';
+      const goalsLine = goals.length > 0 ? ` ${goals.filter(g => (g.saved || 0) < g.target).length} pot${goals.filter(g => (g.saved || 0) < g.target).length !== 1 ? 's' : ''} still in progress.` : '';
+      msg = `Monday check-in${hi}. ${weekLine}${onTrackLine}${goalsLine} What's the focus this week?`;
     } else if (hoursAwayRef.current >= 24) {
       const h = Math.round(hoursAwayRef.current);
       const timeAway = h >= 48 ? `${Math.round(h / 24)} days` : 'a day';
@@ -2462,6 +2506,85 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
           </div>
         )}
 
+        {/* ══════════════════════════════════════════
+            SINKING FUNDS / POTS (FEATURE 10)
+            Shows savings pots with progress bars, monthly contribution needed,
+            and add-funds button per pot. Celebrations on completion.
+        ══════════════════════════════════════════ */}
+        {goals.length > 0 ? (
+          <div style={{ marginBottom: 10, animation: 'cardIn 0.4s ease-out' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <div style={{ fontSize: 9, color: 'rgba(232,221,208,0.3)', letterSpacing: '0.8px', textTransform: 'uppercase', fontWeight: 600 }}>My Pots</div>
+              <button
+                onClick={() => { setNewPotName(''); setNewPotTarget(''); setNewPotDate(''); setNewPotError(''); setShowPotsModal(true); }}
+                style={{ background: 'none', border: '1px solid rgba(200,184,154,0.22)', borderRadius: 8, color: PURPLE, fontSize: 11, padding: '3px 10px', cursor: 'pointer', letterSpacing: '0.2px', fontFamily: 'inherit' }}
+              >+ Add pot</button>
+            </div>
+            {goals.map(g => {
+              const savedAmt = g.saved || 0;
+              const pct      = g.target > 0 ? Math.min(100, Math.round((savedAmt / g.target) * 100)) : 0;
+              const complete = pct >= 100;
+              const mLeft    = monthsUntil(g.targetDate);
+              const monthlyNeeded = !complete && g.target > savedAmt && g.targetDate
+                ? ((g.target - savedAmt) / mLeft).toFixed(0)
+                : null;
+              return (
+                <div key={g.id} style={{
+                  background: complete ? 'rgba(124,174,158,0.06)' : 'rgba(232,221,208,0.03)',
+                  border: `1px solid ${complete ? 'rgba(124,174,158,0.18)' : 'rgba(232,221,208,0.07)'}`,
+                  borderRadius: 14, padding: '10px 12px', marginBottom: 7,
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: '#E8DDD0' }}>
+                      {complete ? '🎉 ' : ''}{g.name}
+                    </div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: complete ? GREEN : PURPLE }}>
+                      £{savedAmt.toLocaleString('en-GB')}
+                      <span style={{ fontWeight: 400, color: 'rgba(232,221,208,0.32)', fontSize: 10 }}> / £{g.target.toLocaleString('en-GB')}</span>
+                    </div>
+                  </div>
+                  <div style={{ height: 3, background: 'rgba(232,221,208,0.07)', borderRadius: 2, marginBottom: 5 }}>
+                    <div style={{
+                      height: '100%', width: `${pct}%`,
+                      background: complete ? GREEN : PURPLE,
+                      borderRadius: 2, transition: 'width 0.7s ease',
+                      minWidth: pct > 0 ? 3 : 0,
+                    }} />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontSize: 9, color: 'rgba(232,221,208,0.28)' }}>
+                      {complete
+                        ? '✓ Target reached'
+                        : [
+                            `${pct}%`,
+                            g.targetDate ? `due ${g.targetDate}` : null,
+                            monthlyNeeded ? `£${monthlyNeeded}/mo` : null,
+                          ].filter(Boolean).join(' · ')
+                      }
+                    </div>
+                    {!complete && (
+                      <button
+                        onClick={() => { setAddFundsModal(g.id); setAddFundsAmount(''); setAddFundsError(''); }}
+                        style={{ background: 'none', border: '1px solid rgba(200,184,154,0.18)', borderRadius: 7, color: 'rgba(200,184,154,0.5)', fontSize: 10, padding: '2px 8px', cursor: 'pointer', letterSpacing: '0.2px', fontFamily: 'inherit' }}
+                      >+ Add funds</button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <button
+            onClick={() => { setNewPotName(''); setNewPotTarget(''); setNewPotDate(''); setNewPotError(''); setShowPotsModal(true); }}
+            style={{
+              width: '100%', marginBottom: 10, padding: '11px 0',
+              background: 'rgba(232,221,208,0.02)', border: '1px dashed rgba(232,221,208,0.1)',
+              borderRadius: 14, color: 'rgba(232,221,208,0.25)', fontSize: 12, cursor: 'pointer',
+              fontFamily: 'inherit', letterSpacing: '0.2px',
+            }}
+          >+ Create a savings pot</button>
+        )}
+
         {/* Weekly Challenge card */}
         {!challengeData.completed && (
           <div style={{
@@ -3490,6 +3613,180 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
               Maybe later
             </button>
           </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════
+          NEW POT MODAL (FEATURE 10)
+          Create a new sinking-fund savings pot.
+      ══════════════════════════════════════════ */}
+      {showPotsModal && (
+        <div
+          onClick={e => { if (e.target === e.currentTarget) setShowPotsModal(false); }}
+          style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.84)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, zIndex: 85 }}
+        >
+          <div style={{ background: BG, border: '1px solid rgba(200,184,154,0.18)', borderRadius: 24, padding: '22px 20px', width: '100%', maxWidth: 320, animation: 'cardIn 0.28s ease-out' }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: '#E8DDD0', marginBottom: 18 }}>Create a savings pot</div>
+
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.38)', marginBottom: 5 }}>What are you saving for?</div>
+              <input
+                value={newPotName}
+                onChange={e => { setNewPotName(e.target.value); setNewPotError(''); }}
+                placeholder="e.g. Holiday, New MacBook, Emergency fund"
+                style={{ width: '100%', padding: '10px 12px', background: 'rgba(232,221,208,0.05)', border: '1px solid rgba(232,221,208,0.1)', borderRadius: 10, color: '#E8DDD0', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
+              />
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.38)', marginBottom: 5 }}>Target amount (£)</div>
+              <input
+                type="number"
+                value={newPotTarget}
+                onChange={e => { setNewPotTarget(e.target.value); setNewPotError(''); }}
+                placeholder="e.g. 1500"
+                style={{ width: '100%', padding: '10px 12px', background: 'rgba(232,221,208,0.05)', border: '1px solid rgba(232,221,208,0.1)', borderRadius: 10, color: '#E8DDD0', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
+              />
+            </div>
+
+            <div style={{ marginBottom: 18 }}>
+              <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.38)', marginBottom: 5 }}>Target date <span style={{ color: 'rgba(232,221,208,0.22)' }}>(optional)</span></div>
+              <input
+                value={newPotDate}
+                onChange={e => setNewPotDate(e.target.value)}
+                placeholder="e.g. August, December 2026"
+                style={{ width: '100%', padding: '10px 12px', background: 'rgba(232,221,208,0.05)', border: '1px solid rgba(232,221,208,0.1)', borderRadius: 10, color: '#E8DDD0', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
+              />
+            </div>
+
+            {newPotError && (
+              <div style={{ fontSize: 12, color: RED, marginBottom: 12, lineHeight: 1.4 }}>{newPotError}</div>
+            )}
+
+            <button
+              onClick={() => {
+                const name   = newPotName.trim();
+                const target = parseFloat(newPotTarget);
+                if (!name)            { setNewPotError('Give your pot a name.'); return; }
+                if (!target || target <= 0) { setNewPotError('Enter a valid target amount.'); return; }
+                const newGoal = {
+                  id:         Date.now(),
+                  name,
+                  target,
+                  saved:      0,
+                  createdAt:  new Date().toISOString().slice(0, 10),
+                  targetDate: newPotDate.trim() || null,
+                };
+                const updated = [...goals, newGoal];
+                saveGoals(updated);
+                setGoals(updated);
+                setShowPotsModal(false);
+                const mLeft = monthsUntil(newPotDate.trim());
+                const perMonth = newPotDate.trim() && mLeft > 0 ? ` That's £${(target / mLeft).toFixed(0)} a month.` : '';
+                const reply = `Pot created for ${name}. Target: £${target.toLocaleString('en-GB')}.${perMonth}`;
+                speak(reply);
+              }}
+              style={{ width: '100%', padding: 13, background: 'rgba(200,184,154,0.14)', border: '1px solid rgba(200,184,154,0.26)', borderRadius: 12, color: PURPLE, fontSize: 15, fontWeight: 600, cursor: 'pointer', marginBottom: 8, fontFamily: 'inherit' }}
+            >Create pot</button>
+
+            <button
+              onClick={() => setShowPotsModal(false)}
+              style={{ width: '100%', padding: 10, background: 'none', border: 'none', color: 'rgba(232,221,208,0.26)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
+            >Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════
+          ADD FUNDS MODAL (FEATURE 10)
+          Record a contribution to an existing savings pot.
+      ══════════════════════════════════════════ */}
+      {addFundsModal !== null && (() => {
+        const pot = goals.find(g => g.id === addFundsModal);
+        if (!pot) return null;
+        const savedAmt  = pot.saved || 0;
+        const remaining = pot.target - savedAmt;
+        return (
+          <div
+            onClick={e => { if (e.target === e.currentTarget) setAddFundsModal(null); }}
+            style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.84)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, zIndex: 85 }}
+          >
+            <div style={{ background: BG, border: '1px solid rgba(200,184,154,0.18)', borderRadius: 24, padding: '22px 20px', width: '100%', maxWidth: 320, animation: 'cardIn 0.28s ease-out' }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: '#E8DDD0', marginBottom: 4 }}>{pot.name}</div>
+              <div style={{ fontSize: 12, color: 'rgba(232,221,208,0.32)', marginBottom: 18 }}>
+                £{savedAmt.toLocaleString('en-GB')} saved · £{remaining.toLocaleString('en-GB')} to go
+              </div>
+
+              <div style={{ marginBottom: 18 }}>
+                <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.38)', marginBottom: 5 }}>Amount to add (£)</div>
+                <input
+                  type="number"
+                  value={addFundsAmount}
+                  onChange={e => { setAddFundsAmount(e.target.value); setAddFundsError(''); }}
+                  placeholder="e.g. 200"
+                  autoFocus
+                  style={{ width: '100%', padding: '10px 12px', background: 'rgba(232,221,208,0.05)', border: '1px solid rgba(232,221,208,0.1)', borderRadius: 10, color: '#E8DDD0', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
+                />
+              </div>
+
+              {addFundsError && (
+                <div style={{ fontSize: 12, color: RED, marginBottom: 12 }}>{addFundsError}</div>
+              )}
+
+              <button
+                onClick={() => {
+                  const amount = parseFloat(addFundsAmount);
+                  if (!amount || amount <= 0) { setAddFundsError('Enter a valid amount.'); return; }
+                  const newSaved = Math.min(pot.target, savedAmt + amount);
+                  const complete = newSaved >= pot.target;
+                  const updated  = goals.map(g => g.id === addFundsModal ? { ...g, saved: newSaved } : g);
+                  saveGoals(updated);
+                  setGoals(updated);
+                  setAddFundsModal(null);
+                  setAddFundsAmount('');
+                  if (complete) {
+                    setCelebrateMsg(`🎉 ${pot.name} — target reached! £${pot.target.toLocaleString('en-GB')} saved.`);
+                    setCelebrate(true);
+                    setTimeout(() => setCelebrate(false), 3500);
+                    speak(`Amazing. You've hit your target for ${pot.name}. ${pot.target} pounds saved. That's a real win.`);
+                  } else {
+                    const newPct  = Math.round((newSaved / pot.target) * 100);
+                    const leftAmt = (pot.target - newSaved).toFixed(0);
+                    speak(`Done. ${pot.name} is now at ${newPct} percent. £${leftAmt} left to go.`);
+                  }
+                }}
+                style={{ width: '100%', padding: 13, background: 'rgba(124,174,158,0.14)', border: '1px solid rgba(124,174,158,0.26)', borderRadius: 12, color: GREEN, fontSize: 15, fontWeight: 600, cursor: 'pointer', marginBottom: 8, fontFamily: 'inherit' }}
+              >Add funds</button>
+
+              <button
+                onClick={() => setAddFundsModal(null)}
+                style={{ width: '100%', padding: 10, background: 'none', border: 'none', color: 'rgba(232,221,208,0.26)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
+              >Cancel</button>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ══════════════════════════════════════════
+          APP SWITCH BLUR OVERLAY (FEATURE 7)
+          Shown when document.hidden = true — hides financial data
+          from the iOS/Android app switcher screenshot.
+      ══════════════════════════════════════════ */}
+      {appBlurred && (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 998,
+          background: BG,
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          gap: 16,
+        }}>
+          <div style={{
+            width: 64, height: 64, borderRadius: '50%',
+            background: 'radial-gradient(circle at 35% 35%, #d8cebe, #C8B89A 55%, #7a6850)',
+            boxShadow: '0 0 28px 10px rgba(200,184,154,0.2)',
+            animation: 'orbMoodPulse 3s ease-in-out infinite',
+          }} />
+          <div style={{ fontSize: 26, fontWeight: 300, letterSpacing: '0.3em', color: 'rgba(232,221,208,0.6)' }}>noa</div>
         </div>
       )}
 
