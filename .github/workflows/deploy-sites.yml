@@ -1,0 +1,30 @@
+name: Deploy Static Sites to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Assemble deploy folder
+        run: |
+          mkdir -p _site
+          cp -r public/agency      _site/agency
+          cp -r public/axontra     _site/axontra
+          cp -r public/noa-landing _site/noa-landing
+          cp pages-index.html      _site/index.html
+
+      - name: Deploy to gh-pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: _site
+          clean: true
