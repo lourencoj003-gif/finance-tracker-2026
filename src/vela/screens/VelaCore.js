@@ -337,6 +337,42 @@ function calcVelaScore({ income, expenses, debt, streak }) {
   return Math.max(0, Math.min(100, pts.savings + pts.debt + pts.streak + pts.pace));
 }
 
+// ── Smart transaction category suggestion ────────────────────────────
+// Returns 'essentials' | 'lifestyle' | 'savings' | null (null = no confident match)
+const CATEGORY_KEYWORDS = {
+  essentials: [
+    'rent','mortgage','electricity','electric','gas','water','internet','broadband',
+    'phone','mobile','insurance','groceries','grocery','supermarket','tesco','sainsbury',
+    "sainsbury's",'asda','lidl','aldi','morrisons','waitrose','marks spencer','m&s',
+    'petrol','fuel','transport','train','bus','tube','underground','oyster','rail',
+    'council tax','council','nhs','prescription','doctor','dentist','pharmacy','chemist',
+    'housing','utility','utilities','broadband','tv licence',
+  ],
+  lifestyle: [
+    'restaurant','cafe','coffee','starbucks','costa','pret','bar','pub','takeaway',
+    'deliveroo','uber eats','ubereats','just eat','justeat','mcdonalds','kfc','pizza',
+    'nandos','wagamama','cinema','netflix','spotify','amazon prime','disney','apple tv',
+    'clothes','clothing','topshop','zara','h&m','asos','boots','superdrug',
+    'gym','fitness','sport','holiday','hotel','flight','airbnb','travel','amazon',
+    'shopping','hair','haircut','beauty','salon','spa','massage','entertainment',
+    'meal','lunch','dinner','breakfast','drink','drinks','cocktail','wine',
+  ],
+  savings: [
+    'savings','saving','investment','invest','pension','isa','stocks','shares',
+    'crypto','bitcoin','eth','ethereum','trading','fund','vanguard','moneybox',
+    'transfer to savings','deposit','pot',
+  ],
+};
+
+function suggestCategory(name) {
+  if (!name || !name.trim()) return null;
+  const lower = name.toLowerCase();
+  for (const [cat, words] of Object.entries(CATEGORY_KEYWORDS)) {
+    if (words.some(w => lower.includes(w))) return cat;
+  }
+  return null;
+}
+
 // ── Financial Personality Detection ──────────────────────────────────
 // Requires 5+ transactions. Returns one of:
 //   'Spender' | 'Saver' | 'Balanced' | 'Inconsistent' | null
@@ -420,6 +456,7 @@ export default function VelaCore({ onReset }) {
   const [expenseLog, setExpenseLog]         = useState(() => getExpenseLog());
   const [showLogTx, setShowLogTx]           = useState(false);
   const [txForm, setTxForm]                 = useState({ amount: '', category: 'essentials', note: '', date: new Date().toISOString().slice(0, 10) });
+  const [txCatSuggested, setTxCatSuggested] = useState(false); // true when category was auto-suggested
   const [voiceError, setVoiceError]         = useState('');
   const [txError, setTxError]               = useState('');
   const [eveningCheckOpen, setEveningCheckOpen] = useState(false);
@@ -3250,7 +3287,32 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
               style={{ width: '100%', background: 'rgba(232,221,208,0.07)', border: '1px solid rgba(232,221,208,0.11)', borderRadius: 12, padding: '11px 14px', color: '#E8DDD0', fontSize: 16, outline: 'none', fontFamily: 'inherit', marginBottom: 16, boxSizing: 'border-box' }}
             />
 
-            <Label>Category</Label>
+            <Label>Merchant / Note</Label>
+            <input
+              value={txForm.note}
+              onChange={e => {
+                const note = e.target.value;
+                const suggested = suggestCategory(note);
+                if (suggested) {
+                  setTxForm(f => ({ ...f, note, category: suggested }));
+                  setTxCatSuggested(true);
+                } else {
+                  setTxForm(f => ({ ...f, note }));
+                  setTxCatSuggested(false);
+                }
+              }}
+              placeholder="e.g. Tesco, Netflix, rent..."
+              style={{ width: '100%', background: 'rgba(232,221,208,0.07)', border: '1px solid rgba(232,221,208,0.11)', borderRadius: 12, padding: '11px 14px', color: '#E8DDD0', fontSize: 16, outline: 'none', fontFamily: 'inherit', marginBottom: 12, boxSizing: 'border-box' }}
+            />
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <Label style={{ marginBottom: 0 }}>Category</Label>
+              {txCatSuggested && (
+                <span style={{ fontSize: 10, color: '#7CAE9E', letterSpacing: '0.5px', fontWeight: 600 }}>
+                  ✦ auto-suggested
+                </span>
+              )}
+            </div>
             <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
               {[
                 { key: 'essentials', label: 'Essentials', color: PURPLE, activeBg: 'rgba(200,184,154,0.18)' },
@@ -3259,7 +3321,7 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
               ].map(({ key, label, color, activeBg }) => (
                 <button
                   key={key}
-                  onClick={() => setTxForm(f => ({ ...f, category: key }))}
+                  onClick={() => { setTxForm(f => ({ ...f, category: key })); setTxCatSuggested(false); }}
                   style={{
                     flex: 1, padding: '8px 4px', borderRadius: 10,
                     border: `1px solid ${txForm.category === key ? color : 'rgba(232,221,208,0.1)'}`,
@@ -3270,14 +3332,6 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
                 >{label}</button>
               ))}
             </div>
-
-            <Label>Note (optional)</Label>
-            <input
-              value={txForm.note}
-              onChange={e => setTxForm(f => ({ ...f, note: e.target.value }))}
-              placeholder="e.g. Coffee, petrol..."
-              style={{ width: '100%', background: 'rgba(232,221,208,0.07)', border: '1px solid rgba(232,221,208,0.11)', borderRadius: 12, padding: '11px 14px', color: '#E8DDD0', fontSize: 16, outline: 'none', fontFamily: 'inherit', marginBottom: 16, boxSizing: 'border-box' }}
-            />
 
             <Label>Date</Label>
             <input
@@ -3303,6 +3357,7 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
                 setExpenseLog(updated);
                 setShowLogTx(false);
                 setTxError('');
+                setTxCatSuggested(false);
                 setTxForm({ amount: '', category: 'essentials', note: '', date: new Date().toISOString().slice(0, 10) });
                 // Feature 2 — Noa comments on the transaction
                 fetchTxComment(entry, updated);
@@ -3310,7 +3365,7 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
               color={PURPLE}
               text="Log transaction"
             />
-            <button onClick={() => { setShowLogTx(false); setTxError(''); }} style={{ width: '100%', padding: 12, background: 'none', border: 'none', color: 'rgba(232,221,208,0.3)', fontSize: 14, cursor: 'pointer' }}>
+            <button onClick={() => { setShowLogTx(false); setTxError(''); setTxCatSuggested(false); }} style={{ width: '100%', padding: 12, background: 'none', border: 'none', color: 'rgba(232,221,208,0.3)', fontSize: 14, cursor: 'pointer' }}>
               Cancel
             </button>
           </div>
