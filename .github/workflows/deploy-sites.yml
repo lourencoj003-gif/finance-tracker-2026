@@ -10,6 +10,9 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -17,14 +20,17 @@ jobs:
       - name: Assemble deploy folder
         run: |
           mkdir -p _site
-          cp -r public/agency      _site/agency
-          cp -r public/axontra     _site/axontra
-          cp -r public/noa-landing _site/noa-landing
-          cp pages-index.html      _site/index.html
+          cp -r public/agency   _site/agency
+          cp -r public/axontra  _site/axontra
+          cp -r noa-landing     _site/noa-landing
+          cp pages-index.html   _site/index.html
 
       - name: Deploy to gh-pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           branch: gh-pages
           folder: _site
           clean: true
+          git-config-name: github-actions[bot]
+          git-config-email: github-actions[bot]@users.noreply.github.com
