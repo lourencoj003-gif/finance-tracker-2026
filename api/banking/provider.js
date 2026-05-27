@@ -3,7 +3,7 @@
 //
 // Exports: createLinkToken(), exchangePublicToken(), getAccounts(), getTransactions()
 
-const PLAID_BASE = 'https://production.plaid.com';
+const PLAID_BASE = 'https://sandbox.plaid.com';
 
 const hdrs = { 'Content-Type': 'application/json' };
 
