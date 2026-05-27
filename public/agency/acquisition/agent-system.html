@@ -654,8 +654,9 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    const MODEL = 'claude-sonnet-4-20250514';
-    const MAX_TOKENS = 1000;
+    const MODEL = 'claude-sonnet-4-6';
+    // Per-component token limits — content-heavy components need more room
+    const TOKEN_LIMITS = { 1: 600, 2: 500, 3: 700, 4: 4000, 5: 3500 };
 
     // ── SYSTEM PROMPTS ────────────────────────────────────────────────
     const SYSTEM_PROMPTS = {
@@ -743,7 +744,7 @@ Rules:
     };
 
     // ── API CALL ──────────────────────────────────────────────────────
-    async function callClaude(systemPrompt, userMessage) {
+    async function callClaude(systemPrompt, userMessage, maxTokens = 1000) {
       const key = document.getElementById('apiKeyInput').value.trim();
       if (!key) throw new Error('No API key set. Enter your Anthropic API key above.');
 
@@ -757,7 +758,7 @@ Rules:
         },
         body: JSON.stringify({
           model: MODEL,
-          max_tokens: MAX_TOKENS,
+          max_tokens: maxTokens,
           system: systemPrompt,
           messages: [{ role: 'user', content: userMessage }]
         })
@@ -829,7 +830,7 @@ Rules:
           userMsg = `Niche: ${niche}\nPrimary offer: ${offer}\nTarget audience: ${audience}\nSequence goal: ${goal}\nSender name: ${sender}\n\nGenerate the 5-email sequence.`;
         }
 
-        const { text, tokens } = await callClaude(SYSTEM_PROMPTS[n], userMsg);
+        const { text, tokens } = await callClaude(SYSTEM_PROMPTS[n], userMsg, TOKEN_LIMITS[n] || 1000);
         outputEl.value = text;
         charEl.textContent = text.length + ' chars';
         statusEl.className = 'status-text done';
