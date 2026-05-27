@@ -5,6 +5,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Axontra Partners — Operational intelligence for insurance brokerages. CRM, workflow, and AI enablement." />
   <title>Axontra Partners — Operational Intelligence</title>
+
+  <!-- Open Graph / Social Preview -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Axontra Partners" />
+  <meta property="og:description" content="Operational intelligence for the modern brokerage." />
+  <meta property="og:image" content="https://axontrapartners.co.uk/og-image.png" />
+  <meta property="og:url" content="https://axontrapartners.co.uk" />
+  <meta property="og:site_name" content="Axontra Partners" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Axontra Partners" />
+  <meta name="twitter:description" content="Operational intelligence for the modern brokerage." />
+  <meta name="twitter:image" content="https://axontrapartners.co.uk/og-image.png" />
+
+  <!-- Google Analytics — add your GA4 Measurement ID below -->
+  <!-- To activate: replace G-XXXXXXXXXX with your GA4 ID from analytics.google.com -->
+  <!--
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-XXXXXXXXXX');
+  </script>
+  -->
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,600;0,700;1,400;1,600&display=swap" rel="stylesheet" />
@@ -647,10 +672,10 @@
           <div class="field-error" id="service-error">Please select a service</div>
         </div>
         <div>
-          <label for="message">Tell us about your brokerage</label>
-          <textarea id="message" name="message" placeholder="Size of team, current challenges, what's not working, what you're trying to achieve…"></textarea>
+          <label for="message">Biggest Operational Challenge</label>
+          <textarea id="message" name="message" placeholder="Describe your most pressing operational problem — manual processes, data silos, missed renewals, team bottlenecks, or something else entirely…"></textarea>
         </div>
-        <button type="button" onclick="submitAxontraForm()" class="form-submit">Submit Enquiry →</button>
+        <button type="button" onclick="submitAxontraForm()" class="form-submit">Request Diagnostic →</button>
       </form>
     </div>
   </section>
@@ -722,7 +747,24 @@
       const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailEl.value.trim() || !re.test(emailEl.value)) { emailEl.classList.add('invalid'); document.getElementById('email-error').classList.add('show'); valid = false; }
       if (!serviceEl.value) { serviceEl.classList.add('invalid'); document.getElementById('service-error').classList.add('show'); valid = false; }
-      if (valid) { document.getElementById('axontra-form').submit(); }
+      if (valid) {
+        // Save enquiry to localStorage for reference
+        const enquiry = {
+          id:        Date.now().toString(36),
+          ts:        new Date().toISOString(),
+          name:      nameEl.value.trim(),
+          firm:      (document.getElementById('firm')?.value || '').trim(),
+          role:      (document.getElementById('role')?.value || '').trim(),
+          email:     emailEl.value.trim(),
+          service:   serviceEl.value,
+          challenge: (document.getElementById('message')?.value || '').trim(),
+        };
+        const prev = JSON.parse(localStorage.getItem('axontra_enquiries') || '[]');
+        prev.unshift(enquiry);
+        localStorage.setItem('axontra_enquiries', JSON.stringify(prev.slice(0, 20)));
+        // Open mailto
+        document.getElementById('axontra-form').submit();
+      }
       else { document.querySelector('.invalid').scrollIntoView({ behavior: 'smooth', block: 'center' }); }
     }
     ['name','email','service'].forEach(id => {
