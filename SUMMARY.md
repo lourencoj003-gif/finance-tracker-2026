@@ -2,6 +2,61 @@
 
 ---
 
+## Session: 2026-05-27 (OG images, WA fix, smart categories, CRM messages)
+
+### Commits
+- `f73a885` — feat: OG images for Noa, Aldric Group, Axontra
+- `47c0156` — fix: update Axontra WhatsApp to correct number
+- `ed931ed` — feat: smart transaction category suggestions based on merchant keywords
+- `ff0b70b` — feat: CRM personalised WhatsApp messages per package tier
+
+### TASK 1 — Node engine pin ✅
+Already correct from previous session (`"20.x"` + `.npmrc legacy-peer-deps=true`). Build verified clean. No new commit needed.
+
+### TASK 2 — OG Images ✅
+Three 1200×630 PNG images generated via sharp+SVG:
+
+| File | Brand | Design |
+|---|---|---|
+| `public/og-image.png` | Noa | Dark `#0a0a0a` bg, radial cream orb, "NOA" serif wordmark, warm gold palette |
+| `public/agency/og-image.png` | Aldric Group | Dark `#080808` bg, gold `#C9A96E` typography, Playfair-style serif, italic tagline |
+| `public/axontra/og-image.png` | Axontra Partners | Navy `#05111f` bg, silver `#b8c4d0` typography, teal accent bar at top |
+
+All referenced in their respective `<meta property="og:image">` tags already in place.
+
+### TASK 3 — Axontra WhatsApp number ✅
+- `public/axontra/index.html`: replaced `447700000000` → `447599260032` in 2 instances (hero CTA + contact section)
+- `public/agency/index.html`: also contains `447700000000` placeholder — noted, not in scope
+
+### TASK 4 — Smart transaction category suggestions ✅
+`src/vela/screens/VelaCore.js`:
+
+**`suggestCategory(name)`** — keyword classifier (case-insensitive substring match):
+- **Essentials**: rent, mortgage, electricity, gas, water, tesco, sainsbury's, asda, lidl, aldi, morrisons, waitrose, petrol, fuel, train, bus, tube, insurance, council tax, pharmacy + more
+- **Lifestyle**: restaurant, cafe, coffee, starbucks, costa, bar, pub, deliveroo, uber eats, just eat, netflix, spotify, amazon prime, cinema, gym, flight, hotel, clothes + more
+- **Savings**: savings, investment, pension, isa, stocks, crypto, bitcoin, vanguard, moneybox + more
+
+UX changes:
+- "Note (optional)" field renamed to **"Merchant / Note"**, placeholder updated to `"e.g. Tesco, Netflix, rent..."`
+- `onChange` auto-sets category and shows **`✦ auto-suggested`** badge in green next to "Category" label
+- Manual category button click overrides + clears badge
+- State `txCatSuggested` resets on log, cancel, and modal close
+
+### TASK 5 — Aldric CRM personalised WhatsApp messages ✅
+`public/agency/crm.html` — new `buildWAMessage(p)` function:
+
+| Package | Message angle | CTA |
+|---|---|---|
+| **Growth** | Social media content + scheduling, fixed monthly | "Would a quick call make sense?" |
+| **Scale** | Email + social together for lead gen, share insights | "Quick call?" |
+| **Dominance** | Full marketing stack on autopilot, ROI case | "Worth a 20-minute call?" |
+
+- Uses prospect `name`, `business`, `sector` fields for personalisation
+- Both `contactWA()` (detail panel) and `cardWA()` (kanban card button) use `buildWAMessage()`
+- Fallback message for unrecognised package values
+
+---
+
 ## Session: 2026-05-27 (7-task pre-launch session)
 
 ### Overview
