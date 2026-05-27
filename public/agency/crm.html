@@ -738,12 +738,31 @@ function doDelete() {
 // ── Contact actions ───────────────────────────────────────────────────────────
 const ALDRIC_WA = '447599260032';
 
+// Per-package conversion-focused WhatsApp messages
+function buildWAMessage(p) {
+  const name     = p.name     || 'there';
+  const business = p.business || 'your business';
+  const sector   = p.sector   || 'your sector';
+  const pkg      = (p.package || 'Growth').toLowerCase();
+
+  if (pkg === 'growth') {
+    return `Hi ${name}, I wanted to reach out about helping ${business} with consistent social media content and scheduling — we work with ${sector} businesses on a fixed monthly basis. Would a quick call make sense?`;
+  }
+  if (pkg === 'scale') {
+    return `Hi ${name}, I've been looking at how ${sector} businesses are using email marketing and social media together to generate leads — the gap between those doing it well and those not is significant. Would love to share what we're seeing. Quick call?`;
+  }
+  if (pkg === 'dominance') {
+    return `Hi ${name}, we work with ${sector} businesses to run their entire marketing stack — content, email, LinkedIn outreach — on autopilot. The ROI case is usually straightforward. Worth a 20-minute call?`;
+  }
+  // fallback
+  return `Hi ${name}, reaching out from Aldric Group about our ${p.package} package for ${business}. Worth a quick call?`;
+}
+
 function contactWA() {
   if (!activeId) return;
-  const p    = prospects.find(x => x.id === activeId);
-  const num  = (p.whatsapp || '').replace(/\D/g,'') || ALDRIC_WA;
-  const text = encodeURIComponent(`Hi ${p.name}, I'm reaching out from Aldric Group regarding our ${p.package} package.`);
-  window.open(`https://wa.me/${num}?text=${text}`, '_blank');
+  const p   = prospects.find(x => x.id === activeId);
+  const num = (p.whatsapp || '').replace(/\D/g,'') || ALDRIC_WA;
+  window.open(`https://wa.me/${num}?text=${encodeURIComponent(buildWAMessage(p))}`, '_blank');
 }
 
 function contactEmail() {
@@ -758,8 +777,7 @@ function cardWA(e, id) {
   const p   = prospects.find(x => x.id === id);
   if (!p) return;
   const num = (p.whatsapp || '').replace(/\D/g,'') || ALDRIC_WA;
-  const txt = encodeURIComponent(`Hi ${p.name}, reaching out from Aldric Group re: ${p.package} package.`);
-  window.open(`https://wa.me/${num}?text=${txt}`, '_blank');
+  window.open(`https://wa.me/${num}?text=${encodeURIComponent(buildWAMessage(p))}`, '_blank');
 }
 
 function cardEmail(e, id) {
