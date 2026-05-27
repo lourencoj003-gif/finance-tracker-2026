@@ -2084,12 +2084,20 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
           </div>
         )}
 
-        {/* Gear — top right */}
-        <button
-          onClick={() => setShowSettings(true)}
-          style={{ position: 'absolute', top: 'max(env(safe-area-inset-top), 20px)', right: 20, zIndex: 5, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(232,221,208,0.26)', fontSize: 20, padding: 8, lineHeight: 1 }}
-          aria-label="Settings"
-        >⚙</button>
+        {/* Share + Gear — top right */}
+        <div style={{ position: 'absolute', top: 'max(env(safe-area-inset-top), 20px)', right: 12, zIndex: 5, display: 'flex', alignItems: 'center', gap: 2 }}>
+          <button
+            onClick={() => { if (!shareQuote) generateShareQuote(); setShowShare(true); }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(232,221,208,0.26)', fontSize: 17, padding: 8, lineHeight: 1 }}
+            aria-label="Share Noa"
+            title="Share Noa"
+          >↗</button>
+          <button
+            onClick={() => setShowSettings(true)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(232,221,208,0.26)', fontSize: 20, padding: 8, lineHeight: 1 }}
+            aria-label="Settings"
+          >⚙</button>
+        </div>
 
         {/* Monthly / Annual toggle */}
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 2 }}>
@@ -3242,6 +3250,23 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
                 </button>
               </>
             )}
+
+            {/* Feedback */}
+            <button
+              onClick={() => {
+                const sub  = encodeURIComponent('Noa Feedback');
+                const body = encodeURIComponent(`Noa v1.0 — Beta\nDevice: ${navigator.userAgent}\n\n---\n[Write your feedback here]\n`);
+                window.location.href = `mailto:feedback@noa.app?subject=${sub}&body=${body}`;
+              }}
+              style={{ width: '100%', padding: '10px 0', background: 'none', border: 'none', color: 'rgba(232,221,208,0.22)', fontSize: 12, cursor: 'pointer', marginTop: 8, letterSpacing: '0.3px' }}
+            >
+              ✉ Send feedback
+            </button>
+
+            {/* Version */}
+            <div style={{ textAlign: 'center', fontSize: 11, color: 'rgba(232,221,208,0.15)', letterSpacing: '0.5px', marginTop: 4, paddingBottom: 2 }}>
+              Noa v1.0 — Beta
+            </div>
           </div>
         </div>
       )}
