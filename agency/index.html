@@ -458,6 +458,46 @@
     }
     .btn-whatsapp-contact:hover { opacity: 0.8; }
 
+    /* DROPDOWN */
+    .nav-dropdown { position: relative; }
+    .nav-dropdown-btn {
+      padding: 9px 16px;
+      background: transparent; border: 1px solid transparent;
+      color: var(--muted); font-size: 13px; font-weight: 500;
+      cursor: pointer; font-family: 'Inter', sans-serif;
+      letter-spacing: 0.04em; transition: color 0.2s;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .nav-dropdown-btn:hover { color: var(--cream); }
+    .nav-dropdown-btn .dd-chevron { font-size: 10px; transition: transform 0.2s; }
+    .nav-dropdown:hover .dd-chevron { transform: rotate(180deg); }
+    .nav-dropdown-menu {
+      position: absolute; top: calc(100% + 8px); right: 0;
+      min-width: 230px; background: var(--bg2);
+      border: 1px solid var(--border); border-radius: 4px;
+      padding: 8px 0; z-index: 200;
+      opacity: 0; pointer-events: none;
+      transform: translateY(-6px);
+      transition: opacity 0.18s ease, transform 0.18s ease;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+    }
+    .nav-dropdown:hover .nav-dropdown-menu {
+      opacity: 1; pointer-events: all; transform: translateY(0);
+    }
+    .dd-section-label {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.2em;
+      text-transform: uppercase; color: var(--muted);
+      padding: 10px 16px 4px;
+    }
+    .dd-section-label:not(:first-child) { padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 4px; }
+    .nav-dropdown-menu a {
+      display: block; padding: 8px 16px;
+      font-size: 12px; font-weight: 500; color: var(--muted);
+      text-decoration: none; transition: all 0.15s;
+    }
+    .nav-dropdown-menu a:hover { color: var(--cream); background: rgba(255,255,255,0.03); }
+    .nav-dropdown-menu a .dd-arrow { color: var(--gold); margin-right: 6px; font-size: 10px; }
+
     /* MOBILE */
     @media (max-width: 900px) {
       nav { padding: 16px 24px; }
@@ -491,6 +531,26 @@
       <a href="#pilot">Pilot Sprint</a>
       <a href="#how">How It Works</a>
       <a href="#who">Who It's For</a>
+      <div class="nav-dropdown">
+        <button class="nav-dropdown-btn">Resources <span class="dd-chevron">▾</span></button>
+        <div class="nav-dropdown-menu">
+          <div class="dd-section-label">Acquisition</div>
+          <a href="acquisition/seven-day-plan.html"><span class="dd-arrow">→</span>7-Day Plan</a>
+          <a href="acquisition/outreach-system.html"><span class="dd-arrow">→</span>AI SDR System</a>
+          <a href="acquisition/automation.html"><span class="dd-arrow">→</span>Automation Safety</a>
+          <a href="acquisition/retention.html"><span class="dd-arrow">→</span>Client Retention</a>
+          <a href="acquisition/agent-system.html"><span class="dd-arrow">→</span>AI Agent System</a>
+          <div class="dd-section-label">Operations</div>
+          <a href="crm.html"><span class="dd-arrow">→</span>CRM</a>
+          <a href="kpi.html"><span class="dd-arrow">→</span>KPI Tracker</a>
+          <a href="contract.html"><span class="dd-arrow">→</span>Contract Generator</a>
+          <a href="onboarding.html"><span class="dd-arrow">→</span>Client Onboarding</a>
+          <a href="sales-call.html"><span class="dd-arrow">→</span>Sales Call Framework</a>
+          <div class="dd-section-label">Client-Facing</div>
+          <a href="case-studies.html"><span class="dd-arrow">→</span>Case Studies</a>
+          <a href="pilot.html"><span class="dd-arrow">→</span>Pilot Sprint</a>
+        </div>
+      </div>
       <a href="#contact" class="nav-cta">Get Started</a>
     </div>
   </nav>
