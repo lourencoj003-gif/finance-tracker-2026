@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Agent System — Aldric Group</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #080808; --bg2: #0f0f0f; --bg3: #161616; --bg4: #1c1c1c; --bg5: #222;
+      --gold: #C9A96E; --gold-lt: #e0c48a; --cream: #F0E8DA;
+      --muted: #6b6b6b; --border: rgba(201,169,110,0.15); --text: #e8e0d4;
+      --green: #4caf50; --amber: #ff9800; --red: #ef5350; --blue: #5c8de8;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif; background: var(--bg);
+      color: var(--text); line-height: 1.6;
+      -webkit-font-smoothing: antialiased; min-height: 100vh;
+    }
+
+    /* HEADER */
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 48px; border-bottom: 1px solid var(--border);
+      background: rgba(8,8,8,0.96); backdrop-filter: blur(20px);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .header-left { display: flex; align-items: center; gap: 20px; }
+    .logo { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; color: var(--gold); text-decoration: none; }
+    .header-title { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; padding-left: 20px; border-left: 1px solid var(--border); }
+    .header-nav { display: flex; gap: 6px; align-items: center; }
+    .nav-pill { padding: 7px 14px; background: transparent; border: 1px solid transparent; color: var(--muted); font-size: 12px; font-weight: 500; border-radius: 3px; cursor: pointer; transition: all 0.15s; font-family: 'Inter', sans-serif; text-decoration: none; }
+    .nav-pill:hover { background: var(--bg3); border-color: var(--border); color: var(--cream); }
+
+    /* PAGE */
+    .page { max-width: 1100px; margin: 0 auto; padding: 0 48px 80px; }
+
+    /* API KEY BANNER */
+    .api-banner {
+      background: var(--bg2); border-bottom: 1px solid var(--border);
+      padding: 14px 48px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .api-label { font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); flex-shrink: 0; }
+    .api-input {
+      flex: 1; max-width: 420px; padding: 8px 12px;
+      background: var(--bg3); border: 1px solid rgba(255,255,255,0.08);
+      color: var(--cream); font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 12px; border-radius: 2px; outline: none;
+      transition: border-color 0.15s; letter-spacing: 0.04em;
+    }
+    .api-input:focus { border-color: rgba(201,169,110,0.4); }
+    .api-status { font-size: 11px; font-weight: 600; }
+    .api-status.set { color: var(--green); }
+    .api-status.unset { color: var(--muted); }
+    .api-note { font-size: 11px; color: var(--muted); }
+
+    /* PAGE HERO */
+    .page-hero { padding: 48px 0 52px; }
+    .page-label { font-size: 10px; font-weight: 700; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gold); margin-bottom: 16px; }
+    .page-title { font-family: 'Playfair Display', serif; font-size: clamp(32px, 4vw, 52px); font-weight: 700; color: var(--cream); line-height: 1.1; margin-bottom: 14px; }
+    .page-sub { font-size: 15px; color: rgba(240,232,218,0.5); max-width: 660px; line-height: 1.75; }
+    .component-map { display: flex; gap: 8px; margin-top: 24px; flex-wrap: wrap; }
+    .cmap-item { padding: 6px 14px; background: var(--bg3); border: 1px solid var(--border); border-radius: 3px; font-size: 12px; color: var(--muted); text-decoration: none; transition: all 0.15s; }
+    .cmap-item:hover { color: var(--cream); border-color: rgba(201,169,110,0.3); }
+
+    /* COMPONENT PANELS */
+    .component { margin-bottom: 3px; }
+    .comp-header {
+      display: flex; align-items: center; gap: 14px;
+      padding: 20px 24px;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 4px 4px 0 0; cursor: pointer;
+      transition: background 0.15s;
+    }
+    .comp-header:hover { background: var(--bg4); }
+    .comp-header.open { border-radius: 4px 4px 0 0; border-bottom-color: transparent; }
+    .comp-num {
+      font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700;
+      color: rgba(201,169,110,0.3); width: 32px; flex-shrink: 0; line-height: 1;
+    }
+    .comp-info { flex: 1; }
+    .comp-name { font-size: 14px; font-weight: 700; color: var(--cream); margin-bottom: 2px; }
+    .comp-desc { font-size: 12px; color: var(--muted); }
+    .comp-meta { display: flex; gap: 8px; align-items: center; }
+    .comp-trigger { padding: 3px 8px; background: rgba(92,141,232,0.1); border: 1px solid rgba(92,141,232,0.2); border-radius: 20px; font-size: 10px; font-weight: 600; color: var(--blue); letter-spacing: 0.06em; white-space: nowrap; }
+    .comp-chevron { color: var(--muted); font-size: 14px; transition: transform 0.2s; }
+    .comp-header.open .comp-chevron { transform: rotate(180deg); }
+
+    .comp-body {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-top: none; border-radius: 0 0 4px 4px;
+      padding: 28px 24px;
+      display: none;
+    }
+    .comp-body.open { display: block; }
+
+    /* INPUTS */
+    .inputs-grid { display: grid; gap: 12px; margin-bottom: 20px; }
+    .inputs-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+    .inputs-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .inputs-grid.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+    .input-group label { font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 6px; }
+    .comp-input, .comp-select, .comp-textarea {
+      width: 100%; padding: 10px 12px;
+      background: var(--bg4); border: 1px solid rgba(255,255,255,0.07);
+      color: var(--cream); font-family: 'Inter', sans-serif;
+      font-size: 13px; border-radius: 2px; outline: none;
+      transition: border-color 0.15s; -webkit-appearance: none;
+    }
+    .comp-input:focus, .comp-select:focus, .comp-textarea:focus { border-color: rgba(201,169,110,0.4); }
+    .comp-select option { background: #161616; }
+    .comp-textarea { resize: vertical; min-height: 90px; line-height: 1.6; }
+
+    /* PROMPT PREVIEW */
+    .prompt-preview {
+      background: var(--bg4); border: 1px solid rgba(92,141,232,0.15);
+      border-radius: 3px; padding: 14px 16px; margin-bottom: 16px;
+      position: relative;
+    }
+    .prompt-preview-label { font-size: 9px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--blue); margin-bottom: 8px; }
+    .prompt-preview-text { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 11px; color: rgba(240,232,218,0.5); line-height: 1.7; white-space: pre-wrap; max-height: 100px; overflow: hidden; transition: max-height 0.3s; }
+    .prompt-preview-text.expanded { max-height: 600px; }
+    .prompt-expand { font-size: 10px; color: var(--muted); cursor: pointer; margin-top: 6px; display: inline-block; transition: color 0.15s; background: none; border: none; font-family: 'Inter', sans-serif; padding: 0; }
+    .prompt-expand:hover { color: var(--cream); }
+
+    /* ACTION ROW */
+    .action-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .btn-run {
+      padding: 11px 28px; background: var(--gold); border: none;
+      color: #080808; font-size: 13px; font-weight: 700;
+      border-radius: 2px; cursor: pointer;
+      transition: all 0.2s; font-family: 'Inter', sans-serif;
+      letter-spacing: 0.04em; display: flex; align-items: center; gap: 8px;
+      flex-shrink: 0;
+    }
+    .btn-run:hover { background: var(--gold-lt); }
+    .btn-run:disabled { background: var(--bg4); color: var(--muted); cursor: not-allowed; }
+    .btn-run .spinner { width: 12px; height: 12px; border: 2px solid rgba(8,8,8,0.3); border-top-color: #080808; border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+    .btn-run.loading .spinner { display: block; }
+    .btn-run.loading .run-label { display: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .status-text { font-size: 12px; }
+    .status-text.running { color: var(--amber); }
+    .status-text.done { color: var(--green); }
+    .status-text.error { color: var(--red); }
+    .token-count { font-size: 11px; color: var(--muted); margin-left: auto; }
+
+    /* OUTPUT */
+    .output-wrap { position: relative; }
+    .output-label { font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); margin-bottom: 7px; display: flex; align-items: center; justify-content: space-between; }
+    .output-area {
+      width: 100%; min-height: 140px; padding: 14px 16px;
+      background: var(--bg4); border: 1px solid rgba(255,255,255,0.06);
+      color: var(--cream); font-family: 'Inter', sans-serif;
+      font-size: 13px; line-height: 1.75; border-radius: 2px;
+      resize: vertical; outline: none; transition: border-color 0.15s;
+    }
+    .output-area:focus { border-color: rgba(201,169,110,0.3); }
+    .output-actions { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
+    .btn-copy {
+      padding: 7px 16px; background: transparent;
+      border: 1px solid var(--border); color: var(--muted);
+      font-size: 11px; font-weight: 600; border-radius: 2px;
+      cursor: pointer; transition: all 0.15s; font-family: 'Inter', sans-serif;
+    }
+    .btn-copy:hover { color: var(--cream); border-color: rgba(240,232,218,0.3); }
+    .btn-copy.copied { color: var(--green); border-color: rgba(76,175,80,0.3); }
+    .char-count { font-size: 10px; color: var(--muted); margin-left: auto; }
+
+    /* LOG SECTION */
+    .log-section { margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 16px; }
+    .log-title { font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+    .log-clear { font-size: 10px; color: var(--muted); background: none; border: none; cursor: pointer; font-family: 'Inter', sans-serif; transition: color 0.15s; padding: 0; }
+    .log-clear:hover { color: var(--red); }
+    .log-list { display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto; }
+    .log-item { background: var(--bg4); border-radius: 2px; padding: 10px 12px; font-size: 11px; cursor: pointer; transition: background 0.15s; }
+    .log-item:hover { background: var(--bg5); }
+    .log-item-header { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
+    .log-item-ts { color: var(--muted); font-size: 10px; }
+    .log-item-tag { padding: 1px 6px; background: rgba(201,169,110,0.08); border-radius: 2px; color: var(--gold); font-size: 9px; font-weight: 700; letter-spacing: 0.08em; }
+    .log-item-text { color: rgba(240,232,218,0.55); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .log-empty { font-size: 12px; color: var(--muted); text-align: center; padding: 16px 0; }
+
+    /* ESCALATION FLAG */
+    .escalation-flag {
+      display: none; align-items: center; gap: 10px;
+      padding: 12px 16px; border-radius: 3px; margin-top: 10px;
+      font-size: 13px; font-weight: 600;
+    }
+    .escalation-flag.show { display: flex; }
+    .flag-red-bg { background: rgba(239,83,80,0.1); border: 1px solid rgba(239,83,80,0.25); color: var(--red); }
+    .flag-amber-bg { background: rgba(255,152,0,0.1); border: 1px solid rgba(255,152,0,0.25); color: var(--amber); }
+    .flag-green-bg { background: rgba(76,175,80,0.1); border: 1px solid rgba(76,175,80,0.25); color: var(--green); }
+
+    /* KPI DATA PREVIEW */
+    .data-preview {
+      background: var(--bg4); border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 3px; padding: 12px 14px; margin-bottom: 14px;
+      font-size: 12px; color: var(--muted); line-height: 1.7;
+    }
+    .data-preview .dp-val { color: var(--cream); font-weight: 600; }
+    .data-preview .dp-label { color: var(--gold); font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 8px; }
+    .data-preview.no-data { text-align: center; padding: 20px; color: var(--muted); font-size: 12px; }
+
+    /* TOAST */
+    .toast { position: fixed; bottom: 28px; right: 28px; background: var(--bg3); border: 1px solid rgba(201,169,110,0.3); color: var(--cream); font-size: 13px; font-weight: 500; padding: 12px 20px; border-radius: 4px; transform: translateY(80px); opacity: 0; transition: all 0.3s ease; z-index: 999; pointer-events: none; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    @media (max-width: 900px) {
+      header { padding: 16px 20px; }
+      .api-banner { padding: 12px 20px; flex-wrap: wrap; }
+      .page { padding: 0 20px 60px; }
+      .inputs-grid.cols-2, .inputs-grid.cols-3, .inputs-grid.cols-4 { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 600px) {
+      .inputs-grid.cols-2, .inputs-grid.cols-3, .inputs-grid.cols-4 { grid-template-columns: 1fr; }
+      .action-row { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-left">
+      <a href="../index.html" class="logo">Aldric Group</a>
+      <div class="header-title">AI Agent System</div>
+    </div>
+    <div class="header-nav">
+      <a href="seven-day-plan.html" class="nav-pill">7-Day Plan</a>
+      <a href="outreach-system.html" class="nav-pill">SDR</a>
+      <a href="automation.html" class="nav-pill">Automation</a>
+      <a href="retention.html" class="nav-pill">Retention</a>
+    </div>
+  </header>
+
+  <!-- API KEY BANNER -->
+  <div class="api-banner">
+    <div class="api-label">API Key</div>
+    <input class="api-input" type="password" id="apiKeyInput" placeholder="sk-ant-api03-…" oninput="saveKey()" autocomplete="off" />
+    <div class="api-status unset" id="apiStatus">Not set</div>
+    <div class="api-note">Saved to localStorage. Never sent anywhere except api.anthropic.com.</div>
+  </div>
+
+  <div class="page">
+
+    <!-- HERO -->
+    <div class="page-hero">
+      <div class="page-label">Claude-Powered Execution</div>
+      <h1 class="page-title">AI Agent<br />Execution System</h1>
+      <p class="page-sub">Five modular Claude agents running the Aldric acquisition and delivery stack. Each component calls the Anthropic API directly — enter your API key above, then run any agent.</p>
+      <div class="component-map">
+        <a href="#c1" class="cmap-item" onclick="openComp('c1',event)">01 — Outreach Generator</a>
+        <a href="#c2" class="cmap-item" onclick="openComp('c2',event)">02 — Reply Handler</a>
+        <a href="#c3" class="cmap-item" onclick="openComp('c3',event)">03 — Weekly Report</a>
+        <a href="#c4" class="cmap-item" onclick="openComp('c4',event)">04 — Content Batch</a>
+        <a href="#c5" class="cmap-item" onclick="openComp('c5',event)">05 — Email Sequence</a>
+      </div>
+    </div>
+
+    <!-- ── COMPONENT 1: DAILY OUTREACH GENERATOR ── -->
+    <div class="component" id="c1">
+      <div class="comp-header" onclick="toggleComp('c1')">
+        <div class="comp-num">01</div>
+        <div class="comp-info">
+          <div class="comp-name">Daily Outreach Generator</div>
+          <div class="comp-desc">Generates personalised LinkedIn connection note + first message for a prospect</div>
+        </div>
+        <div class="comp-meta">
+          <span class="comp-trigger">Manual · 09:00 daily</span>
+          <span class="comp-chevron">▾</span>
+        </div>
+      </div>
+      <div class="comp-body" id="c1-body">
+        <div class="inputs-grid cols-4">
+          <div class="input-group">
+            <label>Niche</label>
+            <select class="comp-select" id="c1-niche">
+              <option value="med spa">Med Spa / Aesthetics</option>
+              <option value="estate agent">Estate Agent</option>
+              <option value="mortgage broker">Mortgage Broker</option>
+              <option value="dental clinic">Dental Clinic</option>
+              <option value="law firm">Law Firm</option>
+              <option value="fitness / PT">Fitness / PT</option>
+              <option value="financial adviser">Financial Adviser / IFA</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label>Day of Sequence</label>
+            <select class="comp-select" id="c1-day">
+              <option value="1">Day 1–2 (Connection Request)</option>
+              <option value="3">Day 3–4 (First Message)</option>
+              <option value="5">Day 5 (Follow-Up 1)</option>
+              <option value="8">Day 8 (Follow-Up 2, soft CTA)</option>
+              <option value="12">Day 12 (Final Touch)</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label>Prospect Name</label>
+            <input class="comp-input" type="text" id="c1-name" placeholder="e.g. Sarah Mitchell" />
+          </div>
+          <div class="input-group">
+            <label>Business Name</label>
+            <input class="comp-input" type="text" id="c1-business" placeholder="e.g. Luxe Aesthetics Studio" />
+          </div>
+        </div>
+
+        <div class="prompt-preview">
+          <div class="prompt-preview-label">System Prompt Preview</div>
+          <div class="prompt-preview-text" id="c1-prompt-text">You are a LinkedIn outreach specialist for Aldric Group, an AI marketing agency. Write a personalised LinkedIn message for a prospect in the [niche] space. The message should be at the [day] stage of the outreach sequence. Keep it concise, human, and relevant to the prospect's business. Never pitch services or mention pricing. Focus on a pain point specific to their niche. Under 300 characters for connection notes, under 400 for messages.</div>
+          <button class="prompt-expand" onclick="togglePrompt('c1')">Show full prompt ▾</button>
+        </div>
+
+        <div class="action-row">
+          <button class="btn-run" id="c1-run" onclick="runComponent(1)">
+            <div class="spinner"></div>
+            <span class="run-label">▶ Run Agent</span>
+          </button>
+          <span class="status-text" id="c1-status"></span>
+          <span class="token-count" id="c1-tokens"></span>
+        </div>
+
+        <div class="output-wrap">
+          <div class="output-label">
+            <span>Generated Message</span>
+          </div>
+          <textarea class="output-area" id="c1-output" placeholder="Message will appear here…" spellcheck="false"></textarea>
+          <div class="output-actions">
+            <button class="btn-copy" onclick="copyOutput('c1-output', this)">Copy</button>
+            <button class="btn-copy" onclick="logAndClear(1)">Log &amp; Clear</button>
+            <span class="char-count" id="c1-chars">0 chars</span>
+          </div>
+        </div>
+
+        <div class="log-section">
+          <div class="log-title">
+            Outreach Log
+            <button class="log-clear" onclick="clearLog('aldric_outreach_log_v1', 'c1-log')">Clear log</button>
+          </div>
+          <div class="log-list" id="c1-log"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── COMPONENT 2: REPLY HANDLER ── -->
+    <div class="component" id="c2">
+      <div class="comp-header" onclick="toggleComp('c2')">
+        <div class="comp-num">02</div>
+        <div class="comp-info">
+          <div class="comp-name">Reply Handler</div>
+          <div class="comp-desc">Classifies prospect reply, suggests response, flags escalation if human takeover needed</div>
+        </div>
+        <div class="comp-meta">
+          <span class="comp-trigger">Manual on reply</span>
+          <span class="comp-chevron">▾</span>
+        </div>
+      </div>
+      <div class="comp-body" id="c2-body">
+        <div class="inputs-grid cols-2">
+          <div class="input-group">
+            <label>Prospect Niche</label>
+            <select class="comp-select" id="c2-niche">
+              <option value="med spa">Med Spa / Aesthetics</option>
+              <option value="estate agent">Estate Agent</option>
+              <option value="mortgage broker">Mortgage Broker</option>
+              <option value="dental clinic">Dental Clinic</option>
+              <option value="law firm">Law Firm</option>
+              <option value="fitness / PT">Fitness / PT</option>
+              <option value="financial adviser">Financial Adviser / IFA</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label>Prospect Name</label>
+            <input class="comp-input" type="text" id="c2-name" placeholder="e.g. Sarah Mitchell" />
+          </div>
+        </div>
+        <div class="inputs-grid" style="grid-template-columns:1fr;">
+          <div class="input-group">
+            <label>Paste Prospect Reply</label>
+            <textarea class="comp-textarea" id="c2-reply" placeholder="Paste the prospect's exact reply here…" style="min-height:110px;"></textarea>
+          </div>
+        </div>
+
+        <div class="prompt-preview">
+          <div class="prompt-preview-label">System Prompt Preview</div>
+          <div class="prompt-preview-text" id="c2-prompt-text">You are a LinkedIn outreach specialist for Aldric Group. Analyse the prospect reply and: 1) Classify it as one of: INTERESTED / OBJECTION / NOT_INTERESTED / PRICING_MENTIONED / CALL_REQUESTED / NEUTRAL. 2) Write a suggested response (under 300 chars, conversational). 3) Output an escalation flag: RED (human must take over immediately), AMBER (respond once then escalate), or GREEN (AI can continue). Format your response as: CLASSIFICATION: [type]\nFLAG: [colour]\nSUGGESTED RESPONSE: [text]\nNOTE: [brief reasoning]</div>
+          <button class="prompt-expand" onclick="togglePrompt('c2')">Show full prompt ▾</button>
+        </div>
+
+        <div class="action-row">
+          <button class="btn-run" id="c2-run" onclick="runComponent(2)">
+            <div class="spinner"></div>
+            <span class="run-label">▶ Run Agent</span>
+          </button>
+          <span class="status-text" id="c2-status"></span>
+          <span class="token-count" id="c2-tokens"></span>
+        </div>
+
+        <div class="escalation-flag" id="c2-flag"></div>
+
+        <div class="output-wrap" style="margin-top:12px;">
+          <div class="output-label"><span>Classification + Suggested Response</span></div>
+          <textarea class="output-area" id="c2-output" placeholder="Analysis will appear here…" style="min-height:160px;" spellcheck="false"></textarea>
+          <div class="output-actions">
+            <button class="btn-copy" onclick="copyOutput('c2-output', this)">Copy Response</button>
+            <span class="char-count" id="c2-chars">0 chars</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── COMPONENT 3: WEEKLY REPORT GENERATOR ── -->
+    <div class="component" id="c3">
+      <div class="comp-header" onclick="toggleComp('c3')">
+        <div class="comp-num">03</div>
+        <div class="comp-info">
+          <div class="comp-name">Weekly Report Generator</div>
+          <div class="comp-desc">Reads KPI data from the tracker and generates the weekly client momentum update</div>
+        </div>
+        <div class="comp-meta">
+          <span class="comp-trigger">Friday 17:00</span>
+          <span class="comp-chevron">▾</span>
+        </div>
+      </div>
+      <div class="comp-body" id="c3-body">
+        <div class="inputs-grid cols-3">
+          <div class="input-group">
+            <label>Client Name</label>
+            <input class="comp-input" type="text" id="c3-client" placeholder="e.g. Sarah / Luxe Aesthetics" />
+          </div>
+          <div class="input-group">
+            <label>Week Number</label>
+            <input class="comp-input" type="number" id="c3-week" min="1" placeholder="e.g. 3" />
+          </div>
+          <div class="input-group">
+            <label>Package</label>
+            <select class="comp-select" id="c3-pkg">
+              <option value="Growth">Growth</option>
+              <option value="Scale">Scale</option>
+              <option value="Dominance">Dominance</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="data-preview" id="c3-kpi-preview">
+          <div class="dp-label">KPI Data (from kpi.html)</div>
+          <div id="c3-kpi-content">Loading from localStorage…</div>
+        </div>
+
+        <div class="inputs-grid" style="grid-template-columns:1fr 1fr;">
+          <div class="input-group">
+            <label>Next Week Action</label>
+            <input class="comp-input" type="text" id="c3-next" placeholder="e.g. launch summer email campaign" />
+          </div>
+          <div class="input-group">
+            <label>Client Ask</label>
+            <input class="comp-input" type="text" id="c3-ask" placeholder="e.g. photo from clinic interior" />
+          </div>
+        </div>
+
+        <div class="prompt-preview">
+          <div class="prompt-preview-label">System Prompt Preview</div>
+          <div class="prompt-preview-text" id="c3-prompt-text">You are an account manager at Aldric Group. Write a concise, professional weekly client update using the KPI data provided. Format: brief opening sentence, key metrics, comparison to target/average where relevant, next week action, client ask. Keep it under 250 words. Tone: confident, transparent, forward-looking. Do not use jargon or over-promise. Include only metrics relevant to the client's package.</div>
+          <button class="prompt-expand" onclick="togglePrompt('c3')">Show full prompt ▾</button>
+        </div>
+
+        <div class="action-row">
+          <button class="btn-run" id="c3-run" onclick="runComponent(3)">
+            <div class="spinner"></div>
+            <span class="run-label">▶ Run Agent</span>
+          </button>
+          <span class="status-text" id="c3-status"></span>
+          <span class="token-count" id="c3-tokens"></span>
+        </div>
+
+        <div class="output-wrap">
+          <div class="output-label"><span>Weekly Client Update</span></div>
+          <textarea class="output-area" id="c3-output" placeholder="Update will appear here…" style="min-height:180px;" spellcheck="false"></textarea>
+          <div class="output-actions">
+            <button class="btn-copy" onclick="copyOutput('c3-output', this)">Copy Update</button>
+            <span class="char-count" id="c3-chars">0 chars</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── COMPONENT 4: CONTENT BATCH GENERATOR ── -->
+    <div class="component" id="c4">
+      <div class="comp-header" onclick="toggleComp('c4')">
+        <div class="comp-num">04</div>
+        <div class="comp-info">
+          <div class="comp-name">Content Batch Generator</div>
+          <div class="comp-desc">Generates 20 branded social posts using the client's brand brief — educational, social proof, promotional, personal</div>
+        </div>
+        <div class="comp-meta">
+          <span class="comp-trigger">Monthly · On demand</span>
+          <span class="comp-chevron">▾</span>
+        </div>
+      </div>
+      <div class="comp-body" id="c4-body">
+        <div class="data-preview" id="c4-brief-preview">
+          <div class="dp-label">Brand Brief (from onboarding.html)</div>
+          <div id="c4-brief-content">Loading from localStorage…</div>
+        </div>
+
+        <div class="inputs-grid cols-3">
+          <div class="input-group">
+            <label>Business Name</label>
+            <input class="comp-input" type="text" id="c4-business" placeholder="e.g. Luxe Aesthetics Studio" />
+          </div>
+          <div class="input-group">
+            <label>Niche</label>
+            <select class="comp-select" id="c4-niche">
+              <option value="med spa / aesthetics clinic">Med Spa / Aesthetics</option>
+              <option value="estate agency">Estate Agency</option>
+              <option value="mortgage brokerage">Mortgage Brokerage</option>
+              <option value="dental clinic">Dental Clinic</option>
+              <option value="law firm">Law Firm</option>
+              <option value="personal training / fitness">Fitness / PT Studio</option>
+              <option value="financial advisory">Financial Advisory</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label>Tone of Voice</label>
+            <select class="comp-select" id="c4-tone">
+              <option value="professional and warm">Professional &amp; Warm</option>
+              <option value="authoritative and direct">Authoritative &amp; Direct</option>
+              <option value="friendly and approachable">Friendly &amp; Approachable</option>
+              <option value="luxury and premium">Luxury &amp; Premium</option>
+              <option value="educational and expert">Educational &amp; Expert</option>
+            </select>
+          </div>
+        </div>
+        <div class="inputs-grid" style="grid-template-columns:1fr;">
+          <div class="input-group">
+            <label>Key Offer / USP (optional override)</label>
+            <input class="comp-input" type="text" id="c4-offer" placeholder="e.g. no-downtime aesthetics treatments, same-day appointments" />
+          </div>
+        </div>
+
+        <div class="prompt-preview">
+          <div class="prompt-preview-label">System Prompt Preview</div>
+          <div class="prompt-preview-text" id="c4-prompt-text">You are a social media content strategist for Aldric Group. Generate 20 social media posts for a [niche] business. Mix: 8 educational (tips, facts, myth-busting), 5 social proof (results, reviews, transformations), 4 promotional (offers, CTAs, bookings), 3 personal/behind-the-scenes. For each post: a short caption (under 150 words), 3-5 relevant hashtags, and a content type label. Format clearly: POST 1 [type] / Caption / Hashtags. Keep the brand voice consistent throughout.</div>
+          <button class="prompt-expand" onclick="togglePrompt('c4')">Show full prompt ▾</button>
+        </div>
+
+        <div class="action-row">
+          <button class="btn-run" id="c4-run" onclick="runComponent(4)">
+            <div class="spinner"></div>
+            <span class="run-label">▶ Run Agent</span>
+          </button>
+          <span class="status-text" id="c4-status"></span>
+          <span class="token-count" id="c4-tokens"></span>
+        </div>
+
+        <div class="output-wrap">
+          <div class="output-label"><span>20-Post Content Batch</span></div>
+          <textarea class="output-area" id="c4-output" placeholder="Content calendar will appear here…" style="min-height:280px;" spellcheck="false"></textarea>
+          <div class="output-actions">
+            <button class="btn-copy" onclick="copyOutput('c4-output', this)">Copy All Posts</button>
+            <button class="btn-copy" onclick="downloadOutput('c4-output', 'content-batch')">Download .txt</button>
+            <span class="char-count" id="c4-chars">0 chars</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── COMPONENT 5: EMAIL SEQUENCE GENERATOR ── -->
+    <div class="component" id="c5">
+      <div class="comp-header" onclick="toggleComp('c5')">
+        <div class="comp-num">05</div>
+        <div class="comp-info">
+          <div class="comp-name">Email Sequence Generator</div>
+          <div class="comp-desc">Generates a 5-email nurture sequence formatted for Instantly.ai import</div>
+        </div>
+        <div class="comp-meta">
+          <span class="comp-trigger">On client onboarding</span>
+          <span class="comp-chevron">▾</span>
+        </div>
+      </div>
+      <div class="comp-body" id="c5-body">
+        <div class="inputs-grid cols-3">
+          <div class="input-group">
+            <label>Client Niche</label>
+            <select class="comp-select" id="c5-niche">
+              <option value="med spa / aesthetics">Med Spa / Aesthetics</option>
+              <option value="estate agency">Estate Agency</option>
+              <option value="mortgage brokerage">Mortgage Brokerage</option>
+              <option value="dental clinic">Dental Clinic</option>
+              <option value="law firm">Law Firm</option>
+              <option value="personal training studio">Fitness / PT Studio</option>
+              <option value="financial advisory">Financial Advisory</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label>Primary Offer</label>
+            <input class="comp-input" type="text" id="c5-offer" placeholder="e.g. Botox, lip fillers, skin treatments" />
+          </div>
+          <div class="input-group">
+            <label>Target Audience</label>
+            <input class="comp-input" type="text" id="c5-audience" placeholder="e.g. women 28-45 in London" />
+          </div>
+        </div>
+        <div class="inputs-grid" style="grid-template-columns:1fr 1fr;">
+          <div class="input-group">
+            <label>Sequence Goal</label>
+            <select class="comp-select" id="c5-goal">
+              <option value="book a consultation">Book a Consultation</option>
+              <option value="make a purchase / booking">Direct Purchase / Booking</option>
+              <option value="download a lead magnet">Lead Magnet Follow-Up</option>
+              <option value="re-engage past clients">Re-Engage Past Clients</option>
+              <option value="welcome new subscribers">Welcome New Subscribers</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label>Sender Name</label>
+            <input class="comp-input" type="text" id="c5-sender" placeholder="e.g. Sarah at Luxe Aesthetics" />
+          </div>
+        </div>
+
+        <div class="prompt-preview">
+          <div class="prompt-preview-label">System Prompt Preview</div>
+          <div class="prompt-preview-text" id="c5-prompt-text">You are an email marketing specialist. Write a 5-email nurture sequence for a [niche] business. Sequence structure: Email 1 (Day 0) — warm welcome + value. Email 2 (Day 3) — education/tip relevant to niche. Email 3 (Day 7) — social proof / case study. Email 4 (Day 10) — soft CTA / offer. Email 5 (Day 14) — last chance / urgency. For each email: Subject line (A/B test variant), Preview text, Body (under 180 words), CTA button text. Format for easy Instantly.ai import. Keep tone conversational, not salesy.</div>
+          <button class="prompt-expand" onclick="togglePrompt('c5')">Show full prompt ▾</button>
+        </div>
+
+        <div class="action-row">
+          <button class="btn-run" id="c5-run" onclick="runComponent(5)">
+            <div class="spinner"></div>
+            <span class="run-label">▶ Run Agent</span>
+          </button>
+          <span class="status-text" id="c5-status"></span>
+          <span class="token-count" id="c5-tokens"></span>
+        </div>
+
+        <div class="output-wrap">
+          <div class="output-label"><span>5-Email Nurture Sequence</span></div>
+          <textarea class="output-area" id="c5-output" placeholder="Email sequence will appear here…" style="min-height:280px;" spellcheck="false"></textarea>
+          <div class="output-actions">
+            <button class="btn-copy" onclick="copyOutput('c5-output', this)">Copy Sequence</button>
+            <button class="btn-copy" onclick="downloadOutput('c5-output', 'email-sequence')">Download .txt</button>
+            <span class="char-count" id="c5-chars">0 chars</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /page -->
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const MODEL = 'claude-sonnet-4-20250514';
+    const MAX_TOKENS = 1000;
+
+    // ── SYSTEM PROMPTS ────────────────────────────────────────────────
+    const SYSTEM_PROMPTS = {
+      1: `You are a LinkedIn outreach specialist for Aldric Group, an AI marketing agency based in London. Your job is to write highly personalised, human-sounding LinkedIn outreach messages.
+
+Rules:
+- Never pitch Aldric Group, mention pricing, or name our services
+- Connection request notes: under 280 characters
+- First messages: under 380 characters, end with a single open question
+- Follow-up messages: under 200 characters, gentle, no pressure
+- Always reference the prospect's niche pain point — not a generic opener
+- Write as if from a human peer, not a marketing team
+
+Output format:
+---
+MESSAGE TYPE: [Connection Note / First Message / Follow-Up 1 / Follow-Up 2 / Final Touch]
+---
+[message text]
+---
+CHAR COUNT: [n]`,
+
+      2: `You are an SDR manager for Aldric Group. Analyse a LinkedIn prospect reply and output a structured response.
+
+Output format (follow exactly):
+CLASSIFICATION: [INTERESTED / OBJECTION / NOT_INTERESTED / PRICING_MENTIONED / CALL_REQUESTED / NEUTRAL]
+FLAG: [RED / AMBER / GREEN]
+SUGGESTED RESPONSE: [under 300 chars, conversational, from a human SDR]
+NOTE: [1-2 sentence reasoning]
+
+FLAG rules:
+- RED: pricing mentioned, call requested, mentions current supplier → human takes over immediately
+- AMBER: 2+ replies no friction, "tell me more" + question → AI responds once then human
+- GREEN: neutral acknowledgement, not now → AI can continue sequence`,
+
+      3: `You are an account manager at Aldric Group writing a weekly performance update for a client. Use the KPI data provided to write a concise, professional update.
+
+Format:
+- Opening: one sentence summarising the week
+- Metrics: bullet list of key numbers with context (vs target or industry average)
+- Next week: one sentence on upcoming action
+- Client ask: one specific, small request
+
+Rules:
+- Under 220 words total
+- Tone: confident, transparent, proactive — never apologetic
+- Include only metrics relevant to the package
+- No jargon, no fluff
+- End with the client ask as a clearly separate line`,
+
+      4: `You are a social media content strategist writing branded posts for a client. Generate exactly 20 social media posts.
+
+Mix (strict):
+- 8 Educational: tips, facts, myth-busting, how-to
+- 5 Social Proof: results, transformations, reviews, before/after narratives
+- 4 Promotional: offers, CTAs, booking nudges, limited availability
+- 3 Personal/BTS: behind-the-scenes, team, day-in-the-life
+
+For EACH post output:
+POST [number] · [TYPE]
+Caption: [text, under 150 words, brand voice consistent]
+Hashtags: [3-5 relevant tags]
+Hook: [first line only, in bold — must stop the scroll]
+
+Maintain consistent brand voice throughout. Vary post length (some short punchy, some detailed). Include a natural CTA in every promotional post.`,
+
+      5: `You are an email marketing specialist writing a nurture sequence. Generate 5 emails formatted for Instantly.ai import.
+
+For EACH email output:
+---
+EMAIL [number] · Day [send day] · [type: Welcome / Education / Social Proof / Offer / Last Chance]
+Subject A: [primary subject line]
+Subject B: [A/B variant]
+Preview: [preview text, under 90 chars]
+Body:
+[email body, under 180 words, conversational, not salesy]
+CTA: [button text]
+---
+
+Rules:
+- Day 0, 3, 7, 10, 14 send schedule
+- Each email stands alone (someone could read it without context)
+- No spam trigger words
+- First line must hook without the subject line
+- Soft CTA until Email 4-5`
+    };
+
+    // ── API CALL ──────────────────────────────────────────────────────
+    async function callClaude(systemPrompt, userMessage) {
+      const key = document.getElementById('apiKeyInput').value.trim();
+      if (!key) throw new Error('No API key set. Enter your Anthropic API key above.');
+
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': key,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: MODEL,
+          max_tokens: MAX_TOKENS,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: userMessage }]
+        })
+      });
+
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error?.message || `API error ${resp.status}`);
+      const text = data.content?.[0]?.text || '';
+      const tokens = data.usage?.output_tokens || 0;
+      return { text, tokens };
+    }
+
+    // ── COMPONENT RUNNERS ─────────────────────────────────────────────
+    async function runComponent(n) {
+      const btn = document.getElementById(`c${n}-run`);
+      const statusEl = document.getElementById(`c${n}-status`);
+      const tokenEl = document.getElementById(`c${n}-tokens`);
+      const outputEl = document.getElementById(`c${n}-output`);
+      const charEl = document.getElementById(`c${n}-chars`);
+
+      btn.classList.add('loading'); btn.disabled = true;
+      statusEl.className = 'status-text running';
+      statusEl.textContent = 'Running…';
+      tokenEl.textContent = '';
+
+      try {
+        let userMsg = '';
+
+        if (n === 1) {
+          const niche    = document.getElementById('c1-niche').value;
+          const day      = document.getElementById('c1-day').value;
+          const name     = document.getElementById('c1-name').value.trim() || '[Name]';
+          const business = document.getElementById('c1-business').value.trim() || '[Business]';
+          const dayLabel = { '1':'Day 1-2 Connection Request','3':'Day 3-4 First Message','5':'Day 5 Follow-Up 1','8':'Day 8 Follow-Up 2 (soft CTA)','12':'Day 12 Final Touch' }[day] || 'First Message';
+          userMsg = `Niche: ${niche}\nMessage stage: ${dayLabel}\nProspect name: ${name}\nBusiness name: ${business}\n\nGenerate the message.`;
+        }
+        else if (n === 2) {
+          const niche  = document.getElementById('c2-niche').value;
+          const name   = document.getElementById('c2-name').value.trim() || '[Name]';
+          const reply  = document.getElementById('c2-reply').value.trim();
+          if (!reply) throw new Error('Paste the prospect reply first.');
+          userMsg = `Niche: ${niche}\nProspect name: ${name}\n\nProspect reply:\n"${reply}"`;
+        }
+        else if (n === 3) {
+          const client = document.getElementById('c3-client').value.trim() || '[Client]';
+          const week   = document.getElementById('c3-week').value || '[X]';
+          const pkg    = document.getElementById('c3-pkg').value;
+          const next   = document.getElementById('c3-next').value.trim() || '[next action]';
+          const ask    = document.getElementById('c3-ask').value.trim() || '[client ask]';
+          const kpi    = getKPIData();
+          const kpiSummary = kpi ? buildKPISummary(kpi) : 'No KPI data found in localStorage.';
+          userMsg = `Client: ${client}\nWeek: ${week}\nPackage: ${pkg}\nNext week action: ${next}\nClient ask: ${ask}\n\nKPI Data:\n${kpiSummary}`;
+        }
+        else if (n === 4) {
+          const business = document.getElementById('c4-business').value.trim() || '[Business]';
+          const niche    = document.getElementById('c4-niche').value;
+          const tone     = document.getElementById('c4-tone').value;
+          const offer    = document.getElementById('c4-offer').value.trim();
+          const brief    = getBrandBrief();
+          const briefStr = brief ? JSON.stringify(brief, null, 2).slice(0, 800) : 'No brand brief found.';
+          userMsg = `Business: ${business}\nNiche: ${niche}\nTone of voice: ${tone}${offer ? `\nKey offer/USP: ${offer}` : ''}\n\nBrand brief (from onboarding):\n${briefStr}\n\nGenerate 20 social posts.`;
+        }
+        else if (n === 5) {
+          const niche    = document.getElementById('c5-niche').value;
+          const offer    = document.getElementById('c5-offer').value.trim() || '[offer]';
+          const audience = document.getElementById('c5-audience').value.trim() || '[audience]';
+          const goal     = document.getElementById('c5-goal').value;
+          const sender   = document.getElementById('c5-sender').value.trim() || 'The team';
+          userMsg = `Niche: ${niche}\nPrimary offer: ${offer}\nTarget audience: ${audience}\nSequence goal: ${goal}\nSender name: ${sender}\n\nGenerate the 5-email sequence.`;
+        }
+
+        const { text, tokens } = await callClaude(SYSTEM_PROMPTS[n], userMsg);
+        outputEl.value = text;
+        charEl.textContent = text.length + ' chars';
+        statusEl.className = 'status-text done';
+        statusEl.textContent = 'Done ✓';
+        tokenEl.textContent = `${tokens} output tokens`;
+        setTimeout(() => { statusEl.textContent = ''; tokenEl.textContent = ''; }, 8000);
+
+        // Component-2 escalation flag
+        if (n === 2) renderEscalationFlag(text);
+
+        // Component-1 auto-log
+        if (n === 1) {
+          const name     = document.getElementById('c1-name').value.trim();
+          const business = document.getElementById('c1-business').value.trim();
+          const niche    = document.getElementById('c1-niche').value;
+          addLog('aldric_outreach_log_v1', { niche, name, business, text: text.slice(0, 200) }, 'c1-log');
+        }
+
+      } catch (err) {
+        statusEl.className = 'status-text error';
+        statusEl.textContent = err.message || 'Error';
+        showToast(err.message || 'Error running agent');
+      } finally {
+        btn.classList.remove('loading'); btn.disabled = false;
+      }
+    }
+
+    // ── ESCALATION FLAG ───────────────────────────────────────────────
+    function renderEscalationFlag(text) {
+      const flagEl = document.getElementById('c2-flag');
+      const match = text.match(/FLAG:\s*(RED|AMBER|GREEN)/i);
+      const flag = match ? match[1].toUpperCase() : null;
+      if (!flag) { flagEl.classList.remove('show'); return; }
+      const config = {
+        RED:   { cls: 'flag-red-bg',   icon: '🔴', msg: 'Human takeover required — do not send AI response' },
+        AMBER: { cls: 'flag-amber-bg', icon: '🟡', msg: 'Respond once then escalate to human review' },
+        GREEN: { cls: 'flag-green-bg', icon: '🟢', msg: 'AI can continue — sequence resumes normally' },
+      }[flag];
+      if (!config) return;
+      flagEl.className = `escalation-flag show ${config.cls}`;
+      flagEl.innerHTML = `<span>${config.icon}</span> <span>${flag} FLAG — ${config.msg}</span>`;
+    }
+
+    // ── KPI DATA ──────────────────────────────────────────────────────
+    function getKPIData() {
+      try { return JSON.parse(localStorage.getItem('aldric_kpi_v1')); } catch(e) { return null; }
+    }
+
+    function buildKPISummary(kpi) {
+      const logs = kpi.logs || [];
+      const totals = logs.reduce((a, r) => {
+        a.msgs += +r.msgs||0; a.replies += +r.replies||0;
+        a.calls += +r.calls||0; a.proposals += +r.proposals||0; a.closes += +r.closes||0;
+        return a;
+      }, { msgs:0, replies:0, calls:0, proposals:0, closes:0 });
+      const rrate = totals.msgs > 0 ? Math.round((totals.replies/totals.msgs)*100) : 0;
+      const crate = totals.proposals > 0 ? Math.round((totals.closes/totals.proposals)*100) : 0;
+      const clients = (kpi.clients||[]);
+      const mrrMap = { Growth:750, Scale:1250, Dominance:1500 };
+      const mrr = clients.reduce((s,c) => s + (mrrMap[c.pkg]||0), 0);
+      return `Messages sent: ${totals.msgs}\nReplies: ${totals.replies} (${rrate}%)\nCalls booked: ${totals.calls}\nProposals sent: ${totals.proposals}\nClients closed: ${totals.closes}\nClose rate: ${crate}%\nActive clients: ${clients.length}\nCurrent MRR: £${mrr}`;
+    }
+
+    function renderC3KPIPreview() {
+      const kpi = getKPIData();
+      const el = document.getElementById('c3-kpi-content');
+      if (!kpi || !(kpi.logs?.length)) {
+        el.innerHTML = '<span style="color:var(--muted)">No KPI data found. Log entries in kpi.html first — or fill in the fields above and the agent will use them.</span>';
+        return;
+      }
+      const summary = buildKPISummary(kpi);
+      el.innerHTML = summary.split('\n').map(line => {
+        const [label, val] = line.split(':');
+        return `<span style="color:var(--muted)">${label}:</span> <span class="dp-val">${val||''}</span>`;
+      }).join('<br />');
+    }
+
+    // ── BRAND BRIEF ───────────────────────────────────────────────────
+    function getBrandBrief() {
+      try { return JSON.parse(localStorage.getItem('aldric_onboarding_v1')); } catch(e) { return null; }
+    }
+
+    function renderC4BriefPreview() {
+      const brief = getBrandBrief();
+      const el = document.getElementById('c4-brief-content');
+      if (!brief) {
+        el.innerHTML = '<span style="color:var(--muted)">No brand brief found. Complete onboarding.html first — or fill in the fields above manually.</span>';
+        return;
+      }
+      const keys = Object.keys(brief).slice(0, 6);
+      el.innerHTML = keys.map(k => `<span style="color:var(--muted)">${k}:</span> <span class="dp-val">${String(brief[k]).slice(0,80)}</span>`).join('<br />');
+    }
+
+    // ── LOG ───────────────────────────────────────────────────────────
+    function addLog(storageKey, entry, listId) {
+      const log = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      log.unshift({ id: Date.now().toString(36), ts: new Date().toISOString(), ...entry });
+      if (log.length > 50) log.splice(50);
+      localStorage.setItem(storageKey, JSON.stringify(log));
+      renderLog(storageKey, listId);
+    }
+
+    function renderLog(storageKey, listId) {
+      const list = document.getElementById(listId);
+      if (!list) return;
+      const log = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      if (!log.length) {
+        list.innerHTML = '<div class="log-empty">No entries yet</div>';
+        return;
+      }
+      list.innerHTML = log.map(entry => `
+        <div class="log-item" onclick="loadLogEntry(${JSON.stringify(entry.text)})">
+          <div class="log-item-header">
+            <span class="log-item-ts">${new Date(entry.ts).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span>
+            <span class="log-item-tag">${entry.niche||'—'}</span>
+            ${entry.name ? `<span style="font-size:10px;color:var(--muted);">${entry.name}</span>` : ''}
+          </div>
+          <div class="log-item-text">${(entry.text||'').slice(0,90)}…</div>
+        </div>
+      `).join('');
+    }
+
+    function loadLogEntry(text) {
+      document.getElementById('c1-output').value = text;
+      document.getElementById('c1-chars').textContent = text.length + ' chars';
+    }
+
+    function logAndClear(n) {
+      const output = document.getElementById(`c${n}-output`);
+      const name = document.getElementById('c1-name')?.value.trim() || '';
+      const niche = document.getElementById('c1-niche')?.value || '';
+      const business = document.getElementById('c1-business')?.value.trim() || '';
+      if (output.value.trim()) {
+        addLog('aldric_outreach_log_v1', { niche, name, business, text: output.value }, 'c1-log');
+      }
+      output.value = '';
+      document.getElementById(`c${n}-chars`).textContent = '0 chars';
+      showToast('Logged ✓');
+    }
+
+    function clearLog(storageKey, listId) {
+      if (!confirm('Clear all log entries?')) return;
+      localStorage.removeItem(storageKey);
+      renderLog(storageKey, listId);
+    }
+
+    // ── UI HELPERS ────────────────────────────────────────────────────
+    function toggleComp(id) {
+      const header = document.querySelector(`#${id} .comp-header`);
+      const body   = document.getElementById(`${id}-body`);
+      const isOpen = body.classList.contains('open');
+      // Close all
+      document.querySelectorAll('.comp-body').forEach(b => b.classList.remove('open'));
+      document.querySelectorAll('.comp-header').forEach(h => h.classList.remove('open'));
+      if (!isOpen) {
+        body.classList.add('open');
+        header.classList.add('open');
+      }
+    }
+
+    function openComp(id, e) {
+      e?.preventDefault();
+      const body = document.getElementById(`${id}-body`);
+      const header = document.querySelector(`#${id} .comp-header`);
+      document.querySelectorAll('.comp-body').forEach(b => b.classList.remove('open'));
+      document.querySelectorAll('.comp-header').forEach(h => h.classList.remove('open'));
+      body.classList.add('open');
+      header.classList.add('open');
+      document.getElementById(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function togglePrompt(id) {
+      const el = document.getElementById(`${id}-prompt-text`);
+      const btn = el.nextElementSibling;
+      const expanded = el.classList.toggle('expanded');
+      btn.textContent = expanded ? 'Hide prompt ▴' : 'Show full prompt ▾';
+    }
+
+    function copyOutput(id, btn) {
+      const val = document.getElementById(id)?.value;
+      if (!val?.trim()) { showToast('Nothing to copy'); return; }
+      navigator.clipboard.writeText(val).then(() => {
+        btn.textContent = 'Copied ✓'; btn.classList.add('copied');
+        showToast('Copied ✓');
+        setTimeout(() => { btn.textContent = btn.textContent.replace(' ✓','') || 'Copy'; btn.classList.remove('copied'); }, 2200);
+      });
+    }
+
+    function downloadOutput(id, name) {
+      const val = document.getElementById(id)?.value;
+      if (!val?.trim()) { showToast('Nothing to download'); return; }
+      const blob = new Blob([val], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url;
+      a.download = `aldric-${name}-${new Date().toISOString().split('T')[0]}.txt`;
+      a.click(); URL.revokeObjectURL(url);
+    }
+
+    // Track char count on output areas
+    document.querySelectorAll('.output-area').forEach(el => {
+      el.addEventListener('input', () => {
+        const id = el.id.replace('-output','-chars');
+        const charEl = document.getElementById(id);
+        if (charEl) charEl.textContent = el.value.length + ' chars';
+      });
+    });
+
+    // ── API KEY ───────────────────────────────────────────────────────
+    function saveKey() {
+      const val = document.getElementById('apiKeyInput').value.trim();
+      const status = document.getElementById('apiStatus');
+      if (val) {
+        localStorage.setItem('aldric_claude_key', val);
+        status.textContent = 'Key set ✓';
+        status.className = 'api-status set';
+      } else {
+        localStorage.removeItem('aldric_claude_key');
+        status.textContent = 'Not set';
+        status.className = 'api-status unset';
+      }
+    }
+
+    function loadKey() {
+      const saved = localStorage.getItem('aldric_claude_key');
+      if (saved) {
+        document.getElementById('apiKeyInput').value = saved;
+        document.getElementById('apiStatus').textContent = 'Key set ✓';
+        document.getElementById('apiStatus').className = 'api-status set';
+      }
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2400);
+    }
+
+    // ── INIT ──────────────────────────────────────────────────────────
+    loadKey();
+    renderC3KPIPreview();
+    renderC4BriefPreview();
+    renderLog('aldric_outreach_log_v1', 'c1-log');
+    // Open first component by default
+    openComp('c1');
+  </script>
+</body>
+</html>
