@@ -33,7 +33,7 @@ async function getUserData(userId: string) {
   const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
   const todayEnd   = new Date(); todayEnd.setHours(23, 59, 59, 999)
 
-  const [user, profile, todayHealth, todayNutrition, pendingTasks, snapshots] = await Promise.all([
+  const [user, profile, todayHealth, todayNutrition, pendingTasks, snapshots, todaySummary] = await Promise.all([
     prisma.user.findUnique({
       where:  { id: userId },
       select: { name: true, xp: true, level: true },
@@ -57,9 +57,15 @@ async function getUserData(userId: string) {
       take:    60,
       select:  { date: true, streakCount: true },
     }),
+    prisma.dailySummary.findFirst({
+      where:  { userId, date: { gte: todayStart, lte: todayEnd } },
+      select: { notes: true },
+    }),
   ])
 
-  return { user, profile, todayHealth, todayNutrition, pendingTasks, snapshots }
+  const checkedInToday = !!todaySummary?.notes?.startsWith('{')
+
+  return { user, profile, todayHealth, todayNutrition, pendingTasks, snapshots, checkedInToday }
 }
 
 export default async function DashboardPage() {
@@ -73,6 +79,7 @@ export default async function DashboardPage() {
   let stepGoal = 10000, waterGoal = 2500, sleepGoal = 8
   let stepsToday = 0, waterToday = 0, sleepToday = 0, mealsToday = 0
   let tasks: { id: string; title: string; status: string }[] = []
+  let checkedInToday = false
 
   if (session?.user?.id) {
     try {
@@ -92,11 +99,12 @@ export default async function DashboardPage() {
         waterGoal = d.profile.dailyWaterMlGoal
         sleepGoal = d.profile.dailySleepHrsGoal
       }
-      stepsToday = d.todayHealth?.steps    ?? 0
-      waterToday = d.todayHealth?.waterMl  ?? 0
-      sleepToday = d.todayHealth?.sleepHrs ?? 0
-      mealsToday = d.todayNutrition.length
-      tasks      = d.pendingTasks.map(t => ({ id: t.id, title: t.title, status: t.status }))
+      stepsToday      = d.todayHealth?.steps    ?? 0
+      waterToday      = d.todayHealth?.waterMl  ?? 0
+      sleepToday      = d.todayHealth?.sleepHrs ?? 0
+      mealsToday      = d.todayNutrition.length
+      tasks           = d.pendingTasks.map(t => ({ id: t.id, title: t.title, status: t.status }))
+      checkedInToday  = d.checkedInToday
     } catch {
       // DB not connected in dev — render shell with zeros
     }
@@ -193,11 +201,22 @@ export default async function DashboardPage() {
             ))}
           </div>
 
-          {/* Log today CTA */}
-          <Link href="/dashboard/health"
-            className="flex items-center justify-center w-full py-4 rounded-2xl bg-primary text-black font-bold text-lg mb-6 hover:bg-[#8ad40e] transition-all active:scale-[0.98]">
-            ⚡ Log Today
-          </Link>
+          {/* Check-in CTA + Log today */}
+          <div className="flex gap-3 mb-6">
+            <Link href="/dashboard/checkin"
+              className="flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl font-bold text-sm transition-all active:scale-[0.98]"
+              style={{
+                background: checkedInToday ? 'rgba(163,245,16,0.10)' : 'rgba(163,245,16,0.18)',
+                border:     checkedInToday ? '1px solid rgba(163,245,16,0.3)' : '1px solid transparent',
+                color:      '#a3f510',
+              }}>
+              {checkedInToday ? '✅ Checked in' : '📋 Check in today'}
+            </Link>
+            <Link href="/dashboard/health"
+              className="flex-1 flex items-center justify-center py-4 rounded-2xl bg-primary text-black font-bold text-sm hover:bg-[#8ad40e] transition-all active:scale-[0.98]">
+              ⚡ Log Today
+            </Link>
+          </div>
 
           {/* Daily goals checklist */}
           <div className="bg-[#1a1a1a] border border-white/8 rounded-2xl p-5 mb-6">
