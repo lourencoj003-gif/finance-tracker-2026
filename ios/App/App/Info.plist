@@ -47,5 +47,9 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Noa uses your microphone to hear your voice commands</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Noa uses Face ID to protect your financial data</string>
 </dict>
 </plist>
