@@ -2,6 +2,58 @@
 
 ---
 
+## Session: 2026-05-27 (Aldric Group COO execution system)
+
+### Commit
+- `daf78f5` — feat: Aldric Group COO execution system — 7 agency assets
+
+### Overview
+
+Complete client acquisition infrastructure built for Aldric Group. All files are standalone HTML (zero dependencies, open directly in browser). Internal tools use localStorage. Public-facing pages match the Aldric brand system (`#080808` bg, `#C9A96E` gold, Inter + Playfair Display).
+
+### Files created / modified
+
+| File | Purpose |
+|------|---------|
+| `public/agency/case-studies.html` | 3 detailed case studies with full results, narrative, and process breakdown |
+| `public/agency/pilot.html` | Proof Sprint £499 landing page — deliverables, 14-day timeline, guarantee, FAQ |
+| `public/agency/onboarding.html` | 6-step client onboarding form → generates downloadable brand brief + agent system prompt |
+| `public/agency/sales-call.html` | Internal sales framework — 7 phases, word-for-word scripts, objection handling table, 3-option close |
+| `public/agency/outreach.html` | Outreach copy library — 6 niches, click-to-copy messages, search/filter, rules section |
+| `public/agency/kpi.html` | Weekly KPI tracker — outreach log, 7 summary cards, targets, MRR dashboard, client roster |
+| `public/agency/contract.html` | Dynamic service agreement — fill client details, select package, print/PDF/download .txt |
+| `public/agency/index.html` | Added Results section (3 case study cards), Pilot Sprint CTA block, nav links updated |
+
+### KPI tracker details (`kpi.html`)
+- 7 summary cards with target progress bars: Messages · Replies · Reply Rate · Calls Booked · Proposals · Clients Closed · Close Rate
+- Weekly/Monthly/All Time views with week navigation
+- Outreach log table — date, business, niche, all metrics, reply rate pill (green/amber/red)
+- MRR dashboard — total, breakdown by package (Growth/Scale/Dominance), client roster
+- Add client modal — name, package, start date
+- Configurable weekly targets for all 7 KPIs + MRR target
+- CSV export, localStorage persistence (`aldric_kpi_v1`)
+
+### Contract generator details (`contract.html`)
+- Sidebar form: client name/business/address/email, package selector, start date, custom deliverables
+- Live preview updates as you type
+- Package-specific deliverables auto-populated (all 4 tiers including Proof Sprint)
+- Renders correct clause set: retainers get Term & Termination; Sprint gets Project Timeline + refund guarantee
+- Print-to-PDF renders white/readable (print CSS overrides dark theme)
+- Copy as plain text or download as `.txt`
+
+### Case studies (3)
+1. **Luxe Aesthetics Studio** — Scale £1,250/mo — no-show 18%→6%, +47% Instagram bookings, +£8.4k MRR month 3
+2. **Harrington & Webb** — Growth £750/mo — +31% direct enquiries, 3 instructions from email list, 8× ROI in 60 days
+3. **Peak Performance Physio** — Dominance £1,500/mo — 47→112 Google reviews in 90 days, +28% new patients, #1 local ranking
+
+### index.html additions
+- **Results section** (#results): 3 stat cards, each showing 3 headline metrics, linking to case-studies.html
+- **Pilot Sprint section** (#pilot): 5 deliverables list, £499 credit guarantee, dual CTA (Sprint / retainer)
+- **Nav**: added "Results" and "Pilot Sprint" links
+- **Footer**: added links to case-studies.html and pilot.html
+
+---
+
 ## Session: 2026-05-27 (Noa final items + Aldric CRM)
 
 ### Commits
