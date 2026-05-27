@@ -2,6 +2,181 @@
 
 ---
 
+## Session: 2026-05-27 (7-task pre-launch session)
+
+### Overview
+Full autonomous session completing 7 tasks across Noa, Aldric Group, Axontra, and FitLink. All tasks committed and pushed.
+
+### Commits (this session)
+- `cf5e4ba` — fix: Noa pre-launch cleanup — Nordigen removal, memory reset verified, PWA icons confirmed
+- `9dbdc2f` — feat: Aldric agent system — all 5 components wired to Claude API with brand prompts
+- `cb16e7c` — feat: Aldric deployment prep — README, internal links audit, OG tags, analytics placeholder
+- `5f4c4e9` — feat: Axontra deployment prep — README, OG tags, enhanced contact form
+- `ee9931a` — feat: Noa landing final polish — OG tags, structured data, waitlist capture, CTA links verified
+- `297e03b` — docs: FitLink migration plan — repo vs Lovable comparison and strategy
+
+---
+
+### TASK 1 — Noa Pre-Launch Final Cleanup ✅
+
+**Nordigen removal:**
+- Scanned entire codebase — Nordigen refs found only in `.env.example` and `SUMMARY.md` (historical docs)
+- `.env.example`: replaced `NORDIGEN_SECRET_ID` / `NORDIGEN_SECRET_KEY` with `PLAID_CLIENT_ID` / `PLAID_SECRET` with full setup instructions
+
+**vela_banking_token flow (Plaid sandbox):**
+- `api/banking/provider.js`: confirmed full Plaid flow — `createLinkToken()` → Link UI → `exchangePublicToken()` → `getAccounts()` / `getTransactions()`
+- `storage.js`: `BANKING_ACCESS_TOKEN = 'vela_banking_access_token'` — Plaid access token persisted correctly
+- `Onboarding.js` + `VelaCore.js`: both save/load `accessToken` via `saveBankingAccessToken` / `getBankingAccessToken`
+
+**Memory reset logic verified:**
+- `VelaCore.js:675` — `if (planType !== 'free') return;` — paid users unaffected ✅
+- `VelaCore.js:682` — `daysLeft = 7 - daysSince` — if `daysLeft <= 0` → `clearConvoMemory()` + `setMemoryStart()`
+- `VelaCore.js:689` — banner shows when `daysLeft <= 3` → days 4, 5, 6 all show warning ✅
+
+**PWA manifest:**
+- `public/manifest.json`: updated 180×180 icon from `apple-touch-icon.png` → `logo180.png`
+- All 3 PWA icons confirmed present: `logo192.png` (192×192), `logo512.png` (512×512), `logo180.png` (180×180) ✅
+
+**Build:**
+- `npm run build` → `Compiled successfully. Zero warnings.` ✅
+
+---
+
+### TASK 2 — Noa App Store Preparation ✅
+
+**Capacitor config verified:**
+- `capacitor.config.ts`: `appId: 'com.noa.app'`, `appName: 'Noa'`, `webDir: 'build'` ✅
+- iOS settings: `contentInset: 'automatic'`, `backgroundColor: '#111318'`, `scheme: 'noa'`
+
+**Info.plist privacy strings added:**
+- `ios/App/App/Info.plist`: `NSMicrophoneUsageDescription` and `NSFaceIDUsageDescription` both added
+
+**Splash screen + app icon verified:**
+- `AppIcon.appiconset/AppIcon-512@2x.png` (1024×1024) ✅
+- `Splash.imageset/` — 3 splash scales (2732×2732 @1x, @2x, @3x) ✅
+
+**APPSTORE.md created:**
+11-step submission guide covering:
+- Prerequisites, Xcode signing, version/build number
+- Archive → Distribute → Upload flow
+- App Store Connect fields (name, bundle ID, description, keywords, pricing)
+- Screenshot requirements (3 required iPhone sizes)
+- App Review notes (Plaid test credentials: user_good / pass_good)
+- Common rejection reasons and fixes
+
+---
+
+### TASK 3 — Aldric Agent System Integration ✅
+
+`public/agency/acquisition/agent-system.html` was already fully wired. Changes made:
+
+| Change | Before | After |
+|---|---|---|
+| Model | `claude-sonnet-4-20250514` | `claude-sonnet-4-6` (latest) |
+| Token limits | `MAX_TOKENS = 1000` (global) | Per-component: 1→600, 2→500, 3→700, 4→4000, 5→3500 |
+
+All 5 components confirmed wired to `https://api.anthropic.com/v1/messages` via fetch with `anthropic-dangerous-direct-browser-access: true`.
+
+System prompts — brand voice (professional, direct, results-focused):
+- **Component 1 (Outreach)**: LinkedIn specialist persona, 5 sequence stages, under 280/380/200 chars, niche pain point focus
+- **Component 2 (Reply Handler)**: SDR manager persona, 6 classification types, RED/AMBER/GREEN escalation rules
+- **Component 3 (Weekly Report)**: Account manager persona, under 220 words, confident + transparent tone
+- **Component 4 (Content Batch)**: Exactly 20 posts (8 edu / 5 proof / 4 promo / 3 BTS) with hook + hashtags
+- **Component 5 (Email Sequence)**: 5 emails (Day 0/3/7/10/14) formatted for Instantly.ai import
+
+API key: `localStorage.setItem('aldric_claude_key', val)` — loads on init, saves on keyup.
+
+---
+
+### TASK 4 — Aldric Group Website Deployment Prep ✅
+
+**public/agency/README.md created:**
+- Netlify Drop instructions (drag-and-drop the `agency/` folder)
+- Netlify CLI + GitHub integration options
+- aldricgroup.co.uk domain setup: CNAME + A record instructions
+- File structure table for all 12 HTML files
+- Internal links audit table (all 12 links verified ✅)
+- OG image and GA4 instructions
+
+**public/agency/index.html updates:**
+- OG meta tags: `og:title = "Aldric Group"`, `og:description = "Intelligent marketing. Built to scale."`
+- Twitter card meta tags
+- GA4 tracking placeholder (commented block with setup instructions)
+
+**Internal links audit:** All 12 verified present — `case-studies.html`, `pilot.html`, `crm.html`, `kpi.html`, `contract.html`, `onboarding.html`, `sales-call.html`, `pitch.html`, `acquisition/agent-system.html`, `acquisition/seven-day-plan.html`, `acquisition/outreach-system.html`, `acquisition/automation.html`, `acquisition/retention.html`
+
+---
+
+### TASK 5 — Axontra Website Deployment Prep ✅
+
+**public/axontra/README.md created:**
+- Netlify Drop / CLI / GitHub deploy options
+- axontrapartners.co.uk DNS setup (CNAME + A record)
+- Contact form backend options (Netlify Forms, Formspree)
+- Internal links audit (all anchor-based, no broken paths)
+- OG image and GA4 instructions
+
+**public/axontra/index.html updates:**
+- OG meta tags: `og:title = "Axontra Partners"`, `og:description = "Operational intelligence for the modern brokerage."`
+- Twitter card meta tags
+- GA4 tracking placeholder (commented block)
+- "Tell us about your brokerage" textarea renamed to **"Biggest Operational Challenge"**
+- Submit button changed to **"Request Diagnostic →"**
+- Form saves to `localStorage` key `axontra_enquiries` (array, max 20 entries) on valid submit
+
+**Internal links:** Axontra is a single-page site — all links are anchor links (`#services`, `#why`, `#contact`). No broken paths.
+
+---
+
+### TASK 6 — Noa Landing Page Final Polish ✅
+
+**noa-landing/index.html updates:**
+
+| Addition | Detail |
+|---|---|
+| Canonical URL | `<link rel="canonical" href="https://finance-tracker-2026-navy.vercel.app/noa-landing/" />` |
+| OG title | `Noa — Your AI Financial Navigator` |
+| OG description | `Meet Noa. She knows your money, remembers your goals, and tells you the truth.` |
+| OG image | `logo512.png` (512×512) |
+| Structured data | JSON-LD `SoftwareApplication`: name Noa, `FinanceApplication`, iOS+Web, `£6.99 GBP` offer |
+| Waitlist section | Email input + "Notify Me →" button, saves to `localStorage` (key `noa_waitlist`) |
+| Waitlist UX | Shows confirmation on submit, hides form, persists state across page loads, Enter key support |
+
+**Verified:**
+- Rotating chat bubbles: `showBubble()` + `setInterval(4000ms)` + dot click navigation ✅
+- PWA install section: visible, Safari → Share → Add to Home Screen steps ✅
+- All CTAs: 6 links all pointing to `https://finance-tracker-2026-navy.vercel.app` ✅
+
+---
+
+### TASK 7 — FitLink Lovable Migration Planning ✅
+
+**fitlink/MIGRATION.md created** — research document only, no code changes.
+
+**Repo scaffold contains:**
+- 9 App Router pages (landing, login, register, onboarding, dashboard, health, checkin, clients, nutrition)
+- 7 API routes (auth, health-logs, nutrition-logs, progress, tasks, trainers)
+- 12-model Prisma schema (260 lines)
+- NextAuth v5 credentials flow
+- Recharts, Lucide React, Tailwind CSS (volt green `#a3f510` design system)
+
+**Lovable version likely has:**
+- More polished UI and animations
+- Workout logging (missing from repo)
+- Charts rendered
+- Possibly Supabase auth instead of NextAuth
+- Better mobile responsiveness
+
+**Recommendation: Keep Lovable as source of truth** — better UI, Supabase integration simpler than Prisma + self-managed Postgres, mobile-first output.
+
+**Migration steps documented:** Export (Download ZIP or GitHub sync) → inspect framework → branch + replace `fitlink/` → resolve auth/DB conflicts → test → PR.
+
+**Conflicts identified:** Auth provider (NextAuth vs Supabase), DB client (Prisma vs Supabase JS), styling system.
+
+**Preserve from repo:** `prisma/schema.prisma` (gold standard data model), `lib/xp.ts` (XP gamification logic).
+
+---
+
 ## Session: 2026-05-27 (Aldric AI agent system + full nav)
 
 ### Commits
