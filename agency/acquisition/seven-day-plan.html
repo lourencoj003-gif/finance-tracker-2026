@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>7-Day Acquisition Plan — Aldric Group</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #080808; --bg2: #0f0f0f; --bg3: #161616; --bg4: #1c1c1c;
+      --gold: #C9A96E; --gold-lt: #e0c48a; --cream: #F0E8DA;
+      --muted: #6b6b6b; --border: rgba(201,169,110,0.15); --text: #e8e0d4;
+      --green: #4caf50; --amber: #ff9800; --red: #ef5350; --blue: #5c8de8;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif; background: var(--bg);
+      color: var(--text); line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* HEADER */
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 48px; border-bottom: 1px solid var(--border);
+      background: rgba(8,8,8,0.96); backdrop-filter: blur(20px);
+      position: sticky; top: 0; z-index: 50;
+    }
+    .header-left { display: flex; align-items: center; gap: 20px; }
+    .logo { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; color: var(--gold); text-decoration: none; }
+    .header-title { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; padding-left: 20px; border-left: 1px solid var(--border); }
+    .header-nav { display: flex; gap: 6px; }
+    .nav-pill { padding: 7px 14px; background: transparent; border: 1px solid transparent; color: var(--muted); font-size: 12px; font-weight: 500; border-radius: 3px; cursor: pointer; transition: all 0.15s; font-family: 'Inter', sans-serif; text-decoration: none; }
+    .nav-pill:hover, .nav-pill.active { background: var(--bg3); border-color: var(--border); color: var(--cream); }
+
+    /* PAGE */
+    .page { max-width: 1200px; margin: 0 auto; padding: 48px 48px 80px; }
+
+    /* HERO */
+    .page-hero { margin-bottom: 56px; }
+    .page-label { font-size: 10px; font-weight: 700; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gold); margin-bottom: 16px; }
+    .page-title { font-family: 'Playfair Display', serif; font-size: clamp(32px, 4vw, 52px); font-weight: 700; color: var(--cream); line-height: 1.1; margin-bottom: 16px; }
+    .page-sub { font-size: 15px; color: rgba(240,232,218,0.5); max-width: 680px; line-height: 1.75; }
+    .week-badge { display: inline-flex; align-items: center; gap: 8px; margin-top: 20px; padding: 8px 16px; background: rgba(201,169,110,0.08); border: 1px solid rgba(201,169,110,0.2); border-radius: 3px; font-size: 12px; font-weight: 600; color: var(--gold); letter-spacing: 0.06em; }
+    .week-badge span { color: var(--cream); }
+
+    /* SECTION HEADERS */
+    .section { margin-bottom: 52px; }
+    .section-label { font-size: 10px; font-weight: 700; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gold); margin-bottom: 10px; }
+    .section-divider { width: 40px; height: 1px; background: rgba(201,169,110,0.4); margin-bottom: 20px; }
+    .section-title { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--cream); margin-bottom: 20px; }
+
+    /* DAY TABLE */
+    .day-table { width: 100%; border-collapse: collapse; }
+    .day-table thead tr { border-bottom: 1px solid var(--border); }
+    .day-table th { text-align: left; padding: 10px 16px; font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
+    .day-table th.c { text-align: center; }
+    .day-table tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.15s; }
+    .day-table tbody tr:hover { background: rgba(255,255,255,0.025); }
+    .day-table td { padding: 18px 16px; font-size: 13px; vertical-align: top; }
+    .day-table td.c { text-align: center; }
+
+    .day-num { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: rgba(201,169,110,0.3); line-height: 1; }
+    .day-range-tag { font-size: 9px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
+
+    .day-title { font-size: 14px; font-weight: 700; color: var(--cream); margin-bottom: 6px; }
+    .day-body { font-size: 13px; color: rgba(240,232,218,0.55); line-height: 1.7; }
+    .day-body strong { color: var(--cream); font-weight: 600; }
+
+    .day-action-list { list-style: none; margin-top: 10px; display: flex; flex-direction: column; gap: 5px; }
+    .day-action-list li { font-size: 12px; color: rgba(240,232,218,0.5); padding-left: 16px; position: relative; line-height: 1.6; }
+    .day-action-list li::before { content: '→'; color: var(--gold); position: absolute; left: 0; font-size: 11px; }
+
+    .target-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 3px; font-size: 11px; font-weight: 700; background: rgba(201,169,110,0.1); color: var(--gold); border: 1px solid rgba(201,169,110,0.2); white-space: nowrap; }
+    .target-chip.green { background: rgba(76,175,80,0.1); color: var(--green); border-color: rgba(76,175,80,0.25); }
+    .target-chip.amber { background: rgba(255,152,0,0.1); color: var(--amber); border-color: rgba(255,152,0,0.25); }
+    .target-chip.review { background: rgba(92,141,232,0.1); color: var(--blue); border-color: rgba(92,141,232,0.25); }
+
+    .phase-bar { height: 3px; border-radius: 2px; margin-bottom: 4px; }
+    .phase-connect { background: var(--blue); }
+    .phase-engage { background: var(--amber); }
+    .phase-convert { background: var(--green); }
+    .phase-review { background: var(--gold); }
+    .phase-label { font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+    .phase-label.blue { color: var(--blue); }
+    .phase-label.amber { color: var(--amber); }
+    .phase-label.green { color: var(--green); }
+    .phase-label.gold { color: var(--gold); }
+
+    /* KPI TABLE */
+    .kpi-table { width: 100%; border-collapse: collapse; }
+    .kpi-table thead tr { border-bottom: 1px solid var(--border); }
+    .kpi-table th { padding: 10px 16px; font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); text-align: center; }
+    .kpi-table th:first-child { text-align: left; }
+    .kpi-table tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .kpi-table td { padding: 14px 16px; font-size: 13px; text-align: center; color: var(--text); }
+    .kpi-table td:first-child { text-align: left; color: var(--cream); font-weight: 600; }
+    .kpi-table .target-val { font-family: 'Playfair Display', serif; font-size: 18px; color: var(--gold); }
+    .kpi-table .note-val { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+    /* MESSAGE CARDS */
+    .msg-scenario { margin-bottom: 40px; }
+    .msg-scenario-title { font-size: 14px; font-weight: 700; color: var(--cream); margin-bottom: 6px; }
+    .msg-scenario-sub { font-size: 12px; color: var(--muted); margin-bottom: 16px; letter-spacing: 0.02em; }
+    .msg-variants { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .msg-card {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 4px; padding: 20px;
+      display: flex; flex-direction: column; gap: 10px;
+      transition: border-color 0.2s;
+    }
+    .msg-card:hover { border-color: rgba(201,169,110,0.3); }
+    .msg-variant-tag { font-size: 9px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
+    .msg-text { font-size: 13px; color: rgba(240,232,218,0.75); line-height: 1.7; flex: 1; }
+    .msg-text em { color: var(--gold); font-style: normal; font-weight: 500; }
+    .msg-footer { display: flex; align-items: center; justify-content: space-between; }
+    .msg-char { font-size: 10px; color: var(--muted); }
+    .copy-btn {
+      padding: 5px 12px; background: transparent;
+      border: 1px solid var(--border); color: var(--muted);
+      font-size: 11px; font-weight: 500; border-radius: 2px;
+      cursor: pointer; transition: all 0.15s; font-family: 'Inter', sans-serif;
+    }
+    .copy-btn:hover { color: var(--cream); border-color: rgba(240,232,218,0.3); }
+    .copy-btn.copied { color: var(--green); border-color: rgba(76,175,80,0.3); }
+
+    /* QUALIFICATION */
+    .qual-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .qual-card { background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 24px; }
+    .qual-trigger { font-size: 14px; font-weight: 600; color: var(--cream); margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+    .qual-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .qual-dot.red { background: var(--red); box-shadow: 0 0 6px rgba(239,83,80,0.5); }
+    .qual-dot.amber { background: var(--amber); box-shadow: 0 0 6px rgba(255,152,0,0.5); }
+    .qual-dot.green { background: var(--green); box-shadow: 0 0 6px rgba(76,175,80,0.5); }
+    .qual-dot.gold { background: var(--gold); box-shadow: 0 0 6px rgba(201,169,110,0.5); }
+    .qual-action { font-size: 12px; color: rgba(240,232,218,0.55); line-height: 1.7; }
+    .qual-action strong { color: var(--cream); font-weight: 600; }
+
+    /* NICHE ROADMAP */
+    .niche-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .niche-card { background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 28px 24px; position: relative; overflow: hidden; }
+    .niche-card.active { border-color: rgba(201,169,110,0.35); }
+    .niche-card.active::before { content: 'CURRENT WEEK'; position: absolute; top: 0; right: 0; font-size: 8px; font-weight: 700; letter-spacing: 0.2em; background: var(--gold); color: #080808; padding: 4px 10px; }
+    .niche-week { font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+    .niche-name { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--cream); margin-bottom: 8px; }
+    .niche-why { font-size: 12px; color: rgba(240,232,218,0.5); line-height: 1.7; }
+    .niche-search-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+    .niche-tag { padding: 3px 8px; background: rgba(201,169,110,0.08); border: 1px solid rgba(201,169,110,0.15); border-radius: 2px; font-size: 11px; color: var(--muted); }
+
+    /* TOAST */
+    .toast { position: fixed; bottom: 28px; right: 28px; background: var(--bg3); border: 1px solid rgba(201,169,110,0.3); color: var(--cream); font-size: 13px; font-weight: 500; padding: 12px 20px; border-radius: 4px; transform: translateY(80px); opacity: 0; transition: all 0.3s ease; z-index: 999; pointer-events: none; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    @media (max-width: 900px) {
+      header { padding: 16px 20px; }
+      .page { padding: 32px 20px 60px; }
+      .msg-variants { grid-template-columns: 1fr; }
+      .qual-grid { grid-template-columns: 1fr; }
+      .niche-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-left">
+      <a href="../index.html" class="logo">Aldric Group</a>
+      <div class="header-title">7-Day Acquisition Plan</div>
+    </div>
+    <div class="header-nav">
+      <a href="outreach-system.html" class="nav-pill">AI SDR System →</a>
+      <a href="../kpi.html" class="nav-pill">KPI Tracker</a>
+      <a href="../crm.html" class="nav-pill">CRM</a>
+    </div>
+  </header>
+
+  <div class="page">
+
+    <!-- HERO -->
+    <div class="page-hero">
+      <div class="page-label">Execution Playbook</div>
+      <h1 class="page-title">7-Day Cold<br />Acquisition Sprint</h1>
+      <p class="page-sub">One niche. One week. LinkedIn-first. No pitching until they're warm. This is the fastest repeatable path from zero to booked calls.</p>
+      <div class="week-badge">Week 1 Focus: <span>Med Spa &amp; Aesthetics</span></div>
+    </div>
+
+    <!-- ── SECTION 1: EXECUTION TABLE ── -->
+    <div class="section" id="plan">
+      <div class="section-label">Daily Execution</div>
+      <div class="section-divider"></div>
+      <div class="section-title">What happens each day.</div>
+
+      <table class="day-table">
+        <thead>
+          <tr>
+            <th style="width:70px;">Day</th>
+            <th style="width:90px;text-align:center;">Phase</th>
+            <th>Actions</th>
+            <th style="width:200px;">Target</th>
+          </tr>
+        </thead>
+        <tbody>
+
+          <!-- DAY 1–2 -->
+          <tr>
+            <td>
+              <div class="day-num">1–2</div>
+              <div class="day-range-tag">Mon–Tue</div>
+            </td>
+            <td class="c">
+              <div class="phase-bar phase-connect"></div>
+              <div class="phase-label blue">Connect</div>
+            </td>
+            <td>
+              <div class="day-title">Profile optimisation + 20 connections/day to med spa owners</div>
+              <div class="day-body"><strong>Zero pitching.</strong> Connect only. Your profile is the landing page — fix the headline, banner, and about section before sending a single request.</div>
+              <ul class="day-action-list">
+                <li>Update LinkedIn headline: "AI marketing for med spas &amp; aesthetic clinics | Aldric Group"</li>
+                <li>Banner: clean dark branded image or before/after engagement stat</li>
+                <li>Featured section: link to case-studies page</li>
+                <li>Search: "med spa owner", "aesthetics clinic director", "cosmetic clinic founder" — UK focus</li>
+                <li>Send 20 connection requests per day with the personalised note template (V1 or V2)</li>
+                <li>Log every sent request in the KPI tracker</li>
+              </ul>
+            </td>
+            <td>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <div class="target-chip">40 requests sent</div>
+                <div class="target-chip">~12 accepted (30%)</div>
+              </div>
+            </td>
+          </tr>
+
+          <!-- DAY 3–4 -->
+          <tr>
+            <td>
+              <div class="day-num">3–4</div>
+              <div class="day-range-tag">Wed–Thu</div>
+            </td>
+            <td class="c">
+              <div class="phase-bar phase-engage"></div>
+              <div class="phase-label amber">Engage</div>
+            </td>
+            <td>
+              <div class="day-title">20 connections/day + first message to Day 1–2 acceptors</div>
+              <div class="day-body">Keep the pipeline flowing <strong>while</strong> activating the first batch. Message everyone who accepted on Day 1–2. First message only — pain-driven question, no offer.</div>
+              <ul class="day-action-list">
+                <li>Send 20 new connection requests (continue med spa niche)</li>
+                <li>Message all Day 1–2 acceptors: use First Message template (FM-V1 or FM-V2)</li>
+                <li>Do not mention Aldric Group, services, or pricing in first message</li>
+                <li>Log every message sent, note timestamp</li>
+                <li>If someone replies to connection note — treat as warm, use First Message immediately</li>
+              </ul>
+            </td>
+            <td>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <div class="target-chip">40 requests sent</div>
+                <div class="target-chip amber">5 replies received</div>
+              </div>
+            </td>
+          </tr>
+
+          <!-- DAY 5 -->
+          <tr>
+            <td>
+              <div class="day-num">5</div>
+              <div class="day-range-tag">Friday</div>
+            </td>
+            <td class="c">
+              <div class="phase-bar phase-engage"></div>
+              <div class="phase-label amber">Engage</div>
+            </td>
+            <td>
+              <div class="day-title">Follow up Day 3–4 non-replies + message new acceptors</div>
+              <div class="day-body">48 hours since first message. Anyone who hasn't replied gets a <strong>single soft follow-up</strong>. No pressure, no offer. Anyone who accepted Day 3–4 gets their first message today.</div>
+              <ul class="day-action-list">
+                <li>Send FU-1 ("Didn't want to lose you in the feed…") to all Day 3–4 non-replies</li>
+                <li>Message new Day 3–4 acceptors with First Message template</li>
+                <li>Monitor active conversations — reply within 2 hours where possible</li>
+                <li>Flag anyone who has replied twice without friction: they're ready for a call ask</li>
+              </ul>
+            </td>
+            <td>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <div class="target-chip amber">3 active conversations</div>
+              </div>
+            </td>
+          </tr>
+
+          <!-- DAY 6 -->
+          <tr>
+            <td>
+              <div class="day-num">6</div>
+              <div class="day-range-tag">Saturday</div>
+            </td>
+            <td class="c">
+              <div class="phase-bar phase-convert"></div>
+              <div class="phase-label green">Convert</div>
+            </td>
+            <td>
+              <div class="day-title">Push for calls + send pilot offer to warm leads</div>
+              <div class="day-body">Identify the warmest conversations — anyone who's replied twice or asked questions. <strong>Ask for 15 minutes.</strong> For anyone still warm but not ready, send the pilot offer message (FU-2).</div>
+              <ul class="day-action-list">
+                <li>For 2+ reply conversations with no friction: "Would a 15-minute call make sense? I can show you what we built for [similar business] last month."</li>
+                <li>Send Pilot Offer (FU-2) to warm leads who haven't escalated to a call ask yet</li>
+                <li>Book calls using Calendly or WhatsApp — confirm time + send reminder the evening before</li>
+                <li>Anyone going silent after Day 5 FU: leave on ice, do not send third touch yet</li>
+              </ul>
+            </td>
+            <td>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <div class="target-chip green">2 calls booked</div>
+                <div class="target-chip">1 pilot offer sent</div>
+              </div>
+            </td>
+          </tr>
+
+          <!-- DAY 7 -->
+          <tr>
+            <td>
+              <div class="day-num">7</div>
+              <div class="day-range-tag">Sunday</div>
+            </td>
+            <td class="c">
+              <div class="phase-bar phase-review"></div>
+              <div class="phase-label gold">Review</div>
+            </td>
+            <td>
+              <div class="day-title">Review KPIs — double down on what worked, kill what didn't</div>
+              <div class="day-body">This is a <strong>data day.</strong> No outreach. Pull the numbers, find the pattern, make the plan for Week 2.</div>
+              <ul class="day-action-list">
+                <li>Open KPI tracker — fill in actuals vs targets for all 7 metrics</li>
+                <li>Which message variant got the highest reply rate? Use that as the Week 2 default</li>
+                <li>Which search filters found the most responsive prospects? Lock those in</li>
+                <li>Review conversation quality — are the pain points matching? Refine the first message if reply rate &lt; 10%</li>
+                <li>Archive anyone with 3 touches + no reply (tag in CRM: Archived)</li>
+                <li>Write 3-sentence Week 2 plan: niche, message change, volume change</li>
+              </ul>
+            </td>
+            <td>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <div class="target-chip review">Week 2 plan written</div>
+                <div class="target-chip review">KPIs logged</div>
+              </div>
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ── SECTION 2: KPI TARGETS ── -->
+    <div class="section" id="kpis">
+      <div class="section-label">Weekly KPI Targets</div>
+      <div class="section-divider"></div>
+      <div class="section-title">What success looks like in numbers.</div>
+
+      <table class="kpi-table">
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th>Day 1–2</th>
+            <th>Day 3–4</th>
+            <th>Day 5</th>
+            <th>Day 6</th>
+            <th>Week Total</th>
+            <th>Target Rate</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Connections Sent</td>
+            <td>
+              <div class="target-val">20/day</div>
+              <div class="note-val">40 total</div>
+            </td>
+            <td>
+              <div class="target-val">20/day</div>
+              <div class="note-val">40 total</div>
+            </td>
+            <td>
+              <div class="target-val">0</div>
+              <div class="note-val">engage only</div>
+            </td>
+            <td>
+              <div class="target-val">0</div>
+              <div class="note-val">convert day</div>
+            </td>
+            <td>
+              <div class="target-val" style="color:var(--cream);">80</div>
+            </td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td>Acceptance Rate</td>
+            <td>
+              <div class="note-val">measure</div>
+            </td>
+            <td>
+              <div class="note-val">measure</div>
+            </td>
+            <td>—</td>
+            <td>—</td>
+            <td>
+              <div class="target-val" style="color:var(--cream);">~24</div>
+              <div class="note-val">accepted</div>
+            </td>
+            <td>
+              <div class="target-val">30%</div>
+              <div class="note-val">minimum</div>
+            </td>
+          </tr>
+          <tr>
+            <td>Messages Sent</td>
+            <td>—</td>
+            <td>
+              <div class="target-val">~12</div>
+              <div class="note-val">to D1–2 accepts</div>
+            </td>
+            <td>
+              <div class="target-val">~16</div>
+              <div class="note-val">FU + new accepts</div>
+            </td>
+            <td>
+              <div class="target-val">~5</div>
+              <div class="note-val">calls + pilot</div>
+            </td>
+            <td>
+              <div class="target-val" style="color:var(--cream);">~33</div>
+            </td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td>Reply Rate</td>
+            <td>—</td>
+            <td>
+              <div class="note-val">measure</div>
+            </td>
+            <td>
+              <div class="note-val">measure</div>
+            </td>
+            <td>—</td>
+            <td>
+              <div class="target-val" style="color:var(--cream);">~5</div>
+              <div class="note-val">replies total</div>
+            </td>
+            <td>
+              <div class="target-val">15%</div>
+              <div class="note-val">minimum</div>
+            </td>
+          </tr>
+          <tr>
+            <td>Active Conversations</td>
+            <td>—</td>
+            <td>—</td>
+            <td>
+              <div class="target-val">3</div>
+            </td>
+            <td>
+              <div class="target-val">3–5</div>
+            </td>
+            <td>
+              <div class="target-val" style="color:var(--cream);">3–5</div>
+            </td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td>Calls Booked</td>
+            <td>—</td>
+            <td>—</td>
+            <td>—</td>
+            <td>
+              <div class="target-val">2</div>
+            </td>
+            <td>
+              <div class="target-val" style="color:var(--green);">2</div>
+            </td>
+            <td>
+              <div class="note-val">from active convos</div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ── SECTION 3: MESSAGE VARIATIONS ── -->
+    <div class="section" id="messages">
+      <div class="section-label">Message Variations</div>
+      <div class="section-divider"></div>
+      <div class="section-title">3 variations per scenario. Test all three.</div>
+
+      <!-- CR: CONNECTION REQUEST -->
+      <div class="msg-scenario">
+        <div class="msg-scenario-title">Connection Request Note</div>
+        <div class="msg-scenario-sub">Under 300 chars. No pitch. Just a reason to connect.</div>
+        <div class="msg-variants">
+          <div class="msg-card">
+            <div class="msg-variant-tag">Variant A — Business focus</div>
+            <div class="msg-text" id="cr-a">Noticed you run <em>[business]</em> — we work with a lot of <em>[niche]</em> owners on their marketing. Would love to connect.</div>
+            <div class="msg-footer">
+              <div class="msg-char" id="cr-a-len"></div>
+              <button class="copy-btn" onclick="copyMsg('cr-a', this)">Copy</button>
+            </div>
+          </div>
+          <div class="msg-card">
+            <div class="msg-variant-tag">Variant B — Niche insight</div>
+            <div class="msg-text" id="cr-b">I focus specifically on marketing for <em>[niche]</em> businesses — come across your profile a few times. Good to connect with people in the space.</div>
+            <div class="msg-footer">
+              <div class="msg-char" id="cr-b-len"></div>
+              <button class="copy-btn" onclick="copyMsg('cr-b', this)">Copy</button>
+            </div>
+          </div>
+          <div class="msg-card">
+            <div class="msg-variant-tag">Variant C — Peer positioning</div>
+            <div class="msg-text" id="cr-c">Been following a few <em>[niche]</em> owners on here — would love to add you to my network. We work in the space and it's always useful to stay connected.</div>
+            <div class="msg-footer">
+              <div class="msg-char" id="cr-c-len"></div>
+              <button class="copy-btn" onclick="copyMsg('cr-c', this)">Copy</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FM: FIRST MESSAGE -->
+      <div class="msg-scenario">
+        <div class="msg-scenario-title">First Message After Connection</div>
+        <div class="msg-scenario-sub">Pain-driven question. No offer. Goal: get a reply.</div>
+        <div class="msg-variants">
+          <div class="msg-card">
+            <div class="msg-variant-tag">Variant A — Content pain</div>
+            <div class="msg-text" id="fm-a">Quick question <em>[name]</em> — are you finding that consistent content is one of those things that always gets pushed to the back? Most <em>[niche]</em> owners I speak to say the same thing.</div>
+            <div class="msg-footer">
+              <div class="msg-char" id="fm-a-len"></div>
+              <button class="copy-btn" onclick="copyMsg('fm-a', this)">Copy</button>
+            </div>
+          </div>
+          <div class="msg-card">
+            <div class="msg-variant-tag">Variant B — Follow-up pain</div>
+            <div class="msg-text" id="fm-b">Hey <em>[name]</em> — genuine question: do you have a process for following up on leads that don't book straight away? A lot of <em>[niche]</em> owners tell me that's where most of the revenue gets left.</div>
+            <div class="msg-footer">
+              <div class="msg-char" id="fm-b-len"></div>
+              <button class="copy-btn" onclick="copyMsg('fm-b', this)">Copy</button>
+            </div>
+          </div>
+          <div class="msg-card">
+            <div class="msg-variant-tag">Variant C — Time pain</div>
+            <div class="msg-text" id="fm-c"><em>[Name]</em> — are you running all your own marketing at the moment or do you have someone handling it? Just curious how most <em>[niche]</em> owners in your position manage it.</div>
+            <div class="msg-footer">
+              <div class="msg-char" id="fm-c-len"></div>
+              <button class="copy-btn" onclick="copyMsg('fm-c', this)">Copy</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FU1: FOLLOW UP DAY 3 -->
+      <div class="msg-scenario">
+        <div class="msg-scenario-title">Follow-Up 1 — Day 3 after first message (no reply)</div>
+        <div class="msg-scenario-sub">Soft. Low pressure. Just checking in.</div>
+        <div class="msg-variants">
+          <div class="msg-card">
+            <div class="msg-variant-tag">Variant A — Feed check</div>
+            <div class="msg-text" id="fu1-a">Didn't want to lose you in the feed — did my last message land okay?</div>
+            <div class="msg-footer">
+              <div class="msg-char" id="fu1-a-len"></div>
+              <button class="copy-btn" onclick="copyMsg('fu1-a', this)">Copy</button>
+            </div>
+          </div>
+          <div class="msg-card">
+            <div class="msg-variant-tag">Variant B — Quick check</div>
+            <div class="msg-text" id="fu1-b">Just checking this came through — LinkedIn has a habit of burying messages. Worth a nudge.</div>
+            <div class="msg-footer">
+              <div class="msg-char" id="fu1-b-len"></div>
+              <button class="copy-btn" onclick="copyMsg('fu1-b', this)">Copy</button>
+            </div>
+          </div>
+          <div class="msg-card">
+            <div class="msg-variant-tag">Variant C — No pressure out</div>
+            <div class="msg-text" id="fu1-c">Totally understand if the timing's off — happy to circle back when it suits. Just didn't want to disappear without checking.</div>
+            <div class="msg-footer">
+              <div class="msg-char" id="fu1-c-len"></div>
+              <button class="copy-btn" onclick="copyMsg('fu1-c', this)">Copy</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FU2: FOLLOW UP DAY 5 -->
+      <div class="msg-scenario">
+        <div class="msg-scenario-title">Follow-Up 2 — Day 5 (soft CTA — pilot offer)</div>
+        <div class="msg-scenario-sub">Still no reply. Last touch before archive. Lead with value.</div>
+        <div class="msg-variants">
+          <div class="msg-card">
+            <div class="msg-variant-tag">Variant A — Pilot offer</div>
+            <div class="msg-text" id="fu2-a">We're running a 14-day pilot for <em>[niche]</em> businesses at the moment — happy to share details if useful. No pressure either way.</div>
+            <div class="msg-footer">
+              <div class="msg-char" id="fu2-a-len"></div>
+              <button class="copy-btn" onclick="copyMsg('fu2-a', this)">Copy</button>
+            </div>
+          </div>
+          <div class="msg-card">
+            <div class="msg-variant-tag">Variant B — Result hook</div>
+            <div class="msg-text" id="fu2-b">Sharing this because it's relevant to <em>[niche]</em> — we just helped a similar business reduce no-shows by 60% in 14 days using a simple automation. Happy to walk you through it.</div>
+            <div class="msg-footer">
+              <div class="msg-char" id="fu2-b-len"></div>
+              <button class="copy-btn" onclick="copyMsg('fu2-b', this)">Copy</button>
+            </div>
+          </div>
+          <div class="msg-card">
+            <div class="msg-variant-tag">Variant C — Clean close</div>
+            <div class="msg-text" id="fu2-c">Last message from me — if this ever becomes relevant, I'm easy to find. Good luck with everything <em>[name]</em>.</div>
+            <div class="msg-footer">
+              <div class="msg-char" id="fu2-c-len"></div>
+              <button class="copy-btn" onclick="copyMsg('fu2-c', this)">Copy</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SECTION 4: QUALIFICATION TRIGGERS ── -->
+    <div class="section" id="qualify">
+      <div class="section-label">Qualification Triggers</div>
+      <div class="section-divider"></div>
+      <div class="section-title">When to escalate. When to archive.</div>
+
+      <div class="qual-grid">
+        <div class="qual-card">
+          <div class="qual-trigger">
+            <div class="qual-dot red"></div>
+            Reply mentions budget or pricing
+          </div>
+          <div class="qual-action"><strong>Escalate immediately.</strong> Do not respond with pricing in DMs. Reply: "Good question — let me give you the full picture on a quick call. 15 minutes?" Move to CRM: Call Booked.</div>
+        </div>
+        <div class="qual-card">
+          <div class="qual-trigger">
+            <div class="qual-dot red"></div>
+            Reply mentions current agency
+          </div>
+          <div class="qual-action"><strong>Escalate.</strong> This is a high-intent signal. Acknowledge, ask what they're looking for that they're not getting. Goal: uncover the gap. Do not position against their current supplier — let them do it.</div>
+        </div>
+        <div class="qual-card">
+          <div class="qual-trigger">
+            <div class="qual-dot amber"></div>
+            Two replies without CTA resistance
+          </div>
+          <div class="qual-action"><strong>Offer a call.</strong> They're engaged. Use: "Would a 15-minute call make sense? I can show you what we built for [similar niche] recently." Move to CRM: Call Booked if they say yes.</div>
+        </div>
+        <div class="qual-card">
+          <div class="qual-trigger">
+            <div class="qual-dot gold"></div>
+            Requests more information
+          </div>
+          <div class="qual-action">Reply with one strong answer, then redirect to a call. Do not send a proposal or pricing sheet via DM. Keep the gate — the call is where conversion happens.</div>
+        </div>
+        <div class="qual-card">
+          <div class="qual-trigger">
+            <div class="qual-dot green"></div>
+            No reply after 3 touches
+          </div>
+          <div class="qual-action"><strong>Archive.</strong> Tag in CRM: Archived. Do not send a 4th message. Leave at least 30 days before re-engaging with a completely new opening — different angle, different pain point.</div>
+        </div>
+        <div class="qual-card">
+          <div class="qual-trigger">
+            <div class="qual-dot amber"></div>
+            Replies with "not right now"
+          </div>
+          <div class="qual-action">Move to CRM: Contacted. Tag: Follow-up in 30 days. Set a reminder. Reply: "Totally — I'll check back in next month. Good luck in the meantime." Then leave them alone.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SECTION 5: NICHE ROADMAP ── -->
+    <div class="section" id="niches">
+      <div class="section-label">Niche Rollout</div>
+      <div class="section-divider"></div>
+      <div class="section-title">One niche per week. Stay focused.</div>
+
+      <div class="niche-grid">
+        <div class="niche-card active">
+          <div class="niche-week">Week 1</div>
+          <div class="niche-name">Med Spas &amp;<br />Aesthetics</div>
+          <div class="niche-why">High spend, visible online presence, strong pain around no-shows and inconsistent bookings. Clear ROI story. Fast to sell.</div>
+          <div class="niche-search-tags">
+            <span class="niche-tag">med spa owner</span>
+            <span class="niche-tag">aesthetics clinic director</span>
+            <span class="niche-tag">cosmetic clinic founder</span>
+            <span class="niche-tag">beauty clinic UK</span>
+          </div>
+        </div>
+        <div class="niche-card">
+          <div class="niche-week">Week 2</div>
+          <div class="niche-name">Estate<br />Agents</div>
+          <div class="niche-why">High-value instructions, email marketing almost universally neglected, strong response to consistent content. Easy to demonstrate ROI from a single instruction.</div>
+          <div class="niche-search-tags">
+            <span class="niche-tag">estate agent owner</span>
+            <span class="niche-tag">lettings director</span>
+            <span class="niche-tag">independent estate agency</span>
+            <span class="niche-tag">property business UK</span>
+          </div>
+        </div>
+        <div class="niche-card">
+          <div class="niche-week">Week 3</div>
+          <div class="niche-name">Mortgage<br />Brokers</div>
+          <div class="niche-why">Referral-dependent, underusing email and social, strong pain around rate changes and keeping past clients warm. Compliancy angle works well as a differentiator.</div>
+          <div class="niche-search-tags">
+            <span class="niche-tag">mortgage broker</span>
+            <span class="niche-tag">mortgage adviser UK</span>
+            <span class="niche-tag">independent mortgage broker</span>
+            <span class="niche-tag">financial adviser</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:18px 20px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;">
+        <div style="font-size:12px;color:rgba(240,232,218,0.5);line-height:1.7;">
+          <strong style="color:var(--cream);">Rule:</strong> Do not split attention across niches in the same week. The message variants, search filters, and pain points are all niche-specific. Switching mid-week kills reply rates. Start Week 2 only after Day 7 review confirms Week 1 is closed out.
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /page -->
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // Char counts
+    function initCharCounts() {
+      const ids = ['cr-a','cr-b','cr-c','fm-a','fm-b','fm-c','fu1-a','fu1-b','fu1-c','fu2-a','fu2-b','fu2-c'];
+      ids.forEach(id => {
+        const el = document.getElementById(id);
+        const lenEl = document.getElementById(id + '-len');
+        if (el && lenEl) {
+          const text = el.innerText;
+          lenEl.textContent = text.length + ' chars';
+        }
+      });
+    }
+
+    function copyMsg(id, btn) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const text = el.innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = 'Copied ✓';
+        btn.classList.add('copied');
+        showToast('Message copied');
+        setTimeout(() => {
+          btn.textContent = 'Copy';
+          btn.classList.remove('copied');
+        }, 2000);
+      });
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2200);
+    }
+
+    initCharCounts();
+  </script>
+</body>
+</html>
