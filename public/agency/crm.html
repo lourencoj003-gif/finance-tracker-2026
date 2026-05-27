@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Aldric Group — CRM</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #080808;
+  --bg2:     #0f0f0f;
+  --bg3:     #161616;
+  --bg4:     #1c1c1c;
+  --gold:    #C9A96E;
+  --gold-lt: #e0c48a;
+  --gold-dk: #9a7a4a;
+  --cream:   #F0E8DA;
+  --muted:   #6b6b6b;
+  --border:  rgba(201,169,110,0.15);
+  --border2: rgba(201,169,110,0.25);
+  --text:    #e8e0d4;
+  --red:     #e05555;
+  --green:   #5aad7a;
+}
+
+html, body { height: 100%; overflow: hidden; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  font-size: 13px;
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(201,169,110,0.2); border-radius: 3px; }
+
+/* ── Layout ────────────────────────────────────────────────── */
+#app { display: flex; flex-direction: column; height: 100vh; }
+
+/* ── Top bar ───────────────────────────────────────────────── */
+#topbar {
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px; height: 60px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  gap: 16px;
+}
+
+.brand {
+  font-family: 'Playfair Display', serif;
+  font-size: 18px; color: var(--gold);
+  letter-spacing: 0.5px; white-space: nowrap;
+}
+
+#stats {
+  display: flex; align-items: center; gap: 24px; flex: 1; justify-content: center;
+}
+
+.stat {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 1px; min-width: 70px;
+}
+.stat-val { font-size: 17px; font-weight: 700; color: var(--gold); line-height: 1; }
+.stat-lbl { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; }
+
+.top-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+/* ── Buttons ───────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: 8px; font-size: 12px;
+  font-weight: 600; cursor: pointer; border: none; font-family: inherit;
+  transition: opacity 0.15s, transform 0.1s;
+  white-space: nowrap;
+}
+.btn:hover { opacity: 0.85; }
+.btn:active { transform: scale(0.97); }
+.btn-gold { background: var(--gold); color: #000; }
+.btn-ghost { background: transparent; color: var(--gold); border: 1px solid var(--border2); }
+.btn-sm { padding: 5px 10px; font-size: 11px; }
+.btn-danger { background: rgba(224,85,85,0.12); color: var(--red); border: 1px solid rgba(224,85,85,0.25); }
+.btn-wa { background: rgba(37,211,102,0.1); color: #25d366; border: 1px solid rgba(37,211,102,0.2); }
+.btn-email { background: rgba(201,169,110,0.08); color: var(--gold); border: 1px solid var(--border); }
+
+/* ── Board ─────────────────────────────────────────────────── */
+#board-wrap {
+  flex: 1; display: flex; overflow-x: auto; overflow-y: hidden;
+  padding: 16px; gap: 12px;
+}
+
+.column {
+  flex-shrink: 0; width: 220px;
+  display: flex; flex-direction: column;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px; overflow: hidden;
+}
+
+.col-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg3);
+}
+.col-title {
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.8px;
+  display: flex; align-items: center; gap: 7px;
+}
+.col-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.col-count {
+  font-size: 10px; font-weight: 700;
+  background: rgba(201,169,110,0.12);
+  color: var(--gold); padding: 1px 7px;
+  border-radius: 20px;
+}
+
+.col-body {
+  flex: 1; overflow-y: auto; padding: 8px;
+  display: flex; flex-direction: column; gap: 6px;
+  min-height: 60px;
+}
+
+/* Drag over highlight */
+.col-body.drag-over {
+  background: rgba(201,169,110,0.04);
+  outline: 1px dashed rgba(201,169,110,0.3);
+  outline-offset: -4px;
+  border-radius: 8px;
+}
+
+/* ── Prospect card ─────────────────────────────────────────── */
+.card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 9px; padding: 10px;
+  cursor: grab; user-select: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.card:hover { border-color: var(--border2); box-shadow: 0 2px 12px rgba(0,0,0,0.4); }
+.card:active { cursor: grabbing; }
+.card.dragging { opacity: 0.45; }
+.card.selected { border-color: rgba(201,169,110,0.5); box-shadow: 0 0 0 1px rgba(201,169,110,0.2); }
+
+.card-name { font-weight: 600; font-size: 13px; color: var(--cream); margin-bottom: 3px; }
+.card-biz  { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+
+.card-pkg {
+  display: inline-block; font-size: 10px; font-weight: 700;
+  padding: 2px 7px; border-radius: 4px; margin-bottom: 6px;
+}
+.pkg-growth     { background: rgba(90,173,122,0.15); color: #5aad7a; }
+.pkg-scale      { background: rgba(201,169,110,0.12); color: var(--gold); }
+.pkg-dominance  { background: rgba(180,120,220,0.14); color: #c084fc; }
+
+.card-actions { display: flex; gap: 4px; margin-top: 6px; }
+
+/* ── Detail panel ──────────────────────────────────────────── */
+#detail {
+  position: fixed; top: 60px; right: 0; bottom: 0;
+  width: 380px; background: var(--bg2);
+  border-left: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+  z-index: 40;
+  overflow: hidden;
+}
+#detail.open { transform: translateX(0); }
+
+#detail-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+#detail-title { font-size: 15px; font-weight: 700; color: var(--cream); }
+
+#detail-body { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; }
+
+.field-group { display: flex; flex-direction: column; gap: 4px; }
+.field-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); font-weight: 600; }
+.field-row { display: flex; gap: 8px; }
+.field-row .field-group { flex: 1; }
+
+input, select, textarea {
+  background: var(--bg3);
+  border: 1px solid rgba(201,169,110,0.12);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12px;
+  width: 100%;
+  transition: border-color 0.15s;
+  outline: none;
+}
+input:focus, select:focus, textarea:focus { border-color: rgba(201,169,110,0.4); }
+textarea { resize: vertical; min-height: 80px; }
+select option { background: #161616; }
+
+.contact-btns { display: flex; gap: 6px; }
+
+/* history log */
+.history-log {
+  display: flex; flex-direction: column; gap: 6px;
+  max-height: 160px; overflow-y: auto;
+  padding: 8px; background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.history-entry {
+  font-size: 11px; color: var(--muted); line-height: 1.5;
+  padding-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.history-entry:last-child { border-bottom: none; padding-bottom: 0; }
+.history-ts { color: rgba(201,169,110,0.5); font-size: 10px; margin-right: 5px; }
+.history-empty { font-size: 11px; color: rgba(107,107,107,0.6); font-style: italic; }
+
+.add-history { display: flex; gap: 6px; }
+.add-history input { flex: 1; }
+
+#detail-footer {
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+  display: flex; gap: 8px; flex-shrink: 0;
+}
+
+/* ── Modal ─────────────────────────────────────────────────── */
+#modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75); z-index: 100;
+  align-items: center; justify-content: center;
+}
+#modal-overlay.open { display: flex; }
+
+#modal {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 16px; padding: 28px;
+  width: 460px; max-width: calc(100vw - 40px);
+  animation: fadeUp 0.22s ease-out;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+#modal h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 20px; color: var(--gold);
+  margin-bottom: 20px;
+}
+
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-grid .full { grid-column: 1 / -1; }
+.form-row { display: flex; flex-direction: column; gap: 4px; }
+.form-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); font-weight: 600; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+
+/* ── Toast ─────────────────────────────────────────────────── */
+#toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--bg3); border: 1px solid var(--border2);
+  color: var(--gold); padding: 9px 18px; border-radius: 8px;
+  font-size: 12px; font-weight: 500;
+  opacity: 0; transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none; z-index: 200; white-space: nowrap;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── Delete confirm ────────────────────────────────────────── */
+#confirm-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75); z-index: 110;
+  align-items: center; justify-content: center;
+}
+#confirm-overlay.open { display: flex; }
+#confirm-box {
+  background: var(--bg2); border: 1px solid rgba(224,85,85,0.3);
+  border-radius: 14px; padding: 24px 28px; width: 320px;
+  text-align: center; animation: fadeUp 0.2s ease-out;
+}
+#confirm-box h3 { font-size: 15px; color: var(--cream); margin-bottom: 8px; }
+#confirm-box p  { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
+#confirm-box .actions { display: flex; gap: 8px; justify-content: center; }
+
+/* ── Empty state ───────────────────────────────────────────── */
+.col-empty { font-size: 11px; color: rgba(107,107,107,0.5); text-align: center; padding: 16px 8px; font-style: italic; }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- Top bar -->
+  <div id="topbar">
+    <div class="brand">Aldric CRM</div>
+
+    <div id="stats">
+      <div class="stat"><span class="stat-val" id="s-total">0</span><span class="stat-lbl">Prospects</span></div>
+      <div class="stat"><span class="stat-val" id="s-pipeline">£0</span><span class="stat-lbl">Pipeline</span></div>
+      <div class="stat"><span class="stat-val" id="s-clients">0</span><span class="stat-lbl">Clients</span></div>
+      <div class="stat"><span class="stat-val" id="s-rate">0%</span><span class="stat-lbl">Conv. Rate</span></div>
+    </div>
+
+    <div class="top-actions">
+      <button class="btn btn-ghost btn-sm" onclick="exportCSV()">↓ CSV</button>
+      <button class="btn btn-gold" onclick="openAddModal()">+ Add Prospect</button>
+    </div>
+  </div>
+
+  <!-- Kanban board -->
+  <div id="board-wrap" id="board"></div>
+
+</div>
+
+<!-- Detail panel -->
+<div id="detail">
+  <div id="detail-header">
+    <span id="detail-title">Prospect</span>
+    <button class="btn btn-ghost btn-sm" onclick="closeDetail()">✕ Close</button>
+  </div>
+  <div id="detail-body">
+
+    <div class="field-row">
+      <div class="field-group">
+        <div class="field-label">Name</div>
+        <input id="d-name" type="text" oninput="saveDetailField('name', this.value)" />
+      </div>
+      <div class="field-group">
+        <div class="field-label">Business</div>
+        <input id="d-biz" type="text" oninput="saveDetailField('business', this.value)" />
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field-group">
+        <div class="field-label">Sector</div>
+        <input id="d-sector" type="text" oninput="saveDetailField('sector', this.value)" />
+      </div>
+      <div class="field-group">
+        <div class="field-label">Package</div>
+        <select id="d-pkg" onchange="saveDetailField('package', this.value); renderBoard()">
+          <option>Growth</option>
+          <option>Scale</option>
+          <option>Dominance</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field-group">
+        <div class="field-label">Email</div>
+        <input id="d-email" type="email" oninput="saveDetailField('email', this.value)" />
+      </div>
+      <div class="field-group">
+        <div class="field-label">WhatsApp</div>
+        <input id="d-wa" type="tel" placeholder="+44…" oninput="saveDetailField('whatsapp', this.value)" />
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field-group">
+        <div class="field-label">Status</div>
+        <select id="d-status" onchange="saveDetailField('status', this.value); renderBoard()">
+          <option>New</option>
+          <option>Contacted</option>
+          <option>Call Booked</option>
+          <option>Proposal Sent</option>
+          <option>Client</option>
+          <option>Lost</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <div class="field-label">Last contacted</div>
+        <input id="d-last" type="date" onchange="saveDetailField('lastContacted', this.value)" />
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-label">Next action</div>
+      <input id="d-next" type="text" placeholder="e.g. Follow up Thursday re: proposal" oninput="saveDetailField('nextAction', this.value)" />
+    </div>
+
+    <div class="field-group">
+      <div class="field-label">Notes</div>
+      <textarea id="d-notes" rows="5" placeholder="Background, pain points, what they care about…" oninput="saveDetailField('notes', this.value)"></textarea>
+    </div>
+
+    <div class="field-group">
+      <div class="field-label">Contact history</div>
+      <div class="history-log" id="history-log"></div>
+      <div class="add-history" style="margin-top:6px">
+        <input id="history-input" type="text" placeholder="Log a note or contact…" onkeydown="if(event.key==='Enter')addHistory()" />
+        <button class="btn btn-ghost btn-sm" onclick="addHistory()">+ Log</button>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-label">Contact</div>
+      <div class="contact-btns">
+        <button class="btn btn-wa btn-sm" id="d-btn-wa" onclick="contactWA()">📲 WhatsApp</button>
+        <button class="btn btn-email btn-sm" id="d-btn-email" onclick="contactEmail()">✉ Email</button>
+      </div>
+    </div>
+
+  </div>
+  <div id="detail-footer">
+    <button class="btn btn-danger btn-sm" onclick="confirmDelete()">🗑 Delete</button>
+    <div style="flex:1"></div>
+    <button class="btn btn-gold btn-sm" onclick="closeDetail()">Done</button>
+  </div>
+</div>
+
+<!-- Add/Edit modal -->
+<div id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div id="modal">
+    <h2 id="modal-title">New Prospect</h2>
+    <div class="form-grid">
+      <div class="form-row"><label class="form-label">Name *</label><input id="f-name" placeholder="Jane Smith" /></div>
+      <div class="form-row"><label class="form-label">Business *</label><input id="f-biz" placeholder="Acme Ltd" /></div>
+      <div class="form-row"><label class="form-label">Sector</label><input id="f-sector" placeholder="e.g. Legal, E-commerce" /></div>
+      <div class="form-row">
+        <label class="form-label">Package Interest</label>
+        <select id="f-pkg">
+          <option>Growth</option>
+          <option>Scale</option>
+          <option>Dominance</option>
+        </select>
+      </div>
+      <div class="form-row"><label class="form-label">Email</label><input id="f-email" type="email" placeholder="jane@acme.com" /></div>
+      <div class="form-row"><label class="form-label">WhatsApp</label><input id="f-wa" type="tel" placeholder="+447…" /></div>
+      <div class="form-row full">
+        <label class="form-label">Status</label>
+        <select id="f-status">
+          <option>New</option>
+          <option>Contacted</option>
+          <option>Call Booked</option>
+          <option>Proposal Sent</option>
+          <option>Client</option>
+          <option>Lost</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-gold" onclick="saveProspect()">Add Prospect</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirm -->
+<div id="confirm-overlay">
+  <div id="confirm-box">
+    <h3>Delete prospect?</h3>
+    <p>This cannot be undone.</p>
+    <div class="actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-danger btn-sm" onclick="doDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ── Data ──────────────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'aldric_crm_v1';
+const STATUSES    = ['New','Contacted','Call Booked','Proposal Sent','Client','Lost'];
+const PKG_VALUE   = { Growth: 1500, Scale: 3000, Dominance: 5000 };
+const COL_COLORS  = {
+  'New':           '#6b6b6b',
+  'Contacted':     '#C9A96E',
+  'Call Booked':   '#5aad7a',
+  'Proposal Sent': '#60a5fa',
+  'Client':        '#a78bfa',
+  'Lost':          '#e05555',
+};
+
+let prospects  = [];
+let activeId   = null;   // detail panel
+let dragId     = null;   // currently dragged card id
+let deleteId   = null;   // pending delete
+
+function load() {
+  try { prospects = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { prospects = []; }
+}
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(prospects));
+}
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+function updateStats() {
+  const active   = prospects.filter(p => p.status !== 'Lost');
+  const clients  = prospects.filter(p => p.status === 'Client');
+  const closed   = prospects.filter(p => p.status === 'Client' || p.status === 'Lost');
+  const pipeline = active.reduce((s,p) => s + (PKG_VALUE[p.package] || 0), 0);
+  const rate     = closed.length ? Math.round(clients.length / closed.length * 100) : 0;
+
+  document.getElementById('s-total').textContent    = prospects.length;
+  document.getElementById('s-pipeline').textContent = '£' + pipeline.toLocaleString('en-GB');
+  document.getElementById('s-clients').textContent  = clients.length;
+  document.getElementById('s-rate').textContent     = rate + '%';
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function renderBoard() {
+  const wrap = document.getElementById('board-wrap');
+  wrap.innerHTML = '';
+
+  STATUSES.forEach(status => {
+    const cards = prospects.filter(p => p.status === status);
+    const col   = document.createElement('div');
+    col.className = 'column';
+    col.innerHTML = `
+      <div class="col-header">
+        <div class="col-title">
+          <span class="col-dot" style="background:${COL_COLORS[status]}"></span>
+          ${status}
+        </div>
+        <span class="col-count">${cards.length}</span>
+      </div>
+      <div class="col-body" data-status="${status}"></div>
+    `;
+
+    const body = col.querySelector('.col-body');
+
+    // Drag-over handlers
+    body.addEventListener('dragover', e => { e.preventDefault(); body.classList.add('drag-over'); });
+    body.addEventListener('dragleave', () => body.classList.remove('drag-over'));
+    body.addEventListener('drop', e => {
+      e.preventDefault();
+      body.classList.remove('drag-over');
+      if (!dragId) return;
+      const p = prospects.find(x => x.id === dragId);
+      if (p) {
+        p.status = status;
+        save();
+        renderBoard();
+        updateStats();
+        if (activeId === dragId) { document.getElementById('d-status').value = status; }
+        toast(`Moved to ${status}`);
+      }
+    });
+
+    if (cards.length === 0) {
+      body.innerHTML = `<div class="col-empty">Drop here</div>`;
+    } else {
+      cards.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'card' + (p.id === activeId ? ' selected' : '');
+        card.draggable = true;
+        card.dataset.id = p.id;
+
+        const pkgClass = 'pkg-' + (p.package || 'growth').toLowerCase().split(' ')[0];
+
+        card.innerHTML = `
+          <div class="card-name">${esc(p.name)}</div>
+          <div class="card-biz">${esc(p.business)}${p.sector ? ' · ' + esc(p.sector) : ''}</div>
+          <span class="card-pkg ${pkgClass}">${p.package || 'Growth'}</span>
+          <div class="card-actions">
+            <button class="btn btn-wa btn-sm" onclick="event.stopPropagation(); cardWA(event,'${p.id}')">📲</button>
+            <button class="btn btn-email btn-sm" onclick="event.stopPropagation(); cardEmail(event,'${p.id}')">✉</button>
+          </div>
+        `;
+
+        card.addEventListener('click', () => openDetail(p.id));
+
+        card.addEventListener('dragstart', e => {
+          dragId = p.id;
+          setTimeout(() => card.classList.add('dragging'), 0);
+          e.dataTransfer.effectAllowed = 'move';
+        });
+        card.addEventListener('dragend', () => {
+          card.classList.remove('dragging');
+          dragId = null;
+          document.querySelectorAll('.col-body').forEach(b => b.classList.remove('drag-over'));
+        });
+
+        body.appendChild(card);
+      });
+    }
+
+    wrap.appendChild(col);
+  });
+
+  updateStats();
+}
+
+// ── Detail panel ──────────────────────────────────────────────────────────────
+function openDetail(id) {
+  activeId = id;
+  const p  = prospects.find(x => x.id === id);
+  if (!p) return;
+
+  document.getElementById('d-name').value   = p.name       || '';
+  document.getElementById('d-biz').value    = p.business   || '';
+  document.getElementById('d-sector').value = p.sector     || '';
+  document.getElementById('d-email').value  = p.email      || '';
+  document.getElementById('d-wa').value     = p.whatsapp   || '';
+  document.getElementById('d-pkg').value    = p.package    || 'Growth';
+  document.getElementById('d-status').value = p.status     || 'New';
+  document.getElementById('d-last').value   = p.lastContacted || '';
+  document.getElementById('d-next').value   = p.nextAction || '';
+  document.getElementById('d-notes').value  = p.notes      || '';
+  document.getElementById('detail-title').textContent = p.name || 'Prospect';
+
+  renderHistory(p);
+
+  document.getElementById('detail').classList.add('open');
+  renderBoard(); // refresh selected highlight
+}
+
+function closeDetail() {
+  activeId = null;
+  document.getElementById('detail').classList.remove('open');
+  renderBoard();
+}
+
+function saveDetailField(field, value) {
+  if (!activeId) return;
+  const p = prospects.find(x => x.id === activeId);
+  if (!p) return;
+  p[field] = value;
+  if (field === 'name') {
+    document.getElementById('detail-title').textContent = value || 'Prospect';
+  }
+  save();
+  updateStats();
+}
+
+// ── History ───────────────────────────────────────────────────────────────────
+function renderHistory(p) {
+  const log = document.getElementById('history-log');
+  const entries = p.history || [];
+  if (entries.length === 0) {
+    log.innerHTML = '<div class="history-empty">No history yet</div>';
+    return;
+  }
+  log.innerHTML = [...entries].reverse().map(e =>
+    `<div class="history-entry"><span class="history-ts">${e.ts}</span>${esc(e.text)}</div>`
+  ).join('');
+}
+
+function addHistory() {
+  if (!activeId) return;
+  const input = document.getElementById('history-input');
+  const text  = input.value.trim();
+  if (!text) return;
+  const p = prospects.find(x => x.id === activeId);
+  if (!p) return;
+  if (!p.history) p.history = [];
+  const now = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+  p.history.push({ ts: now, text });
+  p.lastContacted = new Date().toISOString().slice(0,10);
+  document.getElementById('d-last').value = p.lastContacted;
+  save();
+  renderHistory(p);
+  input.value = '';
+  toast('Logged');
+}
+
+// ── Add/Edit modal ────────────────────────────────────────────────────────────
+function openAddModal() {
+  ['f-name','f-biz','f-sector','f-email','f-wa'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-pkg').value    = 'Growth';
+  document.getElementById('f-status').value = 'New';
+  document.getElementById('modal-title').textContent = 'New Prospect';
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('f-name').focus(), 100);
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+function saveProspect() {
+  const name = document.getElementById('f-name').value.trim();
+  const biz  = document.getElementById('f-biz').value.trim();
+  if (!name || !biz) { toast('Name and business required'); return; }
+
+  const p = {
+    id:        uid(),
+    name,
+    business:  biz,
+    sector:    document.getElementById('f-sector').value.trim(),
+    email:     document.getElementById('f-email').value.trim(),
+    whatsapp:  document.getElementById('f-wa').value.trim(),
+    package:   document.getElementById('f-pkg').value,
+    status:    document.getElementById('f-status').value,
+    notes:     '',
+    nextAction:'',
+    lastContacted: '',
+    history:   [],
+    createdAt: new Date().toISOString(),
+  };
+
+  prospects.unshift(p);
+  save();
+  closeModal();
+  renderBoard();
+  toast(`${name} added`);
+}
+
+// ── Delete ────────────────────────────────────────────────────────────────────
+function confirmDelete() {
+  deleteId = activeId;
+  document.getElementById('confirm-overlay').classList.add('open');
+}
+
+function closeConfirm() {
+  document.getElementById('confirm-overlay').classList.remove('open');
+  deleteId = null;
+}
+
+function doDelete() {
+  if (!deleteId) return;
+  const p = prospects.find(x => x.id === deleteId);
+  prospects = prospects.filter(x => x.id !== deleteId);
+  save();
+  closeConfirm();
+  closeDetail();
+  renderBoard();
+  toast(`${p?.name || 'Prospect'} deleted`);
+}
+
+// ── Contact actions ───────────────────────────────────────────────────────────
+const ALDRIC_WA = '447599260032';
+
+function contactWA() {
+  if (!activeId) return;
+  const p    = prospects.find(x => x.id === activeId);
+  const num  = (p.whatsapp || '').replace(/\D/g,'') || ALDRIC_WA;
+  const text = encodeURIComponent(`Hi ${p.name}, I'm reaching out from Aldric Group regarding our ${p.package} package.`);
+  window.open(`https://wa.me/${num}?text=${text}`, '_blank');
+}
+
+function contactEmail() {
+  if (!activeId) return;
+  const p    = prospects.find(x => x.id === activeId);
+  const sub  = encodeURIComponent(`Aldric Group — ${p.package} Package — ${p.business}`);
+  const body = encodeURIComponent(`Hi ${p.name},\n\nI wanted to follow up regarding the ${p.package} package for ${p.business}.\n\nBest,\nAldric Group`);
+  window.location.href = `mailto:${p.email}?subject=${sub}&body=${body}`;
+}
+
+function cardWA(e, id) {
+  const p   = prospects.find(x => x.id === id);
+  if (!p) return;
+  const num = (p.whatsapp || '').replace(/\D/g,'') || ALDRIC_WA;
+  const txt = encodeURIComponent(`Hi ${p.name}, reaching out from Aldric Group re: ${p.package} package.`);
+  window.open(`https://wa.me/${num}?text=${txt}`, '_blank');
+}
+
+function cardEmail(e, id) {
+  const p   = prospects.find(x => x.id === id);
+  if (!p) return;
+  const sub = encodeURIComponent(`Aldric Group — ${p.package} Package`);
+  window.location.href = `mailto:${p.email}?subject=${sub}`;
+}
+
+// ── CSV export ────────────────────────────────────────────────────────────────
+function exportCSV() {
+  const cols = ['Name','Business','Sector','Email','WhatsApp','Package','Status','Last Contacted','Next Action','Notes','Created'];
+  const rows = prospects.map(p => [
+    p.name, p.business, p.sector, p.email, p.whatsapp,
+    p.package, p.status, p.lastContacted, p.nextAction,
+    (p.notes || '').replace(/\n/g,' '), p.createdAt,
+  ].map(v => `"${(v||'').replace(/"/g,'""')}"`).join(','));
+
+  const csv  = [cols.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `aldric-crm-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('CSV downloaded');
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+let _toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Keyboard shortcuts ────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (document.getElementById('confirm-overlay').classList.contains('open')) { closeConfirm(); return; }
+    if (document.getElementById('modal-overlay').classList.contains('open'))   { closeModal();   return; }
+    if (document.getElementById('detail').classList.contains('open'))          { closeDetail();  return; }
+  }
+  if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+    e.preventDefault(); openAddModal();
+  }
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+load();
+renderBoard();
+</script>
+</body>
+</html>
