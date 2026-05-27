@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Automation Safety System — Aldric Group</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #080808; --bg2: #0f0f0f; --bg3: #161616; --bg4: #1c1c1c;
+      --gold: #C9A96E; --gold-lt: #e0c48a; --cream: #F0E8DA;
+      --muted: #6b6b6b; --border: rgba(201,169,110,0.15); --text: #e8e0d4;
+      --green: #4caf50; --amber: #ff9800; --red: #ef5350; --blue: #5c8de8;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif; background: var(--bg);
+      color: var(--text); line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* HEADER */
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 48px; border-bottom: 1px solid var(--border);
+      background: rgba(8,8,8,0.96); backdrop-filter: blur(20px);
+      position: sticky; top: 0; z-index: 50;
+    }
+    .header-left { display: flex; align-items: center; gap: 20px; }
+    .logo { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; color: var(--gold); text-decoration: none; }
+    .header-title { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; padding-left: 20px; border-left: 1px solid var(--border); }
+    .header-nav { display: flex; gap: 6px; }
+    .nav-pill { padding: 7px 14px; background: transparent; border: 1px solid transparent; color: var(--muted); font-size: 12px; font-weight: 500; border-radius: 3px; cursor: pointer; transition: all 0.15s; font-family: 'Inter', sans-serif; text-decoration: none; }
+    .nav-pill:hover { background: var(--bg3); border-color: var(--border); color: var(--cream); }
+
+    /* PAGE */
+    .page { max-width: 1100px; margin: 0 auto; padding: 52px 48px 80px; }
+
+    /* HERO */
+    .page-hero { margin-bottom: 60px; }
+    .page-label { font-size: 10px; font-weight: 700; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gold); margin-bottom: 16px; }
+    .page-title { font-family: 'Playfair Display', serif; font-size: clamp(32px, 4vw, 52px); font-weight: 700; color: var(--cream); line-height: 1.1; margin-bottom: 14px; }
+    .page-sub { font-size: 15px; color: rgba(240,232,218,0.5); max-width: 660px; line-height: 1.75; }
+    .warn-banner {
+      display: flex; align-items: flex-start; gap: 14px;
+      margin-top: 24px; padding: 16px 20px;
+      background: rgba(239,83,80,0.07); border: 1px solid rgba(239,83,80,0.2);
+      border-radius: 3px;
+    }
+    .warn-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+    .warn-text { font-size: 13px; color: rgba(240,232,218,0.65); line-height: 1.7; }
+    .warn-text strong { color: var(--cream); }
+
+    /* SECTIONS */
+    .section { margin-bottom: 56px; }
+    .section-label { font-size: 10px; font-weight: 700; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gold); margin-bottom: 10px; }
+    .section-divider { width: 40px; height: 1px; background: rgba(201,169,110,0.4); margin-bottom: 20px; }
+    .section-title { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--cream); margin-bottom: 24px; }
+
+    /* PHASE TABLE */
+    .phase-table { width: 100%; border-collapse: collapse; }
+    .phase-table thead tr { border-bottom: 1px solid var(--border); }
+    .phase-table th { text-align: left; padding: 10px 18px; font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
+    .phase-table tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .phase-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+    .phase-table td { padding: 20px 18px; font-size: 13px; vertical-align: top; }
+
+    .phase-badge {
+      display: inline-block; padding: 3px 10px; border-radius: 20px;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    }
+    .phase-manual { background: rgba(92,141,232,0.12); color: var(--blue); border: 1px solid rgba(92,141,232,0.25); }
+    .phase-optional { background: rgba(255,152,0,0.12); color: var(--amber); border: 1px solid rgba(255,152,0,0.25); }
+    .phase-auto { background: rgba(76,175,80,0.12); color: var(--green); border: 1px solid rgba(76,175,80,0.25); }
+
+    .phase-limit {
+      font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700;
+      color: var(--gold); line-height: 1; margin-bottom: 4px;
+    }
+    .phase-unit { font-size: 11px; color: var(--muted); }
+    .phase-desc { font-size: 13px; color: rgba(240,232,218,0.6); line-height: 1.7; margin-top: 10px; }
+    .phase-desc strong { color: var(--cream); }
+    .phase-actions-list { list-style: none; margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
+    .phase-actions-list li { font-size: 12px; color: rgba(240,232,218,0.5); padding-left: 14px; position: relative; line-height: 1.6; }
+    .phase-actions-list li::before { content: '→'; color: var(--gold); position: absolute; left: 0; font-size: 10px; top: 2px; }
+    .phase-actions-list li.blocked { color: rgba(239,83,80,0.6); }
+    .phase-actions-list li.blocked::before { content: '✕'; color: var(--red); }
+
+    .rec-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 2px;
+      background: rgba(201,169,110,0.1); border: 1px solid rgba(201,169,110,0.25);
+      font-size: 11px; font-weight: 700; color: var(--gold);
+      letter-spacing: 0.06em; margin-top: 12px;
+    }
+
+    /* ANTI-BAN GRID */
+    .rules-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .rule-card {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 4px; padding: 24px;
+      transition: border-color 0.2s;
+    }
+    .rule-card:hover { border-color: rgba(201,169,110,0.3); }
+    .rule-card.critical { border-color: rgba(239,83,80,0.25); background: rgba(239,83,80,0.03); }
+    .rule-card.critical .rule-icon { color: var(--red); }
+    .rule-icon { font-size: 22px; margin-bottom: 12px; }
+    .rule-title { font-size: 14px; font-weight: 700; color: var(--cream); margin-bottom: 8px; line-height: 1.3; }
+    .rule-body { font-size: 12px; color: rgba(240,232,218,0.5); line-height: 1.7; }
+    .rule-body strong { color: var(--cream); }
+    .rule-val {
+      font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700;
+      color: var(--gold); margin-bottom: 6px; margin-top: 4px;
+    }
+
+    /* TOOL TABLE */
+    .tool-table { width: 100%; border-collapse: collapse; }
+    .tool-table thead tr { border-bottom: 1px solid var(--border); }
+    .tool-table th { text-align: left; padding: 10px 18px; font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
+    .tool-table th.c { text-align: center; }
+    .tool-table tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.15s; }
+    .tool-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+    .tool-table tbody tr.recommended { background: rgba(201,169,110,0.04); border-color: rgba(201,169,110,0.15); }
+    .tool-table td { padding: 18px 18px; font-size: 13px; vertical-align: middle; }
+    .tool-table td.c { text-align: center; }
+    .tool-name { font-size: 15px; font-weight: 700; color: var(--cream); margin-bottom: 3px; }
+    .tool-phase { font-size: 11px; color: var(--muted); }
+    .price-val { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; color: var(--gold); }
+    .price-period { font-size: 11px; color: var(--muted); }
+    .risk-bar-wrap { width: 80px; height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; margin: 0 auto; overflow: hidden; }
+    .risk-fill { height: 100%; border-radius: 3px; }
+    .risk-low { background: var(--green); }
+    .risk-mid { background: var(--amber); }
+    .risk-label { font-size: 10px; font-weight: 600; margin-top: 4px; text-align: center; }
+    .feature-list { font-size: 12px; color: rgba(240,232,218,0.55); line-height: 1.8; }
+    .feature-list .yes { color: rgba(76,175,80,0.8); font-weight: 600; }
+    .feature-list .no  { color: rgba(239,83,80,0.6); }
+    .rec-star {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 9px; border-radius: 20px;
+      background: rgba(201,169,110,0.1); color: var(--gold);
+      font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+      border: 1px solid rgba(201,169,110,0.25);
+    }
+
+    /* DAILY LOOP */
+    .loop-timeline { display: flex; flex-direction: column; gap: 3px; }
+    .loop-block {
+      display: grid; grid-template-columns: 80px 120px 1fr auto;
+      gap: 0; background: var(--bg3); align-items: stretch;
+    }
+    .loop-block:first-child { border-radius: 4px 4px 0 0; }
+    .loop-block:last-child  { border-radius: 0 0 4px 4px; }
+    .loop-block + .loop-block { border-top: 1px solid rgba(255,255,255,0.04); }
+    .loop-time {
+      padding: 18px 16px; font-family: 'Playfair Display', serif;
+      font-size: 17px; font-weight: 700; color: var(--gold);
+      border-right: 1px solid rgba(255,255,255,0.04);
+      display: flex; align-items: center; white-space: nowrap;
+    }
+    .loop-type {
+      padding: 18px 14px; font-size: 10px; font-weight: 700;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--muted); border-right: 1px solid rgba(255,255,255,0.04);
+      display: flex; align-items: center;
+    }
+    .loop-body { padding: 18px 20px; }
+    .loop-title { font-size: 14px; font-weight: 700; color: var(--cream); margin-bottom: 5px; }
+    .loop-detail { font-size: 13px; color: rgba(240,232,218,0.55); line-height: 1.7; }
+    .loop-detail strong { color: var(--cream); }
+    .loop-detail code {
+      font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px;
+      background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 2px;
+      color: var(--gold);
+    }
+    .loop-tag-wrap { padding: 18px 16px; display: flex; align-items: center; }
+    .loop-tag {
+      padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap;
+    }
+    .loop-tag.ai { background: rgba(92,141,232,0.12); color: var(--blue); border: 1px solid rgba(92,141,232,0.2); }
+    .loop-tag.manual { background: rgba(201,169,110,0.1); color: var(--gold); border: 1px solid rgba(201,169,110,0.2); }
+    .loop-tag.human { background: rgba(76,175,80,0.1); color: var(--green); border: 1px solid rgba(76,175,80,0.2); }
+    .loop-tag.log { background: rgba(255,152,0,0.1); color: var(--amber); border: 1px solid rgba(255,152,0,0.2); }
+
+    /* CLAUDE PROMPT BOX */
+    .prompt-box {
+      background: var(--bg3); border: 1px solid rgba(92,141,232,0.2);
+      border-radius: 4px; padding: 24px 28px; margin-top: 20px;
+      position: relative;
+    }
+    .prompt-box-label {
+      position: absolute; top: -1px; left: 20px;
+      background: rgba(92,141,232,0.15); border: 1px solid rgba(92,141,232,0.25);
+      border-radius: 0 0 3px 3px; padding: 3px 10px;
+      font-size: 9px; font-weight: 700; letter-spacing: 0.18em;
+      text-transform: uppercase; color: var(--blue);
+    }
+    .prompt-text {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 12px; color: rgba(240,232,218,0.65);
+      line-height: 1.8; white-space: pre-wrap;
+    }
+    .prompt-text .var { color: var(--gold); }
+    .prompt-text .comment { color: rgba(107,107,107,0.8); }
+    .copy-prompt-btn {
+      position: absolute; top: 14px; right: 14px;
+      padding: 5px 12px; background: transparent;
+      border: 1px solid var(--border); color: var(--muted);
+      font-size: 11px; font-weight: 500; border-radius: 2px;
+      cursor: pointer; transition: all 0.15s; font-family: 'Inter', sans-serif;
+    }
+    .copy-prompt-btn:hover { color: var(--cream); border-color: rgba(240,232,218,0.3); }
+    .copy-prompt-btn.copied { color: var(--green); border-color: rgba(76,175,80,0.3); }
+
+    /* TOAST */
+    .toast { position: fixed; bottom: 28px; right: 28px; background: var(--bg3); border: 1px solid rgba(201,169,110,0.3); color: var(--cream); font-size: 13px; font-weight: 500; padding: 12px 20px; border-radius: 4px; transform: translateY(80px); opacity: 0; transition: all 0.3s ease; z-index: 999; pointer-events: none; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    @media (max-width: 900px) {
+      header { padding: 16px 20px; }
+      .page { padding: 32px 20px 60px; }
+      .rules-grid { grid-template-columns: 1fr 1fr; }
+      .loop-block { grid-template-columns: 70px 1fr; }
+      .loop-type, .loop-tag-wrap { display: none; }
+    }
+    @media (max-width: 600px) {
+      .rules-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-left">
+      <a href="../index.html" class="logo">Aldric Group</a>
+      <div class="header-title">Automation Safety System</div>
+    </div>
+    <div class="header-nav">
+      <a href="seven-day-plan.html" class="nav-pill">7-Day Plan</a>
+      <a href="outreach-system.html" class="nav-pill">SDR System</a>
+      <a href="retention.html" class="nav-pill">Retention →</a>
+    </div>
+  </header>
+
+  <div class="page">
+
+    <!-- HERO -->
+    <div class="page-hero">
+      <div class="page-label">Internal Operations</div>
+      <h1 class="page-title">LinkedIn Automation<br />Safety System</h1>
+      <p class="page-sub">Sending limits, anti-ban rules, tool selection, and the daily AI-assisted loop. Follow this exactly. A banned LinkedIn account kills the entire acquisition channel.</p>
+      <div class="warn-banner">
+        <div class="warn-icon">⚠️</div>
+        <div class="warn-text"><strong>Account risk is real.</strong> LinkedIn actively detects automation patterns. A restriction on a new account can be permanent. Do not skip the warm-up phase. Do not automate messages in months 1–2. The limits here are conservative by design.</div>
+      </div>
+    </div>
+
+    <!-- ── SECTION 1: SENDING LIMITS ── -->
+    <div class="section" id="limits">
+      <div class="section-label">Sending Limits</div>
+      <div class="section-divider"></div>
+      <div class="section-title">Phase-by-phase volume and automation rules.</div>
+
+      <table class="phase-table">
+        <thead>
+          <tr>
+            <th style="width:140px;">Phase</th>
+            <th style="width:130px;">Daily Limit</th>
+            <th style="width:140px;">Automation</th>
+            <th>Rules &amp; Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+
+          <tr>
+            <td>
+              <div style="font-size:13px;font-weight:700;color:var(--cream);margin-bottom:6px;">Weeks 1–2</div>
+              <span class="phase-badge phase-manual">Manual Only</span>
+            </td>
+            <td>
+              <div class="phase-limit">20</div>
+              <div class="phase-unit">connections / day</div>
+            </td>
+            <td>
+              <div style="font-size:13px;font-weight:600;color:var(--red);">None</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:3px;">Zero automation</div>
+            </td>
+            <td>
+              <div class="phase-desc"><strong>Profile warm-up phase.</strong> LinkedIn's algorithm watches new and reactivated accounts. Consistent manual activity builds a baseline trust score before any volume increase.</div>
+              <ul class="phase-actions-list">
+                <li>Send 20 connection requests manually per day — spread across the day, not in batches</li>
+                <li>Engage with 5–10 posts per day (like, comment) before sending requests</li>
+                <li>Fill out full profile — headline, about, featured, experience, banner</li>
+                <li>Connect with people you actually know first (10–20) to establish graph</li>
+                <li class="blocked">No automation tools of any kind</li>
+                <li class="blocked">No bulk messaging</li>
+              </ul>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <div style="font-size:13px;font-weight:700;color:var(--cream);margin-bottom:6px;">Weeks 3–4</div>
+              <span class="phase-badge phase-optional">Optional Tool</span>
+            </td>
+            <td>
+              <div class="phase-limit">30</div>
+              <div class="phase-unit">connections / day</div>
+            </td>
+            <td>
+              <div style="font-size:13px;font-weight:600;color:var(--amber);">PhantomBuster</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:3px;">Connections only</div>
+            </td>
+            <td>
+              <div class="phase-desc">You can optionally introduce PhantomBuster for connection requests — but <strong>not for messages.</strong> All first messages must still be sent manually. This keeps the human signal on the highest-risk action.</div>
+              <ul class="phase-actions-list">
+                <li>Set PhantomBuster with 45–90 second random delays between requests</li>
+                <li>Run during business hours only (09:00–18:00) — not overnight</li>
+                <li>All first messages sent manually within 24–48 hours of acceptance</li>
+                <li>Monitor LinkedIn notifications daily for warning messages</li>
+                <li class="blocked">Do not automate messages</li>
+                <li class="blocked">Do not exceed 30 requests/day in this phase</li>
+              </ul>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <div style="font-size:13px;font-weight:700;color:var(--cream);margin-bottom:6px;">Month 2+</div>
+              <span class="phase-badge phase-auto">Full Loop</span>
+            </td>
+            <td>
+              <div class="phase-limit">40–50</div>
+              <div class="phase-unit">connections / day max</div>
+            </td>
+            <td>
+              <div style="font-size:13px;font-weight:600;color:var(--green);">Connections + First Msg</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:3px;">Never follow-ups</div>
+            </td>
+            <td>
+              <div class="phase-desc">Full automation loop active. Connections and first messages can be automated with Claude-generated personalised openers. <strong>Follow-up messages must always be manual.</strong> Follow-ups require context from the conversation — automation here is a ban risk and a conversion killer.</div>
+              <ul class="phase-actions-list">
+                <li>Use Claude API to generate 40–50 personalised connection notes + first messages at 09:00</li>
+                <li>Send via PhantomBuster with 60–90 second random delays, business hours only</li>
+                <li>Review all replies manually at 17:00 — no automated responses ever</li>
+                <li>Absolute daily cap: 100 total actions (connects + messages combined)</li>
+                <li class="blocked">Never automate follow-up messages — always manual</li>
+                <li class="blocked">Never run overnight — only 09:00–18:00</li>
+              </ul>
+              <div class="rec-badge">★ Recommended approach from Month 2</div>
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ── SECTION 2: ANTI-BAN RULES ── -->
+    <div class="section" id="rules">
+      <div class="section-label">Anti-Ban Rules</div>
+      <div class="section-divider"></div>
+      <div class="section-title">These are not guidelines. Follow all of them.</div>
+
+      <div class="rules-grid">
+
+        <div class="rule-card critical">
+          <div class="rule-icon">🛑</div>
+          <div class="rule-title">100 action hard cap per day</div>
+          <div class="rule-val">100</div>
+          <div class="rule-body">Total actions across all LinkedIn activity — connection requests, messages, profile views, endorsements. <strong>Never exceed this.</strong> LinkedIn monitors action velocity. 100 is the ceiling for an established account. New accounts: 50.</div>
+        </div>
+
+        <div class="rule-card critical">
+          <div class="rule-icon">⏱️</div>
+          <div class="rule-title">Random delays between every action</div>
+          <div class="rule-val">45–90s</div>
+          <div class="rule-body">Randomised delay between <strong>every single action</strong>, not per batch. Never use fixed delays — LinkedIn detects the pattern. PhantomBuster's built-in randomiser works. Manual senders: use a timer app or just count.</div>
+        </div>
+
+        <div class="rule-card critical">
+          <div class="rule-icon">📅</div>
+          <div class="rule-title">Account age minimum before automation</div>
+          <div class="rule-val">3 months</div>
+          <div class="rule-body">Never automate a LinkedIn account under 3 months old. New accounts flagged for automation patterns face permanent restrictions. <strong>There is no appeal.</strong> If starting fresh: weeks 1–8 are manual only, no exceptions.</div>
+        </div>
+
+        <div class="rule-card">
+          <div class="rule-icon">✏️</div>
+          <div class="rule-title">Always personalise the first line</div>
+          <div class="rule-body">Even in automated messages, the first line must be specific to the recipient. Reference their business name, niche, location, or a recent post. <strong>Generic openers are detected both by LinkedIn and by the recipient.</strong> Use Claude to generate 40–50 unique openers each morning.</div>
+        </div>
+
+        <div class="rule-card critical">
+          <div class="rule-icon">🚨</div>
+          <div class="rule-title">Stop immediately on captcha or restriction</div>
+          <div class="rule-body"><strong>If LinkedIn shows a captcha, a "we've noticed unusual activity" message, or any account restriction warning — stop all automation immediately.</strong> Complete the captcha manually. Do not run any tools for at least 7 days. Resume at 50% of previous volume.</div>
+        </div>
+
+        <div class="rule-card">
+          <div class="rule-icon">🌐</div>
+          <div class="rule-title">Use residential IP if running tools</div>
+          <div class="rule-body">LinkedIn cross-references your IP with your account's usual login location. Data centre IPs are flagged. Use a <strong>residential VPN</strong> (Bright Data, Oxylabs) or ensure you're running from the same network you normally use. Never run PhantomBuster from a new IP without warming it first.</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── SECTION 3: TOOL COMPARISON ── -->
+    <div class="section" id="tools">
+      <div class="section-label">Tool Comparison</div>
+      <div class="section-divider"></div>
+      <div class="section-title">Weeks 1–4 manual. Month 2 PhantomBuster.</div>
+
+      <table class="tool-table">
+        <thead>
+          <tr>
+            <th style="width:200px;">Tool</th>
+            <th style="width:120px;">Cost</th>
+            <th style="width:110px; text-align:center;">Risk Level</th>
+            <th>Capabilities</th>
+            <th style="width:130px;">Verdict</th>
+          </tr>
+        </thead>
+        <tbody>
+
+          <tr>
+            <td>
+              <div class="tool-name">Manual</div>
+              <div class="tool-phase">Weeks 1–4 (all phases)</div>
+            </td>
+            <td>
+              <div class="price-val">£0</div>
+              <div class="price-period">always free</div>
+            </td>
+            <td class="c">
+              <div class="risk-bar-wrap"><div class="risk-fill risk-low" style="width:15%"></div></div>
+              <div class="risk-label" style="color:var(--green);">Lowest</div>
+            </td>
+            <td>
+              <div class="feature-list">
+                <span class="yes">✓</span> Connection requests<br />
+                <span class="yes">✓</span> Messages + follow-ups<br />
+                <span class="yes">✓</span> Full conversation control<br />
+                <span class="no">✕</span> Time intensive at scale<br />
+                <span class="no">✕</span> Hard to maintain 40+/day
+              </div>
+            </td>
+            <td>
+              <span class="phase-badge phase-manual" style="display:block;text-align:center;margin-bottom:6px;">Use weeks 1–4</span>
+              <div style="font-size:11px;color:var(--muted);line-height:1.6;">Required during warm-up. No risk. Claude handles copy generation.</div>
+            </td>
+          </tr>
+
+          <tr class="recommended">
+            <td>
+              <div class="tool-name">PhantomBuster</div>
+              <div class="tool-phase">Month 2+ recommended</div>
+            </td>
+            <td>
+              <div class="price-val">~£50</div>
+              <div class="price-period">per month</div>
+            </td>
+            <td class="c">
+              <div class="risk-bar-wrap"><div class="risk-fill risk-low" style="width:35%"></div></div>
+              <div class="risk-label" style="color:var(--green);">Low–Mid</div>
+            </td>
+            <td>
+              <div class="feature-list">
+                <span class="yes">✓</span> Connection requests (safe)<br />
+                <span class="yes">✓</span> First message automation<br />
+                <span class="yes">✓</span> Built-in random delays<br />
+                <span class="yes">✓</span> LinkedIn Sales Navigator support<br />
+                <span class="no">✕</span> Limited to connection + msg 1 safely
+              </div>
+            </td>
+            <td>
+              <span class="rec-star" style="display:block;text-align:center;margin-bottom:6px;justify-content:center;">★ Recommended</span>
+              <div style="font-size:11px;color:var(--muted);line-height:1.6;">Safest automation tool. Well-established, cloud-based, good delay controls.</div>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <div class="tool-name">TexAu</div>
+              <div class="tool-phase">Month 3+ optional</div>
+            </td>
+            <td>
+              <div class="price-val">~£40</div>
+              <div class="price-period">per month</div>
+            </td>
+            <td class="c">
+              <div class="risk-bar-wrap"><div class="risk-fill risk-mid" style="width:58%"></div></div>
+              <div class="risk-label" style="color:var(--amber);">Medium</div>
+            </td>
+            <td>
+              <div class="feature-list">
+                <span class="yes">✓</span> More workflows than PhantomBuster<br />
+                <span class="yes">✓</span> Multi-platform (LI + Twitter + email)<br />
+                <span class="yes">✓</span> Better CSV/CRM export<br />
+                <span class="no">✕</span> Slightly more aggressive detection<br />
+                <span class="no">✕</span> Requires more configuration
+              </div>
+            </td>
+            <td>
+              <span class="phase-badge phase-optional" style="display:block;text-align:center;margin-bottom:6px;">Optional month 3</span>
+              <div style="font-size:11px;color:var(--muted);line-height:1.6;">More powerful but requires careful setup. Only use after PhantomBuster is stable.</div>
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ── SECTION 4: DAILY LOOP ── -->
+    <div class="section" id="loop">
+      <div class="section-label">Daily Automation Loop</div>
+      <div class="section-divider"></div>
+      <div class="section-title">The exact daily sequence from Month 2.</div>
+
+      <div class="loop-timeline">
+
+        <div class="loop-block">
+          <div class="loop-time">09:00</div>
+          <div class="loop-type">AI Generate</div>
+          <div class="loop-body">
+            <div class="loop-title">Generate personalised connection messages via Claude API</div>
+            <div class="loop-detail">
+              Pull today's prospect list from CRM export (CSV). Run the Claude prompt below with each prospect's name, business, and niche. Output: 40–50 unique connection notes + first messages, each with a personalised first line.
+              <br /><br />Takes <strong>~5 minutes</strong> with the API. Output goes into a CSV column ready for PhantomBuster import.
+            </div>
+          </div>
+          <div class="loop-tag-wrap"><span class="loop-tag ai">AI</span></div>
+        </div>
+
+        <div class="loop-block">
+          <div class="loop-time">09:30</div>
+          <div class="loop-type">Send</div>
+          <div class="loop-body">
+            <div class="loop-title">Send connection requests with random delays via PhantomBuster</div>
+            <div class="loop-detail">
+              Import the Claude-generated CSV into PhantomBuster's LinkedIn Connection Request phantom. Set delay: <code>random(45, 90)</code> seconds. Run only during <strong>09:30–12:00</strong> to mimic natural morning activity. Cap at 40 requests. Let the tool run unattended — do not interrupt mid-run.
+            </div>
+          </div>
+          <div class="loop-tag-wrap"><span class="loop-tag manual">Tool</span></div>
+        </div>
+
+        <div class="loop-block">
+          <div class="loop-time">13:00</div>
+          <div class="loop-type">Send</div>
+          <div class="loop-body">
+            <div class="loop-title">Send first messages to yesterday's acceptors</div>
+            <div class="loop-detail">
+              Pull the accepted connections list from PhantomBuster's export (updated at 12:30). Match against the pre-generated first messages from yesterday's Claude run. Send via PhantomBuster Message Sender with <code>random(60, 90)</code> second delays, max 20 messages. Afternoon send mimics natural engagement patterns.
+            </div>
+          </div>
+          <div class="loop-tag-wrap"><span class="loop-tag manual">Tool</span></div>
+        </div>
+
+        <div class="loop-block">
+          <div class="loop-time">17:00</div>
+          <div class="loop-type">Human Review</div>
+          <div class="loop-body">
+            <div class="loop-title">Check replies, qualify leads, draft responses</div>
+            <div class="loop-detail">
+              Open LinkedIn. Review all message replies from the last 24 hours. Apply <strong>qualification triggers</strong> (from outreach-system.html). Flag red/amber leads in CRM. Draft responses manually — do not automate. Reply within the same session where possible. Move warm leads to Call Booked stage.
+            </div>
+          </div>
+          <div class="loop-tag-wrap"><span class="loop-tag human">Human</span></div>
+        </div>
+
+        <div class="loop-block">
+          <div class="loop-time">17:30</div>
+          <div class="loop-type">Log</div>
+          <div class="loop-body">
+            <div class="loop-title">Log today's KPIs in the tracker</div>
+            <div class="loop-detail">
+              Open <a href="../kpi.html" style="color:var(--gold);text-decoration:none;font-weight:600;">kpi.html</a>. Add today's entry: connections sent, replies received, calls booked, proposals sent. Takes 2 minutes. Do not skip — the weekly review on Day 7 depends on this data being accurate.
+            </div>
+          </div>
+          <div class="loop-tag-wrap"><span class="loop-tag log">Log</span></div>
+        </div>
+
+      </div>
+
+      <!-- CLAUDE PROMPT -->
+      <div style="margin-top:32px;">
+        <div class="section-label" style="margin-bottom:12px;">Claude API Prompt — Morning Message Generation</div>
+        <div class="prompt-box">
+          <div class="prompt-box-label">System Prompt</div>
+          <button class="copy-prompt-btn" id="promptCopyBtn" onclick="copyPrompt()">Copy</button>
+          <pre class="prompt-text" id="promptText">You are a LinkedIn outreach specialist for Aldric Group, an AI marketing agency.
+
+Generate personalised LinkedIn outreach messages for the following prospects.
+For each prospect, output two messages:
+1. Connection request note (under 280 characters, no pitch, just a reason to connect)
+2. First message after connection (pain question, no offer, under 300 characters)
+
+<span class="var">Niche:</span> {{niche}}
+<span class="var">Prospects:</span>
+{{prospect_list}}
+
+<span class="comment"># Format: one JSON object per prospect
+# { "name": "", "business": "", "connect_note": "", "first_msg": "" }
+
+# Rules:
+# - Personalise the first line of each message with the business name or niche
+# - Never mention pricing, packages, or Aldric Group by name in the connection note
+# - Pain question must be specific to their niche — not generic
+# - Connection note: conversational, peer tone, no pitch
+# - First message: one question only, ends with "?"</span></pre>
+        </div>
+      </div>
+
+    </div>
+
+  </div><!-- /page -->
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    function copyPrompt() {
+      const text = document.getElementById('promptText').innerText;
+      const btn = document.getElementById('promptCopyBtn');
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = 'Copied ✓';
+        btn.classList.add('copied');
+        showToast('Prompt copied');
+        setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2200);
+      });
+    }
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2200);
+    }
+  </script>
+</body>
+</html>

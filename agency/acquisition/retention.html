@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Client Retention System — Aldric Group</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #080808; --bg2: #0f0f0f; --bg3: #161616; --bg4: #1c1c1c;
+      --gold: #C9A96E; --gold-lt: #e0c48a; --cream: #F0E8DA;
+      --muted: #6b6b6b; --border: rgba(201,169,110,0.15); --text: #e8e0d4;
+      --green: #4caf50; --amber: #ff9800; --red: #ef5350; --blue: #5c8de8;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif; background: var(--bg);
+      color: var(--text); line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* HEADER */
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 48px; border-bottom: 1px solid var(--border);
+      background: rgba(8,8,8,0.96); backdrop-filter: blur(20px);
+      position: sticky; top: 0; z-index: 50;
+    }
+    .header-left { display: flex; align-items: center; gap: 20px; }
+    .logo { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; color: var(--gold); text-decoration: none; }
+    .header-title { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; padding-left: 20px; border-left: 1px solid var(--border); }
+    .header-nav { display: flex; gap: 6px; }
+    .nav-pill { padding: 7px 14px; background: transparent; border: 1px solid transparent; color: var(--muted); font-size: 12px; font-weight: 500; border-radius: 3px; cursor: pointer; transition: all 0.15s; font-family: 'Inter', sans-serif; text-decoration: none; }
+    .nav-pill:hover { background: var(--bg3); border-color: var(--border); color: var(--cream); }
+
+    /* PAGE */
+    .page { max-width: 1100px; margin: 0 auto; padding: 52px 48px 80px; }
+
+    /* HERO */
+    .page-hero { margin-bottom: 60px; }
+    .page-label { font-size: 10px; font-weight: 700; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gold); margin-bottom: 16px; }
+    .page-title { font-family: 'Playfair Display', serif; font-size: clamp(32px, 4vw, 52px); font-weight: 700; color: var(--cream); line-height: 1.1; margin-bottom: 14px; }
+    .page-sub { font-size: 15px; color: rgba(240,232,218,0.5); max-width: 660px; line-height: 1.75; }
+    .principle-row { display: flex; gap: 10px; margin-top: 24px; flex-wrap: wrap; }
+    .principle-chip { padding: 7px 14px; background: rgba(201,169,110,0.08); border: 1px solid rgba(201,169,110,0.2); border-radius: 2px; font-size: 12px; font-weight: 600; color: var(--gold); }
+
+    /* SECTIONS */
+    .section { margin-bottom: 56px; }
+    .section-label { font-size: 10px; font-weight: 700; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gold); margin-bottom: 10px; }
+    .section-divider { width: 40px; height: 1px; background: rgba(201,169,110,0.4); margin-bottom: 20px; }
+    .section-title { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--cream); margin-bottom: 24px; }
+
+    /* FIRST WIN TABLE */
+    .win-table { width: 100%; border-collapse: collapse; }
+    .win-table thead tr { border-bottom: 1px solid var(--border); }
+    .win-table th { text-align: left; padding: 10px 18px; font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
+    .win-table tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .win-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+    .win-table td { padding: 22px 18px; font-size: 13px; vertical-align: top; }
+
+    .pkg-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 6px; }
+    .pkg-growth    { background: rgba(76,175,80,0.12);  color: #81c784; border: 1px solid rgba(76,175,80,0.25); }
+    .pkg-scale     { background: rgba(201,169,110,0.12); color: var(--gold); border: 1px solid rgba(201,169,110,0.25); }
+    .pkg-dominance { background: rgba(156,39,176,0.12); color: #ce93d8; border: 1px solid rgba(156,39,176,0.25); }
+
+    .pkg-name { font-size: 15px; font-weight: 700; color: var(--cream); }
+    .pkg-price { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    .deadline-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 3px; font-size: 11px; font-weight: 700; }
+    .dl-3 { background: rgba(76,175,80,0.1); color: var(--green); border: 1px solid rgba(76,175,80,0.2); }
+    .dl-5 { background: rgba(201,169,110,0.1); color: var(--gold); border: 1px solid rgba(201,169,110,0.2); }
+    .dl-7 { background: rgba(239,83,80,0.1); color: var(--red); border: 1px solid rgba(239,83,80,0.2); }
+
+    .win-desc { font-size: 13px; color: rgba(240,232,218,0.65); line-height: 1.7; }
+    .win-desc strong { color: var(--cream); }
+
+    .proof-item { display: flex; align-items: flex-start; gap: 10px; margin-top: 10px; font-size: 12px; color: rgba(240,232,218,0.5); line-height: 1.6; }
+    .proof-icon { color: var(--gold); flex-shrink: 0; font-weight: 700; }
+
+    /* TEMPLATE BOX */
+    .template-box {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 4px; padding: 32px; position: relative;
+    }
+    .template-label {
+      position: absolute; top: -1px; left: 20px;
+      background: rgba(201,169,110,0.12); border: 1px solid rgba(201,169,110,0.2);
+      border-radius: 0 0 3px 3px; padding: 3px 10px;
+      font-size: 9px; font-weight: 700; letter-spacing: 0.18em;
+      text-transform: uppercase; color: var(--gold);
+    }
+    .copy-btn {
+      position: absolute; top: 14px; right: 14px;
+      padding: 5px 12px; background: transparent;
+      border: 1px solid var(--border); color: var(--muted);
+      font-size: 11px; font-weight: 500; border-radius: 2px;
+      cursor: pointer; transition: all 0.15s; font-family: 'Inter', sans-serif;
+    }
+    .copy-btn:hover { color: var(--cream); border-color: rgba(240,232,218,0.3); }
+    .copy-btn.copied { color: var(--green); border-color: rgba(76,175,80,0.3); }
+
+    .template-text {
+      font-size: 14px; color: rgba(240,232,218,0.75);
+      line-height: 1.9; white-space: pre-wrap;
+    }
+    .template-text .fill { color: var(--gold); font-weight: 600; }
+    .template-text .note { color: var(--muted); font-size: 12px; }
+
+    /* GENERATOR */
+    .gen-wrap {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 4px; padding: 28px; margin-top: 20px;
+    }
+    .gen-label { font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 7px; }
+    .gen-grid { display: grid; grid-template-columns: repeat(3, 1fr) auto; gap: 12px; align-items: flex-end; }
+    .gen-input, .gen-select {
+      width: 100%; padding: 10px 12px;
+      background: var(--bg4); border: 1px solid rgba(255,255,255,0.08);
+      color: var(--cream); font-family: 'Inter', sans-serif;
+      font-size: 13px; border-radius: 2px; outline: none;
+      transition: border-color 0.15s; -webkit-appearance: none;
+    }
+    .gen-input:focus, .gen-select:focus { border-color: rgba(201,169,110,0.4); }
+    .gen-select option { background: #161616; }
+    .btn-generate {
+      padding: 10px 20px; background: var(--gold); border: none;
+      color: #080808; font-size: 12px; font-weight: 700;
+      border-radius: 2px; cursor: pointer;
+      transition: background 0.2s; font-family: 'Inter', sans-serif;
+      white-space: nowrap;
+    }
+    .btn-generate:hover { background: var(--gold-lt); }
+    .gen-output-wrap { margin-top: 16px; position: relative; }
+    .gen-output {
+      width: 100%; min-height: 160px; padding: 16px;
+      background: var(--bg4); border: 1px solid rgba(255,255,255,0.06);
+      color: var(--cream); font-family: 'Inter', sans-serif;
+      font-size: 13px; line-height: 1.8; border-radius: 2px;
+      resize: vertical; outline: none;
+    }
+    .gen-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .btn-copy-out {
+      padding: 9px 18px; background: transparent;
+      border: 1px solid var(--border); color: var(--muted);
+      font-size: 12px; font-weight: 500; border-radius: 2px;
+      cursor: pointer; transition: all 0.15s; font-family: 'Inter', sans-serif;
+    }
+    .btn-copy-out:hover { color: var(--cream); border-color: rgba(240,232,218,0.3); }
+
+    /* EXPECTATION SCRIPT */
+    .script-box {
+      background: var(--bg3); border: 1px solid rgba(201,169,110,0.2);
+      border-radius: 4px; padding: 32px; position: relative;
+    }
+    .script-header {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 24px;
+    }
+    .script-icon { font-size: 20px; }
+    .script-title { font-size: 14px; font-weight: 700; color: var(--cream); }
+    .script-when { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .script-lines { display: flex; flex-direction: column; gap: 16px; }
+    .script-line { display: flex; gap: 14px; align-items: flex-start; }
+    .sl-num { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; color: rgba(201,169,110,0.25); flex-shrink: 0; line-height: 1.2; width: 24px; }
+    .sl-text { font-size: 14px; color: rgba(240,232,218,0.75); line-height: 1.8; }
+    .sl-text em { font-style: italic; color: var(--cream); }
+    .sl-text strong { color: var(--gold); font-style: normal; }
+    .script-note { margin-top: 20px; padding: 14px 18px; background: rgba(255,255,255,0.03); border-left: 2px solid var(--gold); font-size: 12px; color: rgba(240,232,218,0.5); line-height: 1.7; }
+    .script-note strong { color: var(--cream); }
+
+    /* ENGAGEMENT RULES */
+    .rules-list { display: flex; flex-direction: column; gap: 3px; }
+    .rule-row {
+      display: grid; grid-template-columns: 200px 100px 1fr;
+      background: var(--bg3); gap: 0; align-items: stretch;
+    }
+    .rule-row:first-child { border-radius: 3px 3px 0 0; }
+    .rule-row:last-child { border-radius: 0 0 3px 3px; }
+    .rule-row + .rule-row { border-top: 1px solid rgba(255,255,255,0.04); }
+    .rule-col { padding: 16px 18px; }
+    .rule-col + .rule-col { border-left: 1px solid rgba(255,255,255,0.04); }
+    .rule-what { font-size: 13px; font-weight: 600; color: var(--cream); }
+    .rule-sla {
+      font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700;
+      color: var(--gold); line-height: 1; margin-bottom: 2px;
+    }
+    .rule-sla-label { font-size: 10px; color: var(--muted); }
+    .rule-consequence { font-size: 12px; color: rgba(240,232,218,0.5); line-height: 1.65; }
+    .rule-consequence strong { color: var(--cream); }
+
+    /* MONTHLY REPORT */
+    .report-preview {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 4px; padding: 40px; max-width: 720px;
+      position: relative;
+    }
+    .rp-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+    .rp-logo { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 700; color: var(--gold); }
+    .rp-meta { text-align: right; }
+    .rp-client { font-size: 14px; font-weight: 600; color: var(--cream); }
+    .rp-period { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .rp-summary { font-size: 13px; color: rgba(240,232,218,0.55); line-height: 1.8; margin-bottom: 28px; }
+    .rp-summary .fill { color: var(--gold); font-weight: 600; }
+    .rp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
+    .rp-metric { background: var(--bg4); border-radius: 3px; padding: 16px; }
+    .rp-metric-label { font-size: 9px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+    .rp-metric-val { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 700; color: var(--gold); line-height: 1; }
+    .rp-metric-sub { font-size: 10px; color: var(--muted); margin-top: 4px; }
+    .rp-metric-sub .pos { color: var(--green); font-weight: 600; }
+    .rp-section { margin-bottom: 20px; }
+    .rp-section-title { font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+    .rp-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 12px; }
+    .rp-row-label { color: rgba(240,232,218,0.55); }
+    .rp-row-val { font-weight: 600; color: var(--cream); }
+    .rp-focus { padding: 14px 16px; background: rgba(201,169,110,0.05); border: 1px solid rgba(201,169,110,0.15); border-radius: 3px; font-size: 12px; color: rgba(240,232,218,0.6); line-height: 1.7; }
+    .rp-focus strong { color: var(--cream); }
+    .rp-footer { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--muted); }
+
+    /* FILL INPUTS */
+    .fill-input {
+      display: inline-block; min-width: 60px; padding: 0 4px;
+      border-bottom: 1px solid rgba(201,169,110,0.3);
+      color: var(--gold); font-weight: 600; font-size: 13px;
+      background: transparent; outline: none; font-family: 'Inter', sans-serif;
+      transition: border-color 0.15s;
+    }
+    .fill-input:focus { border-color: var(--gold); }
+    .rp-fill {
+      display: inline-block; min-width: 80px; padding: 0 4px;
+      border-bottom: 1px solid rgba(201,169,110,0.3);
+      color: var(--gold); font-weight: 600; background: transparent;
+      outline: none; font-family: 'Playfair Display', serif;
+      font-size: 24px; line-height: 1; transition: border-color 0.15s;
+    }
+    .rp-fill:focus { border-color: var(--gold); }
+    .rp-text-fill {
+      display: inline-block; min-width: 120px; padding: 0 4px;
+      border-bottom: 1px solid rgba(240,232,218,0.15);
+      color: var(--cream); font-weight: 600; background: transparent;
+      outline: none; font-family: 'Inter', sans-serif; font-size: 12px;
+      transition: border-color 0.15s;
+    }
+    .rp-text-fill:focus { border-color: rgba(240,232,218,0.4); }
+
+    /* TOAST */
+    .toast { position: fixed; bottom: 28px; right: 28px; background: var(--bg3); border: 1px solid rgba(201,169,110,0.3); color: var(--cream); font-size: 13px; font-weight: 500; padding: 12px 20px; border-radius: 4px; transform: translateY(80px); opacity: 0; transition: all 0.3s ease; z-index: 999; pointer-events: none; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    @media (max-width: 900px) {
+      header { padding: 16px 20px; }
+      .page { padding: 32px 20px 60px; }
+      .gen-grid { grid-template-columns: 1fr 1fr; }
+      .rp-grid { grid-template-columns: 1fr 1fr; }
+      .rule-row { grid-template-columns: 1fr; }
+      .rule-col + .rule-col { border-left: none; border-top: 1px solid rgba(255,255,255,0.04); }
+    }
+    @media (max-width: 600px) {
+      .gen-grid { grid-template-columns: 1fr; }
+      .rp-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-left">
+      <a href="../index.html" class="logo">Aldric Group</a>
+      <div class="header-title">Client Retention System</div>
+    </div>
+    <div class="header-nav">
+      <a href="automation.html" class="nav-pill">← Automation</a>
+      <a href="seven-day-plan.html" class="nav-pill">7-Day Plan</a>
+      <a href="../kpi.html" class="nav-pill">KPI Tracker</a>
+    </div>
+  </header>
+
+  <div class="page">
+
+    <!-- HERO -->
+    <div class="page-hero">
+      <div class="page-label">Client Operations</div>
+      <h1 class="page-title">Client Retention<br />System</h1>
+      <p class="page-sub">First-week wins, weekly momentum updates, expectation framing, engagement rules, and monthly reporting. Retention starts on day one — not month three when they're considering leaving.</p>
+      <div class="principle-row">
+        <div class="principle-chip">Show value in 7 days</div>
+        <div class="principle-chip">Report every week</div>
+        <div class="principle-chip">Frame expectations pre-sale</div>
+        <div class="principle-chip">Hold clients to their SLAs</div>
+      </div>
+    </div>
+
+    <!-- ── SECTION 1: FIRST 7-DAY WINS ── -->
+    <div class="section" id="wins">
+      <div class="section-label">First 7-Day Win System</div>
+      <div class="section-divider"></div>
+      <div class="section-title">Fast visible results by package. Show proof before they doubt.</div>
+
+      <table class="win-table">
+        <thead>
+          <tr>
+            <th style="width:180px;">Package</th>
+            <th style="width:130px;">First Win By</th>
+            <th>What to Deliver &amp; Show</th>
+            <th style="width:220px;">Proof to Send Client</th>
+          </tr>
+        </thead>
+        <tbody>
+
+          <tr>
+            <td>
+              <div class="pkg-badge pkg-growth">Growth</div>
+              <div class="pkg-name">Growth</div>
+              <div class="pkg-price">£750/month</div>
+            </td>
+            <td>
+              <div class="deadline-chip dl-3">Day 3</div>
+            </td>
+            <td>
+              <div class="win-desc">
+                <strong>5 posts drafted and scheduled by Day 3.</strong> Don't wait for the content batch to be complete. Send a sample of 3 posts with visuals by Day 3 for approval. Show the full content calendar on Day 5 at latest.
+              </div>
+              <ul style="list-style:none;margin-top:10px;display:flex;flex-direction:column;gap:5px;">
+                <li style="font-size:12px;color:rgba(240,232,218,0.5);padding-left:14px;position:relative;line-height:1.6;"><span style="position:absolute;left:0;color:var(--gold);">→</span> Share content calendar PDF or Notion view — client should see the full month planned</li>
+                <li style="font-size:12px;color:rgba(240,232,218,0.5);padding-left:14px;position:relative;line-height:1.6;"><span style="position:absolute;left:0;color:var(--gold);">→</span> WhatsApp 3 post images + captions: "Draft 1 of 3 — let me know if the tone lands"</li>
+                <li style="font-size:12px;color:rgba(240,232,218,0.5);padding-left:14px;position:relative;line-height:1.6;"><span style="position:absolute;left:0;color:var(--gold);">→</span> Once approved, schedule via Buffer/Later and confirm: "Scheduled — first post goes live [date]"</li>
+              </ul>
+            </td>
+            <td>
+              <div class="proof-item"><span class="proof-icon">📅</span> Screenshot of scheduled posts in Buffer/Later</div>
+              <div class="proof-item"><span class="proof-icon">📄</span> Content calendar PDF (full month)</div>
+              <div class="proof-item"><span class="proof-icon">✅</span> WhatsApp: "5 posts live and scheduled for [month]"</div>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <div class="pkg-badge pkg-scale">Scale</div>
+              <div class="pkg-name">Scale</div>
+              <div class="pkg-price">£1,250/month</div>
+            </td>
+            <td>
+              <div class="deadline-chip dl-5">Day 5</div>
+            </td>
+            <td>
+              <div class="win-desc">
+                <strong>Growth deliverables + first email sequence live by Day 5.</strong> The email sequence is the "wow moment" for Scale clients — it's what they couldn't easily do themselves. Show it running, not just built.
+              </div>
+              <ul style="list-style:none;margin-top:10px;display:flex;flex-direction:column;gap:5px;">
+                <li style="font-size:12px;color:rgba(240,232,218,0.5);padding-left:14px;position:relative;line-height:1.6;"><span style="position:absolute;left:0;color:var(--gold);">→</span> 3-email welcome or nurture sequence activated in their email platform (Klaviyo, Mailchimp, ActiveCampaign)</li>
+                <li style="font-size:12px;color:rgba(240,232,218,0.5);padding-left:14px;position:relative;line-height:1.6;"><span style="position:absolute;left:0;color:var(--gold);">→</span> Send a test email to client's own inbox so they see it exactly as subscribers will</li>
+                <li style="font-size:12px;color:rgba(240,232,218,0.5);padding-left:14px;position:relative;line-height:1.6;"><span style="position:absolute;left:0;color:var(--gold);">→</span> Share open rate within 7 days — even if list is small, a 35%+ open rate is a strong early signal</li>
+              </ul>
+            </td>
+            <td>
+              <div class="proof-item"><span class="proof-icon">📧</span> Screenshot of sequence live in email platform</div>
+              <div class="proof-item"><span class="proof-icon">📊</span> Open rate screenshot at Day 7 (benchmark: 35%+)</div>
+              <div class="proof-item"><span class="proof-icon">📲</span> Test email sent to client: "This is what your subscribers see"</div>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <div class="pkg-badge pkg-dominance">Dominance</div>
+              <div class="pkg-name">Dominance</div>
+              <div class="pkg-price">£1,500/month</div>
+            </td>
+            <td>
+              <div class="deadline-chip dl-7">Day 7</div>
+            </td>
+            <td>
+              <div class="win-desc">
+                <strong>Scale deliverables + LinkedIn outreach started by Day 7.</strong> First batch of connection requests sent. Show the pipeline forming — acceptance rate is the early win metric.
+              </div>
+              <ul style="list-style:none;margin-top:10px;display:flex;flex-direction:column;gap:5px;">
+                <li style="font-size:12px;color:rgba(240,232,218,0.5);padding-left:14px;position:relative;line-height:1.6;"><span style="position:absolute;left:0;color:var(--gold);">→</span> First 20 LinkedIn connection requests sent and logged — show client the prospect list with their target niche</li>
+                <li style="font-size:12px;color:rgba(240,232,218,0.5);padding-left:14px;position:relative;line-height:1.6;"><span style="position:absolute;left:0;color:var(--gold);">→</span> Report acceptance rate at Day 7: "We've sent 20 requests, 7 accepted (35%) — above industry average"</li>
+                <li style="font-size:12px;color:rgba(240,232,218,0.5);padding-left:14px;position:relative;line-height:1.6;"><span style="position:absolute;left:0;color:var(--gold);">→</span> Show any early replies — even "thanks for connecting" is proof the channel is working</li>
+              </ul>
+            </td>
+            <td>
+              <div class="proof-item"><span class="proof-icon">🔗</span> Screenshot of LinkedIn outreach tracker (CSV or CRM)</div>
+              <div class="proof-item"><span class="proof-icon">📈</span> Acceptance rate at Day 7 (target: 25–35%)</div>
+              <div class="proof-item"><span class="proof-icon">💬</span> Any replies forwarded: "First conversation started"</div>
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ── SECTION 2: WEEKLY UPDATE TEMPLATE ── -->
+    <div class="section" id="updates">
+      <div class="section-label">Weekly Momentum Update</div>
+      <div class="section-divider"></div>
+      <div class="section-title">Send every Friday. Never miss a week.</div>
+
+      <div class="template-box">
+        <div class="template-label">Template — WhatsApp / Email</div>
+        <button class="copy-btn" id="updateCopyBtn" onclick="copyTemplate('updateTemplate', 'updateCopyBtn')">Copy</button>
+        <div class="template-text" id="updateTemplate">Week <span class="fill">[X]</span> update for <span class="fill">[client name]</span> —
+
+This week we published <span class="fill">[X]</span> posts reaching <span class="fill">[X]</span> accounts across <span class="fill">[platforms]</span>. <span class="note">// Pull from platform analytics</span>
+
+Your email sequence achieved a <span class="fill">[X]</span>% open rate vs <span class="fill">[X]</span>% industry average. <span class="note">// Industry avg: 22–25% for most niches</span>
+
+LinkedIn generated <span class="fill">[X]</span> new connections and <span class="fill">[X]</span> conversations this week.
+
+Next week we are <span class="fill">[specific action — e.g. "launching your March content batch and activating the re-engagement email sequence"]</span>.
+
+One thing we need from you: <span class="fill">[specific ask — e.g. "a photo from inside the clinic for this week's post" or "approval on the email subject line by Tuesday"]</span>.</div>
+      </div>
+
+      <!-- GENERATOR -->
+      <div class="gen-wrap" style="margin-top:20px;">
+        <div style="font-size:12px;font-weight:600;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:16px;">Fill &amp; Generate</div>
+        <div class="gen-grid">
+          <div>
+            <label class="gen-label" for="g-week">Week Number</label>
+            <input class="gen-input" type="number" id="g-week" placeholder="e.g. 3" min="1" />
+          </div>
+          <div>
+            <label class="gen-label" for="g-client">Client Name</label>
+            <input class="gen-input" type="text" id="g-client" placeholder="e.g. Sarah / Luxe Aesthetics" />
+          </div>
+          <div>
+            <label class="gen-label" for="g-pkg">Package</label>
+            <select class="gen-select" id="g-pkg">
+              <option value="growth">Growth</option>
+              <option value="scale">Scale</option>
+              <option value="dominance">Dominance</option>
+            </select>
+          </div>
+          <button class="btn-generate" onclick="fillUpdate()">Generate</button>
+        </div>
+        <div id="gen-update-fields" style="display:none;">
+          <!-- Dynamic fields injected by JS -->
+        </div>
+        <div class="gen-output-wrap" id="gen-update-output-wrap" style="display:none;">
+          <textarea class="gen-output" id="gen-update-output" spellcheck="false"></textarea>
+          <div class="gen-actions">
+            <button class="btn-copy-out" onclick="copyOutput('gen-update-output', this)">Copy Update</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SECTION 3: EXPECTATION FRAMING SCRIPT ── -->
+    <div class="section" id="expectations">
+      <div class="section-label">Expectation Framing</div>
+      <div class="section-divider"></div>
+      <div class="section-title">Say this before they sign. Not after they complain.</div>
+
+      <div class="script-box">
+        <button class="copy-btn" id="scriptCopyBtn" onclick="copyTemplate('scriptContent','scriptCopyBtn')">Copy</button>
+        <div class="script-header">
+          <div class="script-icon">🎙️</div>
+          <div>
+            <div class="script-title">Pre-Sale Expectation Script</div>
+            <div class="script-when">Say this verbatim on the sales call, after they've agreed to proceed but before contract is sent.</div>
+          </div>
+        </div>
+        <div class="script-lines" id="scriptContent">
+          <div class="script-line">
+            <div class="sl-num">1</div>
+            <div class="sl-text">"Before we start I want to set clear expectations, because I think it's important you know exactly what to expect and when."</div>
+          </div>
+          <div class="script-line">
+            <div class="sl-num">2</div>
+            <div class="sl-text"><em>"Month 1 is about infrastructure — getting your content system, email sequences, and outreach running cleanly. You'll see activity and output, but we're building the engine, not yet running at full speed."</em></div>
+          </div>
+          <div class="script-line">
+            <div class="sl-num">3</div>
+            <div class="sl-text">"<strong>Month 2 is when you start seeing compounding results.</strong> The content starts gaining traction, the email list gets warm, and the outreach pipeline fills up. That's when the numbers start moving."</div>
+          </div>
+          <div class="script-line">
+            <div class="sl-num">4</div>
+            <div class="sl-text"><em>"Most clients see meaningful lead flow by week 6 to 8. Not week 2. If anyone's promising you results in the first two weeks, they're selling you something unrealistic."</em></div>
+          </div>
+          <div class="script-line">
+            <div class="sl-num">5</div>
+            <div class="sl-text">"We report every Friday so you always know exactly what's happening — what was posted, what the numbers were, what we're doing next. You'll never be left guessing."</div>
+          </div>
+          <div class="script-line">
+            <div class="sl-num">6</div>
+            <div class="sl-text"><em>"The one thing we need from you is responsiveness — approvals within 24 hours, assets within 72 hours of requesting them. The system works because it moves fast. If approvals take a week, results take longer."</em></div>
+          </div>
+          <div class="script-line">
+            <div class="sl-num">7</div>
+            <div class="sl-text">"Any questions about any of that before we send the agreement?"</div>
+          </div>
+        </div>
+        <div class="script-note">
+          <strong>Why this matters:</strong> Clients who cancel in month 1 almost always cite "not seeing results yet." This script pre-empts that objection before it forms. If you say it pre-sale, they can't use it as a reason to leave in month 1 — they agreed to the timeline. Document it: send a follow-up email after the call summarising what was agreed.
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SECTION 4: ENGAGEMENT RULES ── -->
+    <div class="section" id="engagement">
+      <div class="section-label">Minimum Engagement Rules</div>
+      <div class="section-divider"></div>
+      <div class="section-title">Client obligations. Include in the contract and onboarding email.</div>
+
+      <div class="rules-list">
+        <div class="rule-row">
+          <div class="rule-col">
+            <div class="rule-what">Weekly Update Response</div>
+          </div>
+          <div class="rule-col">
+            <div class="rule-sla">48 hrs</div>
+            <div class="rule-sla-label">maximum</div>
+          </div>
+          <div class="rule-col">
+            <div class="rule-consequence">Client must acknowledge or respond to the weekly update within 48 hours. <strong>If no response after 72 hours, send one reminder.</strong> If still no response, proceed on schedule and note "update sent, no client response" in your records. Persistent non-response is a churn signal — escalate to a check-in call.</div>
+          </div>
+        </div>
+        <div class="rule-row">
+          <div class="rule-col">
+            <div class="rule-what">Brand Assets &amp; Access</div>
+          </div>
+          <div class="rule-col">
+            <div class="rule-sla">72 hrs</div>
+            <div class="rule-sla-label">from signing</div>
+          </div>
+          <div class="rule-col">
+            <div class="rule-consequence">Logos, brand colours, login credentials, platform access, and any initial photography must be received within 72 hours of contract signing. <strong>Clock does not start until assets are received.</strong> Week 1 deliverables are contingent on this. State this explicitly at onboarding: "No assets, no output on schedule."</div>
+          </div>
+        </div>
+        <div class="rule-row">
+          <div class="rule-col">
+            <div class="rule-what">Content Approval</div>
+          </div>
+          <div class="rule-col">
+            <div class="rule-sla">24 hrs</div>
+            <div class="rule-sla-label">or we publish</div>
+          </div>
+          <div class="rule-col">
+            <div class="rule-consequence">Content batches sent for review must be approved or revised within 24 hours. <strong>If no response in 24 hours, we publish on schedule.</strong> This prevents the most common delay — clients sitting on content approvals. Include this in the contract and repeat it at onboarding. It protects your delivery timeline.</div>
+          </div>
+        </div>
+        <div class="rule-row">
+          <div class="rule-col">
+            <div class="rule-what">Monthly Strategy Review</div>
+          </div>
+          <div class="rule-col">
+            <div class="rule-sla">Monthly</div>
+            <div class="rule-sla-label">30 minutes</div>
+          </div>
+          <div class="rule-col">
+            <div class="rule-consequence">Scale and Dominance clients: one 30-minute strategy call per month (fortnightly for Dominance). <strong>Client must confirm availability within 48 hours of scheduling request.</strong> If call is missed twice in a row without rescheduling, send a brief account health check email and flag internally.</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;padding:16px 20px;background:var(--bg3);border:1px solid var(--border);border-radius:3px;">
+        <div style="font-size:12px;color:rgba(240,232,218,0.5);line-height:1.7;">
+          <strong style="color:var(--cream);">Onboarding email:</strong> Send these rules in writing within 24 hours of signing. Subject line: "Getting started — what to expect from Aldric Group." Include the 48/72/24 hour rules explicitly. Clients who receive them in writing are 3× less likely to cause delays — they know the terms upfront.
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SECTION 5: MONTHLY REPORT ── -->
+    <div class="section" id="reporting">
+      <div class="section-label">Monthly Revenue Report</div>
+      <div class="section-divider"></div>
+      <div class="section-title">One-pager. Sent on the 5th of each month.</div>
+
+      <div style="margin-bottom:16px;font-size:13px;color:rgba(240,232,218,0.5);line-height:1.7;">
+        Fill in the fields below, then copy or print. All values save automatically.
+      </div>
+
+      <div class="report-preview" id="reportPreview">
+        <div class="rp-header">
+          <div>
+            <div class="rp-logo">Aldric Group</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px;">Monthly Performance Report</div>
+          </div>
+          <div class="rp-meta">
+            <div class="rp-client"><input class="rp-text-fill" id="r-client" placeholder="Client Name" style="font-size:14px;font-weight:700;" oninput="autoSave()" /></div>
+            <div class="rp-period" style="margin-top:6px;"><input class="rp-text-fill" id="r-period" placeholder="e.g. May 2026" oninput="autoSave()" /></div>
+          </div>
+        </div>
+
+        <div class="rp-summary">
+          In <input class="fill-input" id="r-month" placeholder="month" style="min-width:70px;" oninput="autoSave()" />, we published <input class="fill-input" id="r-posts" placeholder="0" style="min-width:30px;" oninput="autoSave()" /> pieces of content, sent <input class="fill-input" id="r-emails" placeholder="0" style="min-width:30px;" oninput="autoSave()" /> emails, and generated <input class="fill-input" id="r-leads" placeholder="0" style="min-width:30px;" oninput="autoSave()" /> qualified enquiries. Content reached <input class="fill-input" id="r-reach" placeholder="0" style="min-width:60px;" oninput="autoSave()" /> accounts across all platforms.
+        </div>
+
+        <div class="rp-grid">
+          <div class="rp-metric">
+            <div class="rp-metric-label">MRR Impact (Est.)</div>
+            <div class="rp-metric-val">£<input class="rp-fill" id="r-mrr" placeholder="0" style="min-width:60px;" oninput="autoSave()" /></div>
+            <div class="rp-metric-sub">leads × avg deal value</div>
+          </div>
+          <div class="rp-metric">
+            <div class="rp-metric-label">Email Open Rate</div>
+            <div class="rp-metric-val"><input class="rp-fill" id="r-openrate" placeholder="0" style="min-width:50px;" oninput="autoSave()" />%</div>
+            <div class="rp-metric-sub">vs <input class="rp-text-fill" id="r-openavg" placeholder="22%" style="min-width:40px;font-size:10px;" oninput="autoSave()" /> industry avg</div>
+          </div>
+          <div class="rp-metric">
+            <div class="rp-metric-label">LinkedIn Connections</div>
+            <div class="rp-metric-val"><input class="rp-fill" id="r-li" placeholder="0" style="min-width:50px;" oninput="autoSave()" /></div>
+            <div class="rp-metric-sub"><span class="pos">+<input class="rp-text-fill" id="r-li-delta" placeholder="0" style="min-width:30px;font-size:10px;" oninput="autoSave()" /></span> vs last month</div>
+          </div>
+        </div>
+
+        <div class="rp-section">
+          <div class="rp-section-title">Content Performance</div>
+          <div class="rp-row">
+            <div class="rp-row-label">Posts published</div>
+            <div class="rp-row-val"><input class="rp-text-fill" id="r-pub" placeholder="0" oninput="autoSave()" /></div>
+          </div>
+          <div class="rp-row">
+            <div class="rp-row-label">Total reach</div>
+            <div class="rp-row-val"><input class="rp-text-fill" id="r-total-reach" placeholder="0" oninput="autoSave()" /></div>
+          </div>
+          <div class="rp-row">
+            <div class="rp-row-label">Top performing post</div>
+            <div class="rp-row-val"><input class="rp-text-fill" id="r-top-post" placeholder="description" style="min-width:180px;" oninput="autoSave()" /></div>
+          </div>
+          <div class="rp-row" style="border:none;">
+            <div class="rp-row-label">Engagement rate</div>
+            <div class="rp-row-val"><input class="rp-text-fill" id="r-eng" placeholder="0%" oninput="autoSave()" /></div>
+          </div>
+        </div>
+
+        <div class="rp-section">
+          <div class="rp-section-title">Email Performance</div>
+          <div class="rp-row">
+            <div class="rp-row-label">Emails sent</div>
+            <div class="rp-row-val"><input class="rp-text-fill" id="r-sent" placeholder="0" oninput="autoSave()" /></div>
+          </div>
+          <div class="rp-row">
+            <div class="rp-row-label">Open rate</div>
+            <div class="rp-row-val"><input class="rp-text-fill" id="r-or" placeholder="0%" oninput="autoSave()" /></div>
+          </div>
+          <div class="rp-row" style="border:none;">
+            <div class="rp-row-label">Click rate</div>
+            <div class="rp-row-val"><input class="rp-text-fill" id="r-cr" placeholder="0%" oninput="autoSave()" /></div>
+          </div>
+        </div>
+
+        <div class="rp-focus">
+          <strong>Next month focus:</strong> <input class="rp-text-fill" id="r-focus" placeholder="e.g. launch the summer campaign sequence and increase posting to 25 pieces" style="min-width:300px;" oninput="autoSave()" />
+        </div>
+
+        <div class="rp-footer">
+          <div>Aldric Group · hello@aldricgroup.co.uk · +44 7599 260032</div>
+          <div style="color:var(--gold);font-weight:600;">Confidential</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:16px;">
+        <button class="btn-copy-out" onclick="window.print()">🖨 Print / Save PDF</button>
+        <button class="btn-copy-out" onclick="copyReportText()">Copy as Text</button>
+      </div>
+    </div>
+
+  </div><!-- /page -->
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const STORAGE_KEY = 'aldric_retention_v1';
+
+    // Auto-save report fields
+    function autoSave() {
+      const ids = ['r-client','r-period','r-month','r-posts','r-emails','r-leads',
+                   'r-reach','r-mrr','r-openrate','r-openavg','r-li','r-li-delta',
+                   'r-pub','r-total-reach','r-top-post','r-eng','r-sent','r-or',
+                   'r-cr','r-focus'];
+      const data = {};
+      ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) data[id] = el.value;
+      });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    function loadSaved() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      try {
+        const data = JSON.parse(raw);
+        Object.entries(data).forEach(([id, val]) => {
+          const el = document.getElementById(id);
+          if (el) el.value = val;
+        });
+      } catch(e) {}
+    }
+
+    // Weekly update generator
+    const UPDATE_TEMPLATES = {
+      growth: (w, c, d) => `Week ${w} update for ${c} —\n\nThis week we published ${d.posts||'[X]'} posts reaching ${d.reach||'[X]'} accounts across ${d.platforms||'Instagram and Facebook'}.\n\nNext week we are ${d.next||'[specific action]'}.\n\nOne thing we need from you: ${d.ask||'[specific ask]'}.`,
+      scale: (w, c, d) => `Week ${w} update for ${c} —\n\nThis week we published ${d.posts||'[X]'} posts reaching ${d.reach||'[X]'} accounts across ${d.platforms||'Instagram, Facebook and LinkedIn'}. Your email sequence achieved a ${d.openrate||'[X]'}% open rate vs ${d.avg||'22'}% industry average.\n\nNext week we are ${d.next||'[specific action]'}.\n\nOne thing we need from you: ${d.ask||'[specific ask]'}.`,
+      dominance: (w, c, d) => `Week ${w} update for ${c} —\n\nThis week we published ${d.posts||'[X]'} posts reaching ${d.reach||'[X]'} accounts. Your email sequence achieved a ${d.openrate||'[X]'}% open rate vs ${d.avg||'22'}% industry average. LinkedIn generated ${d.li||'[X]'} new connections and ${d.convos||'[X]'} conversations.\n\nNext week we are ${d.next||'[specific action]'}.\n\nOne thing we need from you: ${d.ask||'[specific ask]'}.`,
+    };
+
+    let extraFields = {};
+
+    function fillUpdate() {
+      const week   = document.getElementById('g-week').value || '[X]';
+      const client = document.getElementById('g-client').value || '[Client]';
+      const pkg    = document.getElementById('g-pkg').value;
+
+      // Show dynamic fields based on package
+      const fieldsDiv = document.getElementById('gen-update-fields');
+      const outputWrap = document.getElementById('gen-update-output-wrap');
+
+      const pkgFields = {
+        growth:    ['posts','reach','platforms','next','ask'],
+        scale:     ['posts','reach','platforms','openrate','avg','next','ask'],
+        dominance: ['posts','reach','openrate','avg','li','convos','next','ask'],
+      };
+      const labels = {
+        posts: 'Posts Published', reach: 'Accounts Reached', platforms: 'Platforms',
+        openrate: 'Open Rate (%)', avg: 'Industry Avg (%)', li: 'LI Connections',
+        convos: 'Conversations', next: 'Next Week Action', ask: 'Client Ask',
+      };
+
+      fieldsDiv.style.display = 'grid';
+      fieldsDiv.style.gridTemplateColumns = 'repeat(3, 1fr)';
+      fieldsDiv.style.gap = '10px';
+      fieldsDiv.style.marginTop = '14px';
+      fieldsDiv.innerHTML = (pkgFields[pkg]||[]).map(f => `
+        <div>
+          <label class="gen-label">${labels[f]||f}</label>
+          <input class="gen-input" id="gf-${f}" placeholder="${f === 'avg' ? '22' : f === 'platforms' ? 'Instagram, Facebook' : ''}" oninput="regenUpdate(${JSON.stringify(week)},${JSON.stringify(client)},${JSON.stringify(pkg)})" />
+        </div>
+      `).join('');
+
+      outputWrap.style.display = 'block';
+      document.getElementById('gen-update-output').value = UPDATE_TEMPLATES[pkg](week, client, {});
+    }
+
+    function regenUpdate(week, client, pkg) {
+      const pkgFields = {
+        growth:    ['posts','reach','platforms','next','ask'],
+        scale:     ['posts','reach','platforms','openrate','avg','next','ask'],
+        dominance: ['posts','reach','openrate','avg','li','convos','next','ask'],
+      };
+      const d = {};
+      (pkgFields[pkg]||[]).forEach(f => {
+        const el = document.getElementById('gf-' + f);
+        if (el && el.value) d[f] = el.value;
+      });
+      const w = document.getElementById('g-week').value || week;
+      const c = document.getElementById('g-client').value || client;
+      document.getElementById('gen-update-output').value = UPDATE_TEMPLATES[pkg](w, c, d);
+    }
+
+    function copyTemplate(elId, btnId) {
+      const el = document.getElementById(elId);
+      const btn = document.getElementById(btnId);
+      if (!el || !btn) return;
+      const text = el.innerText || el.textContent;
+      navigator.clipboard.writeText(text.trim()).then(() => {
+        btn.textContent = 'Copied ✓';
+        btn.classList.add('copied');
+        showToast('Copied ✓');
+        setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2200);
+      });
+    }
+
+    function copyOutput(id, btn) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      navigator.clipboard.writeText(el.value.trim()).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = 'Copied ✓';
+        showToast('Copied ✓');
+        setTimeout(() => btn.textContent = orig, 2200);
+      });
+    }
+
+    function copyReportText() {
+      const ids = {
+        'r-client':'Client','r-period':'Period','r-month':'Month','r-posts':'Posts',
+        'r-emails':'Emails','r-leads':'Leads','r-reach':'Reach',
+        'r-mrr':'MRR Impact (est.)','r-openrate':'Open Rate','r-li':'LinkedIn Connections',
+        'r-pub':'Posts Published','r-total-reach':'Total Reach','r-top-post':'Top Post',
+        'r-eng':'Engagement Rate','r-sent':'Emails Sent','r-or':'Open Rate',
+        'r-cr':'Click Rate','r-focus':'Next Month Focus',
+      };
+      const lines = ['ALDRIC GROUP — MONTHLY PERFORMANCE REPORT', ''];
+      Object.entries(ids).forEach(([id, label]) => {
+        const el = document.getElementById(id);
+        if (el && el.value) lines.push(`${label}: ${el.value}`);
+      });
+      lines.push('', 'Aldric Group · hello@aldricgroup.co.uk · +44 7599 260032');
+      navigator.clipboard.writeText(lines.join('\n')).then(() => showToast('Report copied as text'));
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2200);
+    }
+
+    loadSaved();
+  </script>
+</body>
+</html>
