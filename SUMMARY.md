@@ -2,6 +2,77 @@
 
 ---
 
+## Session: 2026-05-27 (FitLink trainer dashboard + daily check-in)
+
+### Overview
+
+Two FitLink features built and committed separately. All routes are trainer-role auth-gated. Check-in stores mood/energy as JSON in `DailySummary.notes` — no schema migration required.
+
+**Commits:**
+- `50f1fc7` — feat: FitLink trainer dashboard — roster, client profile, task assign, XP award
+- `ffe7afc` — feat: FitLink daily check-in — mood, energy, weight, trainer note, 100 XP
+
+---
+
+### Task 1 — Trainer Dashboard
+
+#### New files
+
+| File | Purpose |
+|------|---------|
+| `fitlink/app/api/trainers/route.ts` | `GET /api/trainers` — trainer's client list with today's activity status |
+| `fitlink/app/api/trainers/[clientId]/route.ts` | `GET` full client data (30d health, tasks, nutrition, snapshots, trainer notes) · `PATCH` update private notes |
+| `fitlink/app/api/trainers/[clientId]/award-xp/route.ts` | `POST /api/trainers/[clientId]/award-xp` — manual XP award, capped at 1000 |
+| `fitlink/app/api/tasks/route.ts` | `POST /api/tasks` — create task for self or (trainer) for a linked client |
+| `fitlink/app/dashboard/clients/page.tsx` | Roster page — server component, redirects non-trainers to `/dashboard` |
+| `fitlink/app/dashboard/clients/[clientId]/page.tsx` | Client profile — server component, fetches DB, passes to client component |
+| `fitlink/app/dashboard/clients/[clientId]/ClientProfileView.tsx` | Client component — Recharts 30-day chart, assign task modal, award XP modal, private notes textarea |
+
+#### Activity status logic
+- **green** — `DailySummary.notes` starts with `{` (check-in done today)
+- **amber** — health log or completed task exists today, but no check-in
+- **red** — nothing logged today
+
+#### Data flow
+- All API routes: `auth()` → role check (`TRAINER`) → `trainerClient.findUnique` to verify relationship
+- Private notes stored in `TrainerClient.notes` — only the linked trainer can read/write
+- Chart metrics: Steps (÷1000), Sleep (hrs), Weight (kg) — three coloured lines via Recharts `LineChart`
+
+---
+
+### Task 2 — Daily Check-in
+
+#### New files
+
+| File | Purpose |
+|------|---------|
+| `fitlink/app/api/health-logs/submit/route.ts` | `POST /api/health-logs/submit` — upserts DailySummary, awards 100 XP (once/day), optionally updates HealthLog weight |
+| `fitlink/app/dashboard/checkin/page.tsx` | 4-step client component: mood → energy → weight → trainer note → submit |
+
+#### Modified files
+
+| File | Change |
+|------|--------|
+| `fitlink/app/dashboard/page.tsx` | Added `checkedInToday` bool from DB; replaced single "Log Today" button with two-button row: "Check in today" (green tick when done) + "Log Today" |
+
+#### Check-in data format
+Stored in `DailySummary.notes` as JSON — no schema migration needed:
+```json
+{ "mood": 7, "energy": 8, "weight": 78.5, "trainerNote": "Lower back tight", "checkedIn": true }
+```
+- XP guard: awarded only if `!alreadyDone` (notes didn't already start with `{`)
+- Weight also written to `HealthLog` for the 30-day chart
+
+---
+
+### Manual steps required (FitLink)
+
+1. **Database**: run `npx prisma db push` (or `prisma migrate dev`) inside `fitlink/` against a live Postgres DB — no schema changes in this session, but required before first deploy
+2. **Seed trainer–client links**: `TrainerClient` rows must exist in DB for the roster to show clients (no UI for this yet — insert manually or via Prisma Studio)
+3. **Auth**: `NEXTAUTH_SECRET` + `DATABASE_URL` must be set in Vercel env vars for `fitlink/`
+
+---
+
 ## Session: 2026-05-26 (Plaid migration — replace Nordigen end-to-end)
 
 ### Overview
