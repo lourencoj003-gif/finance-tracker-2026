@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Client Onboarding — Aldric Group</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:#080808; --bg2:#0f0f0f; --bg3:#161616;
+  --gold:#C9A96E; --gold-lt:#e0c48a; --cream:#F0E8DA;
+  --muted:#6b6b6b; --border:rgba(201,169,110,0.15); --border2:rgba(201,169,110,0.28); --text:#e8e0d4;
+  --green:#5aad7a; --red:#e05555;
+}
+body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); line-height:1.6; -webkit-font-smoothing:antialiased; }
+
+.page { max-width:720px; margin:0 auto; padding:60px 32px 100px; }
+
+.logo { font-family:'Playfair Display',serif; font-size:18px; color:var(--gold); margin-bottom:48px; display:block; text-decoration:none; }
+
+.hdr { margin-bottom:48px; }
+.hdr-tag { font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--gold); margin-bottom:12px; }
+.hdr h1 { font-family:'Playfair Display',serif; font-size:clamp(28px,4vw,42px); color:var(--cream); line-height:1.2; margin-bottom:12px; }
+.hdr p { font-size:14px; color:var(--muted); max-width:520px; }
+
+/* Progress */
+.progress-bar { display:flex; gap:6px; margin-bottom:48px; }
+.prog-step { height:3px; flex:1; background:rgba(201,169,110,0.12); border-radius:2px; transition:background 0.3s; }
+.prog-step.active { background:var(--gold); }
+.prog-step.done { background:var(--green); }
+
+/* Step */
+.step { display:none; }
+.step.active { display:block; }
+
+.step-title { font-family:'Playfair Display',serif; font-size:22px; color:var(--cream); margin-bottom:6px; }
+.step-sub { font-size:13px; color:var(--muted); margin-bottom:32px; }
+
+.field { margin-bottom:20px; }
+.field label { display:block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--muted); margin-bottom:7px; }
+.field label span { color:var(--red); margin-left:2px; }
+input, select, textarea {
+  width:100%; background:var(--bg3);
+  border:1px solid rgba(201,169,110,0.12); border-radius:8px;
+  padding:11px 14px; color:var(--text); font-family:inherit; font-size:13px;
+  outline:none; transition:border-color 0.15s;
+}
+input:focus, select:focus, textarea:focus { border-color:var(--border2); }
+textarea { resize:vertical; min-height:90px; }
+select option { background:#161616; }
+.field-hint { font-size:11px; color:rgba(107,107,107,0.7); margin-top:5px; }
+.field-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+
+.tag-input { display:flex; flex-wrap:wrap; gap:6px; }
+.tag {
+  display:inline-flex; align-items:center; gap:6px;
+  background:rgba(201,169,110,0.1); border:1px solid rgba(201,169,110,0.2);
+  color:var(--gold); font-size:12px; font-weight:500; padding:4px 10px;
+  border-radius:20px; cursor:pointer; transition:background 0.15s;
+}
+.tag:hover { background:rgba(201,169,110,0.18); }
+.tag.selected { background:var(--gold); color:#000; border-color:var(--gold); }
+
+/* nav buttons */
+.step-nav { display:flex; justify-content:space-between; align-items:center; margin-top:40px; padding-top:32px; border-top:1px solid var(--border); }
+.btn-next { background:var(--gold); color:#000; font-weight:700; font-size:14px; padding:12px 32px; border-radius:6px; border:none; cursor:pointer; font-family:inherit; transition:opacity 0.15s; }
+.btn-next:hover { opacity:0.87; }
+.btn-back { background:none; border:1px solid var(--border); color:var(--muted); font-size:13px; padding:11px 24px; border-radius:6px; cursor:pointer; font-family:inherit; transition:color 0.15s; }
+.btn-back:hover { color:var(--cream); }
+.step-counter { font-size:12px; color:var(--muted); }
+
+/* Output modal */
+#output-modal {
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85);
+  z-index:100; align-items:flex-start; justify-content:center;
+  padding:40px 20px; overflow-y:auto;
+}
+#output-modal.open { display:flex; }
+#output-box {
+  background:var(--bg2); border:1px solid var(--border2);
+  border-radius:16px; width:100%; max-width:760px;
+  padding:40px; animation:fadeUp 0.25s ease-out;
+}
+@keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+#output-box h2 { font-family:'Playfair Display',serif; font-size:26px; color:var(--gold); margin-bottom:8px; }
+#output-box .sub { font-size:13px; color:var(--muted); margin-bottom:24px; }
+
+#brief-output {
+  background:var(--bg3); border:1px solid var(--border);
+  border-radius:10px; padding:24px; font-size:12px; line-height:1.9;
+  color:var(--text); white-space:pre-wrap; font-family:'Courier New',monospace;
+  max-height:400px; overflow-y:auto; margin-bottom:20px;
+}
+
+.output-actions { display:flex; gap:10px; flex-wrap:wrap; }
+.btn-copy { background:var(--gold); color:#000; font-weight:700; font-size:13px; padding:11px 24px; border-radius:6px; border:none; cursor:pointer; font-family:inherit; }
+.btn-dl { background:rgba(201,169,110,0.1); color:var(--gold); border:1px solid var(--border2); font-size:13px; padding:10px 20px; border-radius:6px; cursor:pointer; font-family:inherit; }
+.btn-close { background:none; border:1px solid var(--border); color:var(--muted); font-size:13px; padding:10px 20px; border-radius:6px; cursor:pointer; font-family:inherit; }
+
+.complete-msg { text-align:center; padding:20px 0; }
+.complete-msg .tick { font-size:48px; margin-bottom:12px; }
+.complete-msg h2 { font-family:'Playfair Display',serif; font-size:28px; color:var(--cream); margin-bottom:8px; }
+.complete-msg p { color:var(--muted); font-size:14px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <a href="index.html" class="logo">Aldric Group</a>
+
+  <div class="hdr">
+    <div class="hdr-tag">Client Onboarding</div>
+    <h1>Let's build your brand brief.</h1>
+    <p>This takes 15–20 minutes. Everything you provide feeds directly into the AI agents we configure for your business. The more specific you are, the better the output.</p>
+  </div>
+
+  <div class="progress-bar" id="progress-bar"></div>
+
+  <!-- STEP 1: Business basics -->
+  <div class="step active" data-step="1">
+    <div class="step-title">Your business</div>
+    <div class="step-sub">The fundamentals. All fields marked * are required.</div>
+
+    <div class="field-row">
+      <div class="field"><label>Business Name <span>*</span></label><input id="biz-name" placeholder="e.g. Luxe Aesthetics Studio" /></div>
+      <div class="field"><label>Your Name <span>*</span></label><input id="contact-name" placeholder="e.g. Sarah Mitchell" /></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Email <span>*</span></label><input id="contact-email" type="email" placeholder="sarah@luxeaesthetics.co.uk" /></div>
+      <div class="field"><label>WhatsApp / Mobile</label><input id="contact-phone" type="tel" placeholder="+44 7…" /></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Website</label><input id="biz-website" placeholder="https://…" /></div>
+      <div class="field"><label>Industry / Sector <span>*</span></label><input id="biz-sector" placeholder="e.g. Aesthetics, Estate Agency, Physio" /></div>
+    </div>
+    <div class="field"><label>Location(s)</label><input id="biz-location" placeholder="e.g. London, Manchester — or UK-wide" /></div>
+    <div class="field">
+      <label>Package / Sprint <span>*</span></label>
+      <select id="biz-package">
+        <option value="">Select…</option>
+        <option>Proof Sprint — £499</option>
+        <option>Growth — £750/mo</option>
+        <option>Scale — £1,250/mo</option>
+        <option>Dominance — £1,500/mo</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- STEP 2: Brand voice -->
+  <div class="step" data-step="2">
+    <div class="step-title">Brand voice</div>
+    <div class="step-sub">This defines how every agent writes for you. Be specific — "professional" tells us nothing. "Direct, warm, never salesy" tells us everything.</div>
+
+    <div class="field">
+      <label>3 words that describe your brand <span>*</span></label>
+      <input id="voice-words" placeholder="e.g. Confident, warm, no-nonsense" />
+      <div class="field-hint">These become guardrails for every piece of content we generate.</div>
+    </div>
+    <div class="field">
+      <label>3 words you never want to sound like</label>
+      <input id="voice-never" placeholder="e.g. Corporate, salesy, desperate" />
+    </div>
+    <div class="field">
+      <label>Tone of voice description</label>
+      <textarea id="voice-desc" placeholder="Describe how you want to come across. Like talking to a knowledgeable friend — straight to the point, no jargon, occasional dry humour…"></textarea>
+    </div>
+    <div class="field">
+      <label>A brand or communicator whose writing you admire</label>
+      <input id="voice-admire" placeholder="e.g. Alex Hormozi, Rory Sutherland, or a competitor you think 'nails it'" />
+    </div>
+    <div class="field">
+      <label>Words / phrases you never want used</label>
+      <input id="voice-ban" placeholder="e.g. 'leverage synergies', 'game-changing', 'journey'" />
+    </div>
+  </div>
+
+  <!-- STEP 3: Audience -->
+  <div class="step" data-step="3">
+    <div class="step-title">Your audience</div>
+    <div class="step-sub">Who we're writing to, and what keeps them up at night.</div>
+
+    <div class="field">
+      <label>Primary audience <span>*</span></label>
+      <input id="aud-primary" placeholder="e.g. Women 30–55, disposable income, interested in aesthetics and self-care" />
+    </div>
+    <div class="field">
+      <label>Secondary audience (if any)</label>
+      <input id="aud-secondary" placeholder="e.g. Gifters — partners buying vouchers for birthdays" />
+    </div>
+    <div class="field">
+      <label>Their biggest pain points <span>*</span></label>
+      <textarea id="aud-pains" placeholder="What problem are they trying to solve? What do they complain about? What makes them hesitate to buy?&#10;&#10;e.g. They've been burned by clinics that didn't listen. They want results but don't want to look 'done'. They're busy and hate chasing appointments."></textarea>
+    </div>
+    <div class="field">
+      <label>Their desires and goals</label>
+      <textarea id="aud-desires" placeholder="What outcome are they really buying? What does success look like for them?&#10;&#10;e.g. They want to feel like themselves again. They want to look rested, not different. They want to trust the person doing the work."></textarea>
+    </div>
+    <div class="field">
+      <label>Objections they commonly raise</label>
+      <textarea id="aud-objections" placeholder="e.g. 'Too expensive', 'I'm not sure it'll work for me', 'I need to check with my husband'"></textarea>
+    </div>
+  </div>
+
+  <!-- STEP 4: Offers -->
+  <div class="step" data-step="4">
+    <div class="step-title">Your offers</div>
+    <div class="step-sub">List what you sell. This is what the content and email agents will promote.</div>
+
+    <div class="field">
+      <label>Core offers (name + price + 1 sentence description) <span>*</span></label>
+      <textarea id="offers-core" rows="7" placeholder="1. Botox — £350 — anti-wrinkle injections, results in 10–14 days, lasts 3–4 months&#10;2. Lip filler — £280 — subtle volume and definition, Juvederm product&#10;3. Skin consultation — Free — 30-min assessment, leads to treatment plan&#10;4. Monthly maintenance plan — £150/mo — quarterly treatments at reduced rate"></textarea>
+    </div>
+    <div class="field">
+      <label>Best-performing / highest-margin offer</label>
+      <input id="offers-best" placeholder="e.g. Botox (highest margin + repeat client conversion)" />
+    </div>
+    <div class="field">
+      <label>Offer you want to push most right now</label>
+      <input id="offers-push" placeholder="e.g. Skin consultation (gateway to larger packages)" />
+    </div>
+    <div class="field">
+      <label>Seasonal or upcoming promotions</label>
+      <input id="offers-promo" placeholder="e.g. Summer prep campaign starting May, Black Friday bundles" />
+    </div>
+  </div>
+
+  <!-- STEP 5: Marketing setup -->
+  <div class="step" data-step="5">
+    <div class="step-title">Current marketing setup</div>
+    <div class="step-sub">What you're doing now — and what's broken.</div>
+
+    <div class="field">
+      <label>Active platforms (select all that apply)</label>
+      <div class="tag-input" id="platforms-tags">
+        <span class="tag" data-val="Instagram">Instagram</span>
+        <span class="tag" data-val="LinkedIn">LinkedIn</span>
+        <span class="tag" data-val="Facebook">Facebook</span>
+        <span class="tag" data-val="TikTok">TikTok</span>
+        <span class="tag" data-val="Email list">Email list</span>
+        <span class="tag" data-val="Google Business">Google Business</span>
+        <span class="tag" data-val="Google Ads">Google Ads</span>
+        <span class="tag" data-val="Meta Ads">Meta Ads</span>
+        <span class="tag" data-val="WhatsApp broadcasts">WhatsApp broadcasts</span>
+        <span class="tag" data-val="None yet">None yet</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>Email platform (if any)</label>
+      <input id="email-platform" placeholder="e.g. Mailchimp, ActiveCampaign, Klaviyo, none" />
+    </div>
+    <div class="field">
+      <label>CRM / booking tool</label>
+      <input id="crm-tool" placeholder="e.g. Cliniko, Fresha, HubSpot, spreadsheet, nothing" />
+    </div>
+    <div class="field">
+      <label>What's working right now?</label>
+      <textarea id="mkt-working" placeholder="e.g. Instagram DMs convert well when we post consistently. Existing clients rebook reliably."></textarea>
+    </div>
+    <div class="field">
+      <label>What's the biggest gap / what's broken? <span>*</span></label>
+      <textarea id="mkt-broken" placeholder="e.g. Leads come in but fall through — no follow-up system. We post sporadically, no strategy. No-show rate is 18%, costing us £3k/month."></textarea>
+    </div>
+    <div class="field">
+      <label>What does success look like in 90 days? <span>*</span></label>
+      <textarea id="mkt-success" placeholder="e.g. Books full 3 weeks out. Under 5% no-show rate. Instagram driving 10 new inquiries per month."></textarea>
+    </div>
+  </div>
+
+  <!-- STEP 6: Competition + context -->
+  <div class="step" data-step="6">
+    <div class="step-title">Competition & context</div>
+    <div class="step-sub">Positioning context for the content agents.</div>
+
+    <div class="field">
+      <label>Your 2–3 main competitors</label>
+      <textarea id="comp-names" placeholder="e.g. Dr Priya Aesthetics (stronger Instagram, cheaper pricing). The Skin Suite (better location). The clinic down the road undercutting on Botox."></textarea>
+    </div>
+    <div class="field">
+      <label>Your unfair advantage — why clients choose you over them</label>
+      <textarea id="comp-advantage" placeholder="e.g. We only use top-tier products, 8 years experience, smaller and more personal — clients don't feel like a number. Every client gets a full consultation."></textarea>
+    </div>
+    <div class="field">
+      <label>Topics / areas you want content to focus on</label>
+      <textarea id="content-topics" placeholder="e.g. Education (how Botox works), myth-busting, before/after results, practitioner expertise, client stories"></textarea>
+    </div>
+    <div class="field">
+      <label>Topics or angles to avoid</label>
+      <textarea id="content-avoid" placeholder="e.g. Anything that makes us look cheap or discount-heavy. Nothing that references competitors directly. Avoid overly clinical/medical language."></textarea>
+    </div>
+    <div class="field">
+      <label>Anything else we should know?</label>
+      <textarea id="extra-context" placeholder="Recent press, upcoming launches, sensitivities, past bad experiences with agencies, anything that helps us get this right from day one…"></textarea>
+    </div>
+  </div>
+
+  <!-- COMPLETE -->
+  <div class="step" data-step="7">
+    <div class="complete-msg">
+      <div class="tick">✓</div>
+      <h2>Brief complete.</h2>
+      <p>Your brand brief is ready. Copy it below and send to hello@aldricgroup.co.uk, or we'll use it directly in the strategy call.</p>
+    </div>
+    <div style="margin-top:28px;display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
+      <button class="btn-next" onclick="showOutput()">View & Copy Brand Brief</button>
+      <a href="index.html#contact" style="display:inline-block;background:rgba(201,169,110,0.1);color:var(--gold);border:1px solid rgba(201,169,110,0.25);font-size:14px;padding:12px 24px;border-radius:6px;text-decoration:none">Book Strategy Call</a>
+    </div>
+  </div>
+
+  <!-- Nav -->
+  <div class="step-nav" id="step-nav">
+    <button class="btn-back" id="btn-back" onclick="goBack()">← Back</button>
+    <span class="step-counter" id="step-counter"></span>
+    <button class="btn-next" id="btn-next" onclick="goNext()">Continue →</button>
+  </div>
+
+</div>
+
+<!-- Output modal -->
+<div id="output-modal">
+  <div id="output-box">
+    <h2>Brand Brief</h2>
+    <p class="sub">Copy this and paste it into your agent setup, or send it to hello@aldricgroup.co.uk</p>
+    <div id="brief-output"></div>
+    <div class="output-actions">
+      <button class="btn-copy" onclick="copyBrief()">Copy Brief</button>
+      <button class="btn-dl" onclick="downloadBrief()">Download .txt</button>
+      <button class="btn-close" onclick="closeOutput()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const TOTAL_STEPS = 7;
+let currentStep = 1;
+
+// Init progress bar
+const pb = document.getElementById('progress-bar');
+for (let i = 1; i <= TOTAL_STEPS - 1; i++) { // -1 because step 7 is the complete screen
+  const s = document.createElement('div');
+  s.className = 'prog-step'; s.id = `ps-${i}`; pb.appendChild(s);
+}
+
+function updateUI() {
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  document.querySelector(`.step[data-step="${currentStep}"]`).classList.add('active');
+
+  for (let i = 1; i <= TOTAL_STEPS - 1; i++) {
+    const el = document.getElementById(`ps-${i}`);
+    if (!el) continue;
+    if (i < currentStep) el.className = 'prog-step done';
+    else if (i === currentStep) el.className = 'prog-step active';
+    else el.className = 'prog-step';
+  }
+
+  const nav = document.getElementById('step-nav');
+  const back = document.getElementById('btn-back');
+  const next = document.getElementById('btn-next');
+  const counter = document.getElementById('step-counter');
+
+  if (currentStep === TOTAL_STEPS) { nav.style.display = 'none'; return; }
+  nav.style.display = 'flex';
+  back.style.visibility = currentStep === 1 ? 'hidden' : 'visible';
+  counter.textContent = `${currentStep} of ${TOTAL_STEPS - 1}`;
+  next.textContent = currentStep === TOTAL_STEPS - 1 ? 'Generate Brief →' : 'Continue →';
+}
+
+function goNext() {
+  // Validate required fields
+  const step = document.querySelector(`.step[data-step="${currentStep}"]`);
+  const required = step.querySelectorAll('input[id="biz-name"],input[id="contact-name"],input[id="contact-email"],input[id="biz-sector"],select[id="biz-package"],input[id="voice-words"],input[id="aud-primary"],textarea[id="aud-pains"],textarea[id="offers-core"],textarea[id="mkt-broken"],textarea[id="mkt-success"]');
+  let valid = true;
+  required.forEach(el => {
+    if (!el.value.trim()) { el.style.borderColor = 'rgba(224,85,85,0.5)'; valid = false; }
+    else el.style.borderColor = '';
+  });
+  if (!valid) return;
+  if (currentStep < TOTAL_STEPS) { currentStep++; updateUI(); window.scrollTo(0,0); }
+}
+
+function goBack() {
+  if (currentStep > 1) { currentStep--; updateUI(); window.scrollTo(0,0); }
+}
+
+// Tag selection
+document.querySelectorAll('#platforms-tags .tag').forEach(t => {
+  t.addEventListener('click', () => t.classList.toggle('selected'));
+});
+
+function getSelectedTags(containerId) {
+  return [...document.querySelectorAll(`#${containerId} .tag.selected`)].map(t => t.dataset.val).join(', ') || 'None selected';
+}
+
+function v(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+
+function generateBrief() {
+  return `═══════════════════════════════════════════
+ALDRIC GROUP — BRAND BRIEF
+Generated: ${new Date().toLocaleDateString('en-GB', {day:'numeric',month:'long',year:'numeric'})}
+═══════════════════════════════════════════
+
+BUSINESS OVERVIEW
+─────────────────
+Business Name:   ${v('biz-name')}
+Contact:         ${v('contact-name')} · ${v('contact-email')} · ${v('contact-phone')}
+Website:         ${v('biz-website')}
+Sector:          ${v('biz-sector')}
+Location:        ${v('biz-location')}
+Package:         ${v('biz-package')}
+
+BRAND VOICE
+───────────
+Describe in 3 words:  ${v('voice-words')}
+Never sound like:     ${v('voice-never')}
+Voice description:    ${v('voice-desc')}
+Reference brand/communicator: ${v('voice-admire')}
+Banned words/phrases: ${v('voice-ban')}
+
+TARGET AUDIENCE
+───────────────
+Primary:       ${v('aud-primary')}
+Secondary:     ${v('aud-secondary')}
+
+Pain points:
+${v('aud-pains')}
+
+Desires:
+${v('aud-desires')}
+
+Common objections:
+${v('aud-objections')}
+
+OFFERS
+──────
+${v('offers-core')}
+
+Best-performing offer:  ${v('offers-best')}
+Priority push:          ${v('offers-push')}
+Promotions:             ${v('offers-promo')}
+
+CURRENT MARKETING
+─────────────────
+Active platforms:   ${getSelectedTags('platforms-tags')}
+Email platform:     ${v('email-platform')}
+CRM/Booking tool:   ${v('crm-tool')}
+
+What's working:
+${v('mkt-working')}
+
+Biggest gap / what's broken:
+${v('mkt-broken')}
+
+Success in 90 days:
+${v('mkt-success')}
+
+COMPETITION & POSITIONING
+──────────────────────────
+Competitors:
+${v('comp-names')}
+
+Our unfair advantage:
+${v('comp-advantage')}
+
+Content focus areas:
+${v('content-topics')}
+
+Avoid:
+${v('content-avoid')}
+
+Additional context:
+${v('extra-context')}
+
+═══════════════════════════════════════════
+AGENT INSTRUCTIONS (append to system prompt)
+═══════════════════════════════════════════
+
+You are a marketing AI agent for ${v('biz-name')}, a ${v('biz-sector')} business based in ${v('biz-location')}.
+
+Tone: ${v('voice-words')}. Never: ${v('voice-never')}.
+
+You are writing for: ${v('aud-primary')}.
+
+Their core pain: ${v('aud-pains').split('\n')[0]}
+
+We sell: ${v('offers-push') || v('offers-best')}
+
+Our advantage over competitors: ${v('comp-advantage')}
+
+Always stay consistent with this voice. Never use: ${v('voice-ban')}
+`;
+}
+
+function showOutput() {
+  document.getElementById('brief-output').textContent = generateBrief();
+  document.getElementById('output-modal').classList.add('open');
+}
+function closeOutput() { document.getElementById('output-modal').classList.remove('open'); }
+
+function copyBrief() {
+  navigator.clipboard.writeText(generateBrief()).then(() => {
+    const btn = document.querySelector('.btn-copy');
+    btn.textContent = 'Copied ✓'; setTimeout(() => btn.textContent = 'Copy Brief', 2200);
+  });
+}
+
+function downloadBrief() {
+  const text = generateBrief();
+  const blob = new Blob([text], {type:'text/plain'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `aldric-brand-brief-${v('biz-name').toLowerCase().replace(/\s+/g,'-') || 'client'}.txt`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+// Save to localStorage as you go
+function autosave() {
+  const fields = ['biz-name','contact-name','contact-email','contact-phone','biz-website','biz-sector','biz-location','biz-package','voice-words','voice-never','voice-desc','voice-admire','voice-ban','aud-primary','aud-secondary','aud-pains','aud-desires','aud-objections','offers-core','offers-best','offers-push','offers-promo','email-platform','crm-tool','mkt-working','mkt-broken','mkt-success','comp-names','comp-advantage','content-topics','content-avoid','extra-context'];
+  const data = {};
+  fields.forEach(id => { const el = document.getElementById(id); if (el) data[id] = el.value; });
+  localStorage.setItem('aldric_onboarding_v1', JSON.stringify(data));
+}
+
+// Restore saved data
+try {
+  const saved = JSON.parse(localStorage.getItem('aldric_onboarding_v1') || '{}');
+  Object.keys(saved).forEach(id => { const el = document.getElementById(id); if (el) el.value = saved[id]; });
+} catch {}
+
+document.querySelectorAll('input,select,textarea').forEach(el => el.addEventListener('input', autosave));
+
+updateUI();
+</script>
+</body>
+</html>

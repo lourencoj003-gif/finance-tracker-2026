@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sales Call Guide — Aldric Group (Internal)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+:root {
+  --bg:#080808; --bg2:#0f0f0f; --bg3:#161616; --bg4:#1c1c1c;
+  --gold:#C9A96E; --gold-lt:#e0c48a; --cream:#F0E8DA;
+  --muted:#6b6b6b; --border:rgba(201,169,110,0.15); --text:#e8e0d4;
+  --green:#5aad7a; --red:#e05555; --blue:#60a5fa;
+}
+body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); line-height:1.6; -webkit-font-smoothing:antialiased; }
+.page { max-width:860px; margin:0 auto; padding:60px 32px 100px; }
+.logo { font-family:'Playfair Display',serif; font-size:18px; color:var(--gold); margin-bottom:8px; display:block; }
+.internal-tag { font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--red); background:rgba(224,85,85,0.1); border:1px solid rgba(224,85,85,0.2); padding:4px 10px; border-radius:4px; display:inline-block; margin-bottom:40px; }
+h1 { font-family:'Playfair Display',serif; font-size:38px; color:var(--cream); margin-bottom:8px; }
+.subtitle { font-size:14px; color:var(--muted); margin-bottom:48px; }
+
+/* Phase blocks */
+.phase { margin-bottom:48px; border-left:2px solid var(--gold); padding-left:24px; }
+.phase-header { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+.phase-num { font-family:'Playfair Display',serif; font-size:28px; color:var(--gold); line-height:1; }
+.phase-name { font-family:'Playfair Display',serif; font-size:20px; color:var(--cream); }
+.phase-time { font-size:11px; color:var(--muted); background:var(--bg3); border:1px solid var(--border); padding:3px 10px; border-radius:20px; }
+
+/* Questions */
+.q-block { background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:16px 20px; margin-bottom:10px; }
+.q-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--gold); margin-bottom:6px; }
+.q-text { font-size:14px; color:var(--cream); font-weight:500; margin-bottom:6px; }
+.q-intent { font-size:12px; color:var(--muted); font-style:italic; }
+
+/* Transition lines */
+.transition { background:rgba(201,169,110,0.06); border:1px solid rgba(201,169,110,0.15); border-radius:8px; padding:14px 18px; margin:16px 0; }
+.t-label { font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--gold); margin-bottom:4px; }
+.t-script { font-size:13px; color:var(--cream); line-height:1.6; }
+
+/* Close options */
+.close-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-top:16px; }
+.close-card { background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:16px; }
+.close-card h4 { font-size:13px; font-weight:700; color:var(--cream); margin-bottom:6px; }
+.close-card p { font-size:12px; color:var(--muted); line-height:1.6; }
+.close-card .price { font-size:18px; font-weight:700; color:var(--gold); margin:8px 0 6px; }
+
+/* Objection handling */
+.obj-table { border-collapse:collapse; width:100%; margin-top:16px; }
+.obj-table th { font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); font-weight:700; text-align:left; padding:8px 12px; border-bottom:1px solid var(--border); }
+.obj-table td { font-size:13px; color:var(--text); padding:12px 12px; border-bottom:1px solid rgba(255,255,255,0.04); vertical-align:top; }
+.obj-table tr:last-child td { border-bottom:none; }
+.obj-table td:first-child { color:var(--gold); font-weight:500; width:30%; }
+
+/* Checklist */
+.checklist { list-style:none; margin-top:16px; }
+.checklist li { display:flex; gap:10px; align-items:flex-start; font-size:13px; color:var(--muted); padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.03); }
+.checklist li:last-child { border-bottom:none; }
+.checklist li::before { content:'□'; color:var(--gold); font-size:14px; flex-shrink:0; line-height:1.4; }
+
+/* Warning box */
+.warning { background:rgba(224,85,85,0.06); border:1px solid rgba(224,85,85,0.15); border-radius:8px; padding:14px 18px; margin-top:12px; }
+.warning p { font-size:13px; color:rgba(224,85,85,0.9); }
+</style>
+</head>
+<body>
+<div class="page">
+  <span class="logo">Aldric Group</span>
+  <span class="internal-tag">Internal — Sales Framework</span>
+
+  <h1>The Discovery & Close Call</h1>
+  <p class="subtitle">Total time: 30–45 minutes · Format: Video (Zoom/Meet) or phone · Goal: Qualify, expose the gap, position AI leverage, close or progress to proposal.</p>
+
+  <!-- PRE-CALL -->
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-num">00</div>
+      <div class="phase-name">Pre-Call Prep</div>
+      <div class="phase-time">5 min before</div>
+    </div>
+    <ul class="checklist">
+      <li>Review their website, Instagram, and Google reviews — form a view on their current marketing before they say a word</li>
+      <li>Check CRM for any prior touchpoints — what drew them in, what package they expressed interest in</li>
+      <li>Note 1–2 specific things you noticed (gap in their social consistency, no review responses, unclear pricing page)</li>
+      <li>Have their email open — you'll send a follow-up within 1 hour of the call</li>
+      <li>Have pilot.html link and onboarding.html link ready to share in chat</li>
+    </ul>
+  </div>
+
+  <!-- PHASE 1: OPEN -->
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-num">01</div>
+      <div class="phase-name">Open — Set Frame</div>
+      <div class="phase-time">2 min</div>
+    </div>
+    <div class="transition">
+      <div class="t-label">Opening line</div>
+      <div class="t-script">"Good to meet you. I want to make this useful for you — so rather than me talking at you, let's start with where you actually are. I looked at your [website / Instagram] before this call and had a few observations, but I want to hear from you first. What made you reach out now?"</div>
+    </div>
+    <div class="warning"><p>Do not pitch. Do not explain what Aldric Group does yet. Let them talk first — you learn more in the first 5 minutes of listening than in 45 minutes of presenting.</p></div>
+  </div>
+
+  <!-- PHASE 2: DIAGNOSE -->
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-num">02</div>
+      <div class="phase-name">Diagnose — Understand the Business</div>
+      <div class="phase-time">10 min</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-label">Business context</div>
+      <div class="q-text">"Walk me through your current marketing — what are you doing, and what's actually working?"</div>
+      <div class="q-intent">Let them describe it in their words. Listen for where they trail off or sound uncertain — that's the gap.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-label">Volume + revenue</div>
+      <div class="q-text">"Roughly how many new clients are you seeing each month, and where are they coming from?"</div>
+      <div class="q-intent">You need to understand their current lead flow to size the opportunity.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-label">Time spent</div>
+      <div class="q-text">"How much time are you or your team spending on marketing right now — content, emails, following up on inquiries?"</div>
+      <div class="q-intent">This surfaces the real cost of their current approach — even if it's "free", it's not.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-label">What's tried</div>
+      <div class="q-text">"What have you tried before that didn't work? An agency, a freelancer, doing it yourself?"</div>
+      <div class="q-intent">Critical for positioning. If they've been burned, you need to understand why before you position.</div>
+    </div>
+  </div>
+
+  <!-- PHASE 3: EXPOSE -->
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-num">03</div>
+      <div class="phase-name">Expose — Make the Gap Visible</div>
+      <div class="phase-time">10 min</div>
+    </div>
+    <div class="transition">
+      <div class="t-label">Bridge into this phase</div>
+      <div class="t-script">"Before I say anything about what we do — I want to share what I noticed when I looked at your [business] before this call. Tell me if any of this resonates."</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-label">The gap question</div>
+      <div class="q-text">"If I told you that [specific observation — e.g. 'your Instagram last post was 3 weeks ago' / 'you have 12 Google reviews and your main competitor has 140'] — what would your reaction be?"</div>
+      <div class="q-intent">Use what you observed pre-call. Specific beats generic every time. Let them confirm or correct.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-label">Cost of inaction</div>
+      <div class="q-text">"If nothing changes in the next 6 months — what does that look like for you?"</div>
+      <div class="q-intent">Forces them to articulate the cost themselves. Much stronger than you telling them what they're losing.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-label">The size of the prize</div>
+      <div class="q-text">"If your marketing was running consistently — and bringing in, say, 5–10 more clients per month — what does that mean for the business in revenue terms?"</div>
+      <div class="q-intent">Anchor the ROI in their numbers, not yours. £1,500/month is nothing if 3 extra clients = £3,000 MRR.</div>
+    </div>
+    <div class="warning"><p>Do not rush this phase. The longer they sit with the gap and size the prize themselves, the easier the close. Silence is fine — let them think.</p></div>
+  </div>
+
+  <!-- PHASE 4: POSITION -->
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-num">04</div>
+      <div class="phase-name">Position — Explain the Lever</div>
+      <div class="phase-time">8 min</div>
+    </div>
+    <div class="transition">
+      <div class="t-label">Transition</div>
+      <div class="t-script">"OK, so here's what we do — and I'll keep it simple. We configure AI agents that run your marketing for you. Not templates, not generic content — trained on your voice, your audience, your offers. Content goes out every day. Leads get followed up within minutes. Reviews get requested automatically. It runs while you're doing the actual work."</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-label">After explaining</div>
+      <div class="q-text">"Does that make sense? What's your immediate reaction to that — what's your first question?"</div>
+      <div class="q-intent">Don't keep pitching once you've made the point. Ask what's in their head. Their question tells you what objection is coming.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-label">Social proof (use the relevant case study)</div>
+      <div class="q-text">"We had a [similar business] — [brief 2-sentence case study]. They're now [result]. Similar setup to what you're describing."</div>
+      <div class="q-intent">Reference the most relevant case study from case-studies.html. One story lands better than three.</div>
+    </div>
+  </div>
+
+  <!-- PHASE 5: CLOSE -->
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-num">05</div>
+      <div class="phase-name">Close — Present the Options</div>
+      <div class="phase-time">8 min</div>
+    </div>
+    <div class="transition">
+      <div class="t-label">Transition into close</div>
+      <div class="t-script">"So based on what you've described, here's where I think you are and what makes sense. Let me give you two options — and there's no wrong answer."</div>
+    </div>
+
+    <div class="close-grid">
+      <div class="close-card">
+        <h4>Option A — Proof Sprint</h4>
+        <div class="price">£499</div>
+        <p>14 days. One workflow live. You see exactly what we build before committing to a retainer. Credited against month one.</p>
+        <p style="margin-top:8px;color:var(--green);font-size:11px;font-weight:600">Best for: first-time, sceptical, or already has a specific pain point to solve</p>
+      </div>
+      <div class="close-card">
+        <h4>Option B — Growth Retainer</h4>
+        <div class="price">£750/mo</div>
+        <p>Content + email done-for-you every month. Best for businesses who know they need consistent output and don't have time to manage it.</p>
+        <p style="margin-top:8px;color:var(--gold);font-size:11px;font-weight:600">Best for: already doing some marketing but inconsistently</p>
+      </div>
+      <div class="close-card">
+        <h4>Option C — Scale/Dominance</h4>
+        <div class="price">£1,250–£1,500/mo</div>
+        <p>Full stack — content, email, outreach, automation. For businesses ready to put marketing on autopilot and grow aggressively.</p>
+        <p style="margin-top:8px;color:#c084fc;font-size:11px;font-weight:600">Best for: already has revenue, clear offer, wants to scale</p>
+      </div>
+    </div>
+
+    <div class="transition" style="margin-top:20px">
+      <div class="t-label">Asking for the decision</div>
+      <div class="t-script">"Which of those feels like the right starting point for where you are right now?"</div>
+    </div>
+    <div class="warning"><p>After asking — stop talking. The next person who speaks loses. Wait for their answer, however long it takes.</p></div>
+  </div>
+
+  <!-- OBJECTIONS -->
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-num">06</div>
+      <div class="phase-name">Objection Handling</div>
+    </div>
+    <table class="obj-table">
+      <tr><th>Objection</th><th>Response</th></tr>
+      <tr>
+        <td>"It's too expensive."</td>
+        <td>"Compared to what? You said [3–5 more clients/month] would mean £X in revenue. Our retainer is £Y. That's month one covered by one new client. The question isn't whether it's expensive — it's whether it pays for itself. And we're confident it does."</td>
+      </tr>
+      <tr>
+        <td>"I need to think about it."</td>
+        <td>"Of course. What specifically do you need to think through? I'd rather address it now than leave you with a question." [Identify the real objection — it's usually budget, trust, or timing.]</td>
+      </tr>
+      <tr>
+        <td>"I've tried agencies before and they didn't deliver."</td>
+        <td>"That's exactly why I'd recommend starting with the Proof Sprint. You see the work before you commit to a contract. If we don't deliver in 14 days, you get your £499 back. That's the difference — we're not asking you to trust us for 3 months before seeing anything."</td>
+      </tr>
+      <tr>
+        <td>"I don't have time to manage this."</td>
+        <td>"You don't need to. The onboarding form takes 20 minutes, one 30-minute strategy call, and one round of content approval per month. That's it. Everything else runs without you."</td>
+      </tr>
+      <tr>
+        <td>"Can you guarantee results?"</td>
+        <td>"I can guarantee the work gets done — content published, automations running, sequences live. Results depend on your market and your offers, but the infrastructure we build gives those results their best possible chance. That's the honest answer."</td>
+      </tr>
+      <tr>
+        <td>"We're not ready yet."</td>
+        <td>"What would need to be in place for you to feel ready? In my experience, 'not ready' often means the system isn't ready — which is exactly what we fix. What's the specific thing that's blocking you?"</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- POST-CALL -->
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-num">07</div>
+      <div class="phase-name">Post-Call — Within 1 Hour</div>
+    </div>
+    <ul class="checklist">
+      <li>Send a WhatsApp or email with: (1) what you discussed, (2) which option you recommended and why, (3) direct link to onboarding form or Stripe payment</li>
+      <li>Log the call outcome in the CRM — status update, notes, next action, follow-up date</li>
+      <li>If they didn't decide — set a follow-up for 48 hours, not 7 days. Interest decays fast.</li>
+      <li>If they said yes — send onboarding.html link and confirm the strategy call slot</li>
+      <li>If they said no — ask "what would need to change for this to make sense in 3 months?" — log and keep warm</li>
+    </ul>
+
+    <div class="transition" style="margin-top:20px">
+      <div class="t-label">Follow-up message template (WhatsApp)</div>
+      <div class="t-script">Hi [Name] — great call earlier. Based on what you described, I'd recommend starting with [option]. Here's the link to get started: [link]. Any questions, just reply here. — [Your name], Aldric Group</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

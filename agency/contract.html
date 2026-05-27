@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Service Agreement — Aldric Group</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #080808; --bg2: #0f0f0f; --bg3: #161616; --bg4: #1c1c1c;
+      --gold: #C9A96E; --gold-lt: #e0c48a; --cream: #F0E8DA;
+      --muted: #6b6b6b; --border: rgba(201,169,110,0.15); --text: #e8e0d4;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg); color: var(--text);
+      line-height: 1.6; -webkit-font-smoothing: antialiased;
+    }
+
+    /* HEADER */
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 40px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(8,8,8,0.95);
+      position: sticky; top: 0; z-index: 50;
+      backdrop-filter: blur(20px);
+    }
+    .header-left { display: flex; align-items: center; gap: 20px; }
+    .logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 18px; font-weight: 700; color: var(--gold);
+      text-decoration: none;
+    }
+    .header-title {
+      font-size: 13px; font-weight: 600; color: var(--muted);
+      letter-spacing: 0.1em; text-transform: uppercase;
+      padding-left: 20px; border-left: 1px solid var(--border);
+    }
+    .header-actions { display: flex; gap: 10px; }
+    .btn-icon {
+      padding: 8px 16px;
+      background: transparent; border: 1px solid var(--border);
+      color: var(--muted); font-size: 12px; font-weight: 500;
+      border-radius: 3px; cursor: pointer;
+      transition: all 0.2s; font-family: 'Inter', sans-serif;
+    }
+    .btn-icon:hover { color: var(--cream); border-color: rgba(240,232,218,0.3); }
+    .btn-gold {
+      padding: 8px 18px;
+      background: var(--gold); border: 1px solid var(--gold);
+      color: #080808; font-size: 12px; font-weight: 700;
+      border-radius: 3px; cursor: pointer;
+      transition: all 0.2s; font-family: 'Inter', sans-serif;
+    }
+    .btn-gold:hover { background: var(--gold-lt); }
+
+    /* LAYOUT */
+    .wrap { display: grid; grid-template-columns: 340px 1fr; min-height: calc(100vh - 65px); }
+
+    /* SIDEBAR */
+    .sidebar {
+      background: var(--bg2); border-right: 1px solid var(--border);
+      padding: 32px 28px;
+      position: sticky; top: 65px; height: calc(100vh - 65px);
+      overflow-y: auto;
+    }
+    .sidebar-title {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.2em;
+      text-transform: uppercase; color: var(--gold); margin-bottom: 20px;
+    }
+    .form-group { margin-bottom: 16px; }
+    .form-group label {
+      font-size: 10px; font-weight: 600; letter-spacing: 0.15em;
+      text-transform: uppercase; color: var(--muted);
+      display: block; margin-bottom: 6px;
+    }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 10px 12px;
+      background: var(--bg3); border: 1px solid rgba(255,255,255,0.07);
+      color: var(--cream); font-family: 'Inter', sans-serif;
+      font-size: 13px; border-radius: 2px; outline: none;
+      transition: border-color 0.15s; -webkit-appearance: none;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      border-color: rgba(201,169,110,0.4);
+    }
+    .form-group textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
+    .form-group select option { background: #161616; }
+    .sidebar-divider { height: 1px; background: var(--border); margin: 24px 0; }
+    .action-row { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+
+    /* CONTRACT PREVIEW */
+    .preview { padding: 48px 64px; }
+    .contract-doc {
+      max-width: 800px; margin: 0 auto;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 4px; padding: 64px;
+    }
+
+    /* PRINT STYLES — rendered white for PDF/print */
+    @media print {
+      header, .sidebar { display: none !important; }
+      .wrap { grid-template-columns: 1fr !important; }
+      .preview { padding: 0 !important; }
+      .contract-doc {
+        border: none !important; background: #fff !important;
+        color: #111 !important; padding: 40px !important;
+        max-width: 100% !important; border-radius: 0 !important;
+      }
+      .contract-doc * { color: #111 !important; }
+      .contract-doc .gold-text { color: #8B6914 !important; }
+      .contract-doc hr { border-color: #ccc !important; }
+      .contract-doc .clause-num { color: #8B6914 !important; }
+      .sig-line { border-color: #333 !important; }
+    }
+
+    /* CONTRACT TYPOGRAPHY */
+    .contract-header {
+      text-align: center; margin-bottom: 48px;
+      padding-bottom: 32px; border-bottom: 1px solid var(--border);
+    }
+    .contract-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 24px; font-weight: 700; color: var(--gold);
+      margin-bottom: 8px;
+    }
+    .contract-doc-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 28px; font-weight: 700; color: var(--cream);
+      margin-bottom: 8px; line-height: 1.2;
+    }
+    .contract-ref {
+      font-size: 12px; color: var(--muted); letter-spacing: 0.08em;
+    }
+
+    .parties-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+      margin-bottom: 40px;
+    }
+    .party-box {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 3px; padding: 20px;
+    }
+    .party-role {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.22em;
+      text-transform: uppercase; color: var(--gold); margin-bottom: 8px;
+    }
+    .party-name {
+      font-size: 15px; font-weight: 600; color: var(--cream);
+      margin-bottom: 4px;
+    }
+    .party-detail { font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+    .effective-date {
+      text-align: center; margin-bottom: 40px;
+      font-size: 13px; color: rgba(240,232,218,0.5);
+    }
+    .effective-date strong { color: var(--gold); }
+
+    /* CLAUSES */
+    .clause { margin-bottom: 36px; }
+    .clause-num {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.22em;
+      text-transform: uppercase; color: var(--gold); margin-bottom: 10px;
+    }
+    .clause h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 18px; font-weight: 700; color: var(--cream);
+      margin-bottom: 14px; line-height: 1.3;
+    }
+    .clause p {
+      font-size: 13px; color: rgba(240,232,218,0.65);
+      line-height: 1.8; margin-bottom: 10px;
+    }
+    .clause ul {
+      list-style: none; padding: 0;
+      margin-bottom: 10px;
+    }
+    .clause ul li {
+      font-size: 13px; color: rgba(240,232,218,0.65);
+      line-height: 1.8; padding: 4px 0;
+      padding-left: 20px; position: relative;
+    }
+    .clause ul li::before {
+      content: '—';
+      color: var(--gold); position: absolute; left: 0;
+    }
+    .highlight-box {
+      background: rgba(201,169,110,0.06);
+      border: 1px solid rgba(201,169,110,0.2);
+      border-radius: 3px; padding: 16px 20px;
+      margin: 16px 0;
+    }
+    .highlight-box p {
+      font-size: 13px; color: var(--cream); margin: 0;
+      font-weight: 500;
+    }
+    .highlight-box .hl-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.2em;
+      text-transform: uppercase; color: var(--gold); margin-bottom: 6px;
+    }
+
+    hr.clause-divider {
+      border: none; border-top: 1px solid var(--border); margin: 32px 0;
+    }
+
+    /* SIGNATURES */
+    .sig-section {
+      margin-top: 48px; padding-top: 32px;
+      border-top: 1px solid var(--border);
+    }
+    .sig-title {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.2em;
+      text-transform: uppercase; color: var(--gold); margin-bottom: 32px;
+      text-align: center;
+    }
+    .sig-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
+    .sig-block { }
+    .sig-party {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 60px;
+    }
+    .sig-line {
+      border-top: 1px solid rgba(240,232,218,0.2);
+      padding-top: 8px;
+    }
+    .sig-name { font-size: 13px; font-weight: 600; color: var(--cream); }
+    .sig-detail { font-size: 11px; color: var(--muted); margin-top: 3px; }
+    .sig-date-line { margin-top: 20px; }
+    .sig-date-label { font-size: 11px; color: var(--muted); }
+    .sig-date-val {
+      border-bottom: 1px solid rgba(240,232,218,0.2);
+      padding-bottom: 4px; min-width: 160px; display: inline-block;
+      font-size: 13px; color: var(--cream); margin-top: 4px;
+    }
+
+    /* TOAST */
+    .toast {
+      position: fixed; bottom: 28px; right: 28px;
+      background: var(--bg3); border: 1px solid rgba(201,169,110,0.3);
+      color: var(--cream); font-size: 13px; font-weight: 500;
+      padding: 12px 20px; border-radius: 4px;
+      transform: translateY(80px); opacity: 0;
+      transition: all 0.3s ease; z-index: 999;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    @media (max-width: 900px) {
+      .wrap { grid-template-columns: 1fr; }
+      .sidebar { position: static; height: auto; }
+      .preview { padding: 24px 16px; }
+      .contract-doc { padding: 32px 24px; }
+      .parties-grid { grid-template-columns: 1fr; }
+      .sig-grid { grid-template-columns: 1fr; gap: 32px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-left">
+      <a href="index.html" class="logo">Aldric Group</a>
+      <div class="header-title">Service Agreement</div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-icon" onclick="copyText()">Copy Text</button>
+      <button class="btn-icon" onclick="window.print()">🖨 Print / PDF</button>
+      <button class="btn-gold" onclick="downloadTxt()">Download .txt</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+
+    <!-- SIDEBAR: FILL IN DETAILS -->
+    <div class="sidebar">
+      <div class="sidebar-title">Client Details</div>
+
+      <div class="form-group">
+        <label>Client Full Name</label>
+        <input type="text" id="clientName" placeholder="e.g. Sarah Mitchell" oninput="render()" />
+      </div>
+      <div class="form-group">
+        <label>Client Business Name</label>
+        <input type="text" id="clientBusiness" placeholder="e.g. Mitchell Aesthetics Ltd" oninput="render()" />
+      </div>
+      <div class="form-group">
+        <label>Client Address</label>
+        <textarea id="clientAddress" rows="3" placeholder="e.g. 12 High Street, London, W1A 1AA" oninput="render()"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Client Email</label>
+        <input type="email" id="clientEmail" placeholder="sarah@mitchellaesthetics.com" oninput="render()" />
+      </div>
+
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-title">Service Details</div>
+
+      <div class="form-group">
+        <label>Package</label>
+        <select id="package" onchange="render()">
+          <option value="Growth">Growth — £750/month</option>
+          <option value="Scale">Scale — £1,250/month</option>
+          <option value="Dominance">Dominance — £1,500/month</option>
+          <option value="Proof Sprint">Proof Sprint — £499 one-off</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Start Date</label>
+        <input type="date" id="startDate" oninput="render()" />
+      </div>
+      <div class="form-group">
+        <label>Contract Reference</label>
+        <input type="text" id="contractRef" placeholder="Auto-generated" oninput="render()" />
+      </div>
+
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-title">Additional Scope</div>
+      <div class="form-group">
+        <label>Custom Deliverables (optional)</label>
+        <textarea id="customDeliverables" rows="4" placeholder="List any agreed extras, one per line…" oninput="render()"></textarea>
+      </div>
+
+      <div class="sidebar-divider"></div>
+      <div class="action-row">
+        <button class="btn-gold" onclick="window.print()">🖨 Print / Save PDF</button>
+        <button class="btn-icon" onclick="downloadTxt()">Download .txt</button>
+      </div>
+    </div>
+
+    <!-- CONTRACT PREVIEW -->
+    <div class="preview">
+      <div class="contract-doc" id="contractDoc">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const PACKAGES = {
+      Growth:      { price: '£750', period: 'per calendar month', type: 'retainer' },
+      Scale:       { price: '£1,250', period: 'per calendar month', type: 'retainer' },
+      Dominance:   { price: '£1,500', period: 'per calendar month', type: 'retainer' },
+      'Proof Sprint': { price: '£499', period: 'one-off payment', type: 'project' },
+    };
+
+    const DELIVERABLES = {
+      Growth: [
+        '20 social media posts per calendar month across agreed platforms (Instagram, Facebook, LinkedIn)',
+        'Full content calendar — planned, written, and scheduled in advance',
+        'Platform management and community monitoring across all active accounts',
+        'Brand voice guide created during onboarding and used throughout engagement',
+        'Monthly performance report delivered by the 5th of the following month',
+      ],
+      Scale: [
+        'Everything included in the Growth package',
+        'Email marketing — automated sequences, campaign sends, and nurture flows',
+        'Lead capture integration and CRM automation setup',
+        'Fortnightly strategy call (30 minutes) with account manager',
+        'Lead nurturing — automated follow-up sequences for new and cold leads',
+        'Monthly performance dashboard with engagement, leads, and open rate data',
+      ],
+      Dominance: [
+        'Everything included in the Scale package',
+        'SMS outreach campaigns — up to 4 sends per month to opted-in list',
+        'LinkedIn prospecting — targeted connection requests and message sequences',
+        'Full funnel automation — awareness through to conversion',
+        'Weekly strategy call (30 minutes) with account manager',
+        'Priority response time (same business day) and dedicated account manager',
+      ],
+      'Proof Sprint': [
+        'One complete automation workflow built and activated',
+        '5 on-brand content pieces (social or email) ready to publish',
+        '3-email nurture sequence written and configured',
+        'Brand brief created from onboarding interview',
+        'Day 14 performance report with findings and recommendations',
+        '£499 credited in full against the first month of any retainer package if engaged within 30 days',
+      ],
+    };
+
+    function today() { return new Date().toISOString().split('T')[0]; }
+
+    function fmtDate(s) {
+      if (!s) return '_______________';
+      const d = new Date(s + 'T12:00:00');
+      return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    function genRef() {
+      const d = new Date();
+      return `AG-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}-${Math.floor(1000+Math.random()*9000)}`;
+    }
+
+    function v(id) { return document.getElementById(id)?.value.trim() || ''; }
+
+    function render() {
+      const clientName     = v('clientName') || '[Client Name]';
+      const clientBusiness = v('clientBusiness') || '[Client Business Name]';
+      const clientAddress  = v('clientAddress').replace(/\n/g, ', ') || '[Client Address]';
+      const clientEmail    = v('clientEmail') || '[Client Email]';
+      const pkg            = document.getElementById('package').value;
+      const pkgInfo        = PACKAGES[pkg];
+      const startDate      = v('startDate');
+      const contractRef    = v('contractRef') || genRef();
+      const customLines    = v('customDeliverables').split('\n').filter(l => l.trim());
+      const deliverables   = [...(DELIVERABLES[pkg] || []), ...customLines];
+      const isRetainer     = pkgInfo.type === 'retainer';
+      const effectiveDateStr = fmtDate(startDate || today());
+
+      const doc = document.getElementById('contractDoc');
+
+      doc.innerHTML = `
+        <div class="contract-header">
+          <div class="contract-logo">Aldric Group</div>
+          <div class="contract-doc-title">Marketing Services Agreement</div>
+          <div class="contract-ref">Ref: ${contractRef} &nbsp;·&nbsp; ${new Date().getFullYear()}</div>
+        </div>
+
+        <div class="parties-grid">
+          <div class="party-box">
+            <div class="party-role">Service Provider</div>
+            <div class="party-name">Aldric Group</div>
+            <div class="party-detail">
+              London, United Kingdom<br />
+              hello@aldricgroup.co.uk<br />
+              +44 7599 260032
+            </div>
+          </div>
+          <div class="party-box">
+            <div class="party-role">Client</div>
+            <div class="party-name">${clientBusiness}</div>
+            <div class="party-detail">
+              ${clientName}<br />
+              ${clientAddress}<br />
+              ${clientEmail}
+            </div>
+          </div>
+        </div>
+
+        <div class="effective-date">
+          This Agreement is effective from <strong>${effectiveDateStr}</strong>
+        </div>
+
+        <hr class="clause-divider" />
+
+        <!-- 1. SCOPE -->
+        <div class="clause">
+          <div class="clause-num">Clause 01</div>
+          <h3>Scope of Services</h3>
+          <p>Aldric Group agrees to provide the following marketing and automation services to the Client under the <strong style="color:var(--gold)">${pkg} Package</strong> (${pkgInfo.price} ${pkgInfo.period}):</p>
+          <ul>
+            ${deliverables.map(d => `<li>${d}</li>`).join('')}
+          </ul>
+          <p>All services will be performed remotely. Access to the Client's social accounts, email platform, and CRM (where applicable) must be granted within 5 business days of the Agreement's effective date.</p>
+        </div>
+
+        <!-- 2. FEES & PAYMENT -->
+        <div class="clause">
+          <div class="clause-num">Clause 02</div>
+          <h3>Fees &amp; Payment</h3>
+          <div class="highlight-box">
+            <div class="hl-label">Fee</div>
+            <p>${pkgInfo.price} ${pkgInfo.period}</p>
+          </div>
+          ${isRetainer ? `
+          <p>Invoices are issued on the 1st of each calendar month and are due within 7 days of issue. Payments are processed via bank transfer or Stripe payment link provided on the invoice.</p>
+          <p>In the event of late payment (more than 7 days overdue), Aldric Group reserves the right to pause all active services until the outstanding balance is cleared. A late payment notice will be issued before any work is suspended.</p>
+          ` : `
+          <p>Payment is due in full before work commences on the Proof Sprint. Aldric Group will issue a Stripe payment link or bank transfer details upon signing this Agreement. Work begins once payment is confirmed.</p>
+          <p>If the Client proceeds to a monthly retainer within 30 days of the Proof Sprint's completion, the full £499 will be credited against the first month's retainer fee.</p>
+          `}
+          <p>All fees are quoted in GBP and exclude VAT where applicable. VAT will be added to invoices if Aldric Group is VAT registered at the time of invoicing.</p>
+        </div>
+
+        ${isRetainer ? `
+        <!-- 3. TERM & TERMINATION -->
+        <div class="clause">
+          <div class="clause-num">Clause 03</div>
+          <h3>Term &amp; Termination</h3>
+          <p>This Agreement commences on ${effectiveDateStr} and continues on a rolling month-to-month basis.</p>
+          <p>Either party may terminate this Agreement by providing <strong style="color:var(--cream)">30 days' written notice</strong> via email. Notice sent before the 1st of a calendar month will take effect at the end of that month.</p>
+          <p>Aldric Group may terminate immediately and without notice if:</p>
+          <ul>
+            <li>Payment is more than 21 days overdue and has not been resolved following a written reminder</li>
+            <li>The Client engages in conduct that is abusive, threatening, or unlawful</li>
+            <li>The Client requests services that are illegal, defamatory, or in breach of platform terms of service</li>
+          </ul>
+          <p>Upon termination, all deliverables completed to the date of termination remain the property of the Client. No refund will be issued for services already delivered.</p>
+        </div>
+        ` : `
+        <!-- 3. PROJECT TIMELINE -->
+        <div class="clause">
+          <div class="clause-num">Clause 03</div>
+          <h3>Project Timeline</h3>
+          <p>The Proof Sprint is a fixed 14-day engagement. The timeline is as follows:</p>
+          <ul>
+            <li><strong style="color:var(--cream)">Days 1–2:</strong> Onboarding call, brand brief creation, and access setup</li>
+            <li><strong style="color:var(--cream)">Days 3–7:</strong> Build phase — automation, content, and email sequence</li>
+            <li><strong style="color:var(--cream)">Days 8–13:</strong> Activation and monitoring</li>
+            <li><strong style="color:var(--cream)">Day 14:</strong> Performance report delivered</li>
+          </ul>
+          <p>Timelines assume the Client provides required access and approvals within 24 hours of request. Delays caused by the Client may extend the delivery window accordingly.</p>
+          <p>Aldric Group guarantees delivery of all Proof Sprint deliverables within 14 days. If deliverables are not completed within this window for reasons within Aldric Group's control, a full refund of the £499 fee will be issued.</p>
+        </div>
+        `}
+
+        <!-- 4. INTELLECTUAL PROPERTY -->
+        <div class="clause">
+          <div class="clause-num">Clause 04</div>
+          <h3>Intellectual Property</h3>
+          <p>Upon receipt of full payment for the relevant period, all content, copy, sequences, workflows, and deliverables created specifically for the Client under this Agreement become the exclusive property of the Client.</p>
+          <p>Aldric Group retains ownership of all underlying frameworks, templates, processes, and systems used in the delivery of services. These are proprietary to Aldric Group and are not transferred to the Client under this Agreement.</p>
+          <p>The Client grants Aldric Group a non-exclusive licence to access, manage, and post on their platforms for the duration of this Agreement. This licence terminates upon cancellation.</p>
+          <p>Aldric Group may reference the Client's name and general results (e.g. "increased engagement by X%") as a case study, unless the Client explicitly opts out in writing.</p>
+        </div>
+
+        <!-- 5. CONFIDENTIALITY -->
+        <div class="clause">
+          <div class="clause-num">Clause 05</div>
+          <h3>Confidentiality</h3>
+          <p>Both parties agree to treat all non-public information shared during the course of this Agreement as confidential. This includes business strategies, client data, financial information, and proprietary processes.</p>
+          <p>Neither party will disclose confidential information to third parties without prior written consent, except where required by law.</p>
+          <p>This obligation of confidentiality survives the termination of this Agreement and remains in force indefinitely.</p>
+        </div>
+
+        <!-- 6. LIABILITY -->
+        <div class="clause">
+          <div class="clause-num">Clause 06</div>
+          <h3>Limitation of Liability</h3>
+          <p>Aldric Group's total liability under this Agreement is limited to the fees paid in the 30 days preceding the claim. Aldric Group is not liable for indirect, consequential, or speculative losses, including loss of revenue, loss of business, or reputational damage.</p>
+          <p>Marketing results (engagement rates, lead volumes, revenue generated) are influenced by factors outside Aldric Group's control, including platform algorithm changes, market conditions, and the Client's product, pricing, and service quality. Aldric Group does not guarantee specific results.</p>
+          <p>The Client is responsible for ensuring all content approved for publication complies with applicable laws, including advertising regulations and industry-specific compliance requirements (e.g. FCA guidelines for financial services).</p>
+        </div>
+
+        <!-- 7. GENERAL -->
+        <div class="clause">
+          <div class="clause-num">Clause 07</div>
+          <h3>General Provisions</h3>
+          <p><strong style="color:var(--cream)">Entire Agreement:</strong> This document constitutes the entire agreement between the parties and supersedes all prior discussions, representations, and proposals.</p>
+          <p><strong style="color:var(--cream)">Amendments:</strong> Any changes to this Agreement must be agreed in writing by both parties. Email confirmation is accepted as written notice.</p>
+          <p><strong style="color:var(--cream)">Governing Law:</strong> This Agreement is governed by the laws of England and Wales. Any disputes will be subject to the exclusive jurisdiction of the courts of England and Wales.</p>
+          <p><strong style="color:var(--cream)">Severability:</strong> If any provision of this Agreement is found to be unenforceable, the remaining provisions continue in full force and effect.</p>
+        </div>
+
+        <hr class="clause-divider" />
+
+        <!-- SIGNATURES -->
+        <div class="sig-section">
+          <div class="sig-title">Signatures</div>
+          <p style="text-align:center;font-size:12px;color:var(--muted);margin-bottom:40px;">By signing below, both parties agree to the terms of this Agreement.</p>
+          <div class="sig-grid">
+            <div class="sig-block">
+              <div class="sig-party">Aldric Group (Service Provider)</div>
+              <div class="sig-line">
+                <div class="sig-name">Aldric Group</div>
+                <div class="sig-detail">Authorised Signatory</div>
+              </div>
+              <div class="sig-date-line">
+                <div class="sig-date-label">Date</div>
+                <div class="sig-date-val">&nbsp;</div>
+              </div>
+            </div>
+            <div class="sig-block">
+              <div class="sig-party">Client</div>
+              <div class="sig-line">
+                <div class="sig-name">${clientName}</div>
+                <div class="sig-detail">${clientBusiness}</div>
+              </div>
+              <div class="sig-date-line">
+                <div class="sig-date-label">Date</div>
+                <div class="sig-date-val">&nbsp;</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:48px;text-align:center;font-size:11px;color:var(--muted);">
+          Aldric Group · hello@aldricgroup.co.uk · +44 7599 260032 · London, United Kingdom<br />
+          Ref: ${contractRef}
+        </div>
+      `;
+    }
+
+    function plainText() {
+      const clientName     = v('clientName') || '[Client Name]';
+      const clientBusiness = v('clientBusiness') || '[Client Business Name]';
+      const clientAddress  = v('clientAddress') || '[Client Address]';
+      const clientEmail    = v('clientEmail') || '[Client Email]';
+      const pkg            = document.getElementById('package').value;
+      const pkgInfo        = PACKAGES[pkg];
+      const startDate      = v('startDate');
+      const contractRef    = v('contractRef') || genRef();
+      const customLines    = v('customDeliverables').split('\n').filter(l => l.trim());
+      const deliverables   = [...(DELIVERABLES[pkg] || []), ...customLines];
+      const isRetainer     = pkgInfo.type === 'retainer';
+
+      const lines = [
+        'ALDRIC GROUP — MARKETING SERVICES AGREEMENT',
+        `Ref: ${contractRef}`,
+        '',
+        'PARTIES',
+        'Service Provider: Aldric Group, London, UK',
+        `Client: ${clientBusiness} (${clientName}), ${clientEmail}`,
+        '',
+        `Effective Date: ${fmtDate(startDate || today())}`,
+        '',
+        '───────────────────────────────────────────────────────────────────',
+        '',
+        '1. SCOPE OF SERVICES',
+        `Package: ${pkg} — ${pkgInfo.price} ${pkgInfo.period}`,
+        '',
+        ...deliverables.map(d => `  — ${d}`),
+        '',
+        '2. FEES & PAYMENT',
+        `Fee: ${pkgInfo.price} ${pkgInfo.period}`,
+        isRetainer
+          ? 'Invoices issued on the 1st of each month. Due within 7 days. Payment via bank transfer or Stripe.'
+          : 'Payment due in full before work commences. £499 credited to first retainer month if engaged within 30 days.',
+        '',
+        isRetainer ? '3. TERM & TERMINATION' : '3. PROJECT TIMELINE',
+        isRetainer
+          ? `Rolling month-to-month from ${fmtDate(startDate || today())}. 30 days' written notice to cancel.`
+          : '14-day fixed engagement. Days 1-2: onboarding. Days 3-7: build. Days 8-13: activation. Day 14: report.',
+        '',
+        '4. INTELLECTUAL PROPERTY',
+        'All deliverables become Client property upon full payment. Aldric Group retains ownership of underlying frameworks.',
+        '',
+        '5. CONFIDENTIALITY',
+        'Both parties agree to keep all non-public information confidential. This obligation survives termination.',
+        '',
+        '6. LIMITATION OF LIABILITY',
+        `Aldric Group's total liability is limited to fees paid in the preceding 30 days. No guarantee of specific results.`,
+        '',
+        '7. GENERAL',
+        'Governed by the laws of England and Wales.',
+        '',
+        '───────────────────────────────────────────────────────────────────',
+        '',
+        'SIGNATURES',
+        '',
+        'Aldric Group (Service Provider)',
+        'Signature: ________________________',
+        'Date: ________________________',
+        '',
+        `Client: ${clientName} — ${clientBusiness}`,
+        'Signature: ________________________',
+        'Date: ________________________',
+        '',
+        `Ref: ${contractRef} · Aldric Group · hello@aldricgroup.co.uk`,
+      ];
+      return lines.join('\n');
+    }
+
+    function copyText() {
+      navigator.clipboard.writeText(plainText()).then(() => showToast('Copied to clipboard ✓'));
+    }
+
+    function downloadTxt() {
+      const txt = plainText();
+      const blob = new Blob([txt], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url;
+      const ref = v('contractRef') || 'contract';
+      a.download = `aldric-agreement-${ref}.txt`;
+      a.click(); URL.revokeObjectURL(url);
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2400);
+    }
+
+    // Init
+    document.getElementById('startDate').value = new Date().toISOString().split('T')[0];
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Results — Aldric Group</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:#080808; --bg2:#0f0f0f; --bg3:#161616; --bg4:#1c1c1c;
+  --gold:#C9A96E; --gold-lt:#e0c48a; --cream:#F0E8DA;
+  --muted:#6b6b6b; --border:rgba(201,169,110,0.15); --text:#e8e0d4;
+  --green:#5aad7a; --red:#e05555;
+}
+html { scroll-behavior: smooth; }
+body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); line-height:1.6; -webkit-font-smoothing:antialiased; }
+a { color:inherit; text-decoration:none; }
+
+nav {
+  position:fixed; top:0; left:0; right:0; z-index:100;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:20px 48px; background:rgba(8,8,8,0.92);
+  border-bottom:1px solid rgba(201,169,110,0.08);
+  backdrop-filter:blur(20px);
+}
+.nav-logo { font-family:'Playfair Display',serif; font-size:20px; font-weight:700; color:var(--gold); }
+.nav-links { display:flex; gap:32px; align-items:center; }
+.nav-links a { font-size:13px; font-weight:500; color:var(--muted); transition:color 0.2s; }
+.nav-links a:hover { color:var(--cream); }
+.nav-cta { color:var(--gold) !important; border:1px solid rgba(201,169,110,0.3); padding:8px 20px; border-radius:4px; }
+
+.page-hero {
+  padding:160px 48px 80px;
+  max-width:900px; margin:0 auto; text-align:center;
+}
+.label { font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--gold); margin-bottom:20px; }
+h1 { font-family:'Playfair Display',serif; font-size:clamp(36px,5vw,62px); color:var(--cream); line-height:1.15; margin-bottom:20px; }
+.hero-sub { font-size:16px; color:var(--muted); max-width:560px; margin:0 auto 16px; }
+.disclaimer { font-size:12px; color:rgba(107,107,107,0.6); font-style:italic; }
+
+/* Case studies */
+.cases { max-width:1100px; margin:0 auto; padding:0 48px 120px; display:flex; flex-direction:column; gap:80px; }
+
+.case {
+  display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:start;
+  padding-bottom:80px; border-bottom:1px solid var(--border);
+}
+.case:last-child { border-bottom:none; }
+
+.case-label { font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--gold); margin-bottom:12px; }
+.case h2 { font-family:'Playfair Display',serif; font-size:clamp(24px,3vw,34px); color:var(--cream); line-height:1.2; margin-bottom:8px; }
+.case-sub { font-size:14px; color:var(--muted); margin-bottom:24px; }
+
+.pkg-badge {
+  display:inline-block; font-size:11px; font-weight:700; padding:4px 12px;
+  border-radius:4px; margin-bottom:24px; letter-spacing:0.5px;
+}
+.pkg-growth    { background:rgba(90,173,122,0.12); color:#5aad7a; border:1px solid rgba(90,173,122,0.2); }
+.pkg-scale     { background:rgba(201,169,110,0.1); color:var(--gold); border:1px solid rgba(201,169,110,0.2); }
+.pkg-dominance { background:rgba(180,120,220,0.1); color:#c084fc; border:1px solid rgba(180,120,220,0.2); }
+
+.before-after { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:28px; }
+.ba-box { background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:16px; }
+.ba-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
+.ba-before { color:var(--red); }
+.ba-after  { color:var(--green); }
+.ba-box p  { font-size:12px; color:var(--muted); line-height:1.7; }
+
+.results-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+.result-card {
+  background:var(--bg3); border:1px solid var(--border);
+  border-radius:10px; padding:16px; text-align:center;
+}
+.result-num { font-family:'Playfair Display',serif; font-size:28px; color:var(--gold); line-height:1; margin-bottom:4px; }
+.result-lbl { font-size:11px; color:var(--muted); line-height:1.4; }
+
+.what-we-did { margin-top:24px; }
+.what-we-did h4 { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--cream); margin-bottom:12px; }
+.what-we-did ul { list-style:none; display:flex; flex-direction:column; gap:8px; }
+.what-we-did li { font-size:13px; color:var(--muted); display:flex; gap:10px; align-items:flex-start; }
+.what-we-did li::before { content:'→'; color:var(--gold); flex-shrink:0; font-size:12px; margin-top:1px; }
+
+.quote-block {
+  background:var(--bg3); border-left:2px solid var(--gold);
+  padding:20px 24px; border-radius:0 10px 10px 0; margin-top:28px;
+}
+.quote-text { font-style:italic; font-size:14px; color:var(--cream); margin-bottom:8px; line-height:1.7; }
+.quote-attr { font-size:12px; color:var(--gold); }
+
+/* CTA */
+.cta-section { background:var(--bg2); border-top:1px solid var(--border); border-bottom:1px solid var(--border); padding:80px 48px; text-align:center; }
+.cta-section h2 { font-family:'Playfair Display',serif; font-size:36px; color:var(--cream); margin-bottom:16px; }
+.cta-section p { color:var(--muted); max-width:480px; margin:0 auto 32px; }
+.btn-gold { display:inline-block; background:var(--gold); color:#000; font-weight:700; font-size:14px; padding:14px 36px; border-radius:4px; letter-spacing:0.3px; }
+.btn-ghost { display:inline-block; color:var(--gold); border:1px solid rgba(201,169,110,0.35); font-size:14px; font-weight:500; padding:13px 28px; border-radius:4px; margin-left:12px; }
+
+footer { padding:40px 48px; text-align:center; font-size:12px; color:var(--muted); border-top:1px solid var(--border); }
+
+@media(max-width:768px) {
+  nav { padding:16px 20px; }
+  .page-hero, .cases { padding-left:20px; padding-right:20px; }
+  .case { grid-template-columns:1fr; gap:32px; }
+  .before-after { grid-template-columns:1fr; }
+  .results-grid { grid-template-columns:1fr 1fr; }
+  .btn-ghost { margin-left:0; margin-top:12px; display:block; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">Aldric Group</a>
+  <div class="nav-links">
+    <a href="index.html#services">Services</a>
+    <a href="index.html#how">How It Works</a>
+    <a href="pilot.html">Pilot Sprint</a>
+    <a href="index.html#contact" class="nav-cta">Get Started</a>
+  </div>
+</nav>
+
+<div class="page-hero">
+  <div class="label">Client Results</div>
+  <h1>What happens when AI runs your marketing.</h1>
+  <p class="hero-sub">Three UK businesses. Different sectors, same outcome — growth that compounds without adding headcount.</p>
+  <p class="disclaimer">All results are indicative. Specific outcomes depend on business context, market conditions, and engagement quality.</p>
+</div>
+
+<div class="cases">
+
+  <!-- ── CASE 1: MED SPA ───────────────────────────────────────── -->
+  <div class="case">
+    <div>
+      <div class="case-label">Case Study 01 · Aesthetics</div>
+      <h2>Luxe Aesthetics Studio</h2>
+      <p class="case-sub">London-based aesthetics clinic — Botox, fillers, skin treatments. 2 practitioners, £320k annual revenue.</p>
+      <span class="pkg-badge pkg-scale">Scale Package · £1,250/mo</span>
+
+      <div class="before-after">
+        <div class="ba-box">
+          <div class="ba-label ba-before">Before</div>
+          <p>18% no-show rate costing ~£3,200/month. Posting to Instagram 1–2x per week with no strategy. Leads from DMs falling through with no follow-up system. Zero email presence.</p>
+        </div>
+        <div class="ba-after ba-box">
+          <div class="ba-label ba-after">After</div>
+          <p>Automated booking confirmations + 24hr reminders. 3x weekly Instagram content, AI-written to their brand voice. Email nurture sequence converting inquiry to booking within 48hrs.</p>
+        </div>
+      </div>
+
+      <div class="quote-block">
+        <p class="quote-text">"We had the clients, we just kept losing them at the wrong moments. Now the system catches them. Our books are fuller than they've ever been and I haven't touched marketing once this month."</p>
+        <div class="quote-attr">— Clinic Director, Luxe Aesthetics Studio</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="results-grid">
+        <div class="result-card">
+          <div class="result-num">67%</div>
+          <div class="result-lbl">Drop in no-show rate (18% → 6%)</div>
+        </div>
+        <div class="result-card">
+          <div class="result-num">+47%</div>
+          <div class="result-lbl">Bookings from Instagram in 60 days</div>
+        </div>
+        <div class="result-card">
+          <div class="result-num">£8.4k</div>
+          <div class="result-lbl">Additional MRR by month 3</div>
+        </div>
+        <div class="result-card">
+          <div class="result-num">3×</div>
+          <div class="result-lbl">Content output with zero extra staff time</div>
+        </div>
+        <div class="result-card">
+          <div class="result-num">4.9★</div>
+          <div class="result-lbl">Google rating after automated review requests</div>
+        </div>
+        <div class="result-card">
+          <div class="result-num">11 days</div>
+          <div class="result-lbl">To first automated booking from Instagram</div>
+        </div>
+      </div>
+
+      <div class="what-we-did">
+        <h4>What We Built</h4>
+        <ul>
+          <li>Automated SMS + email booking reminder sequence (48hr, 24hr, 2hr)</li>
+          <li>AI content calendar — 12 posts/month branded to their aesthetic</li>
+          <li>5-email lead nurture sequence for DM and website inquiries</li>
+          <li>Post-treatment review request automation (Google + Instagram)</li>
+          <li>Monthly performance report delivered to inbox</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CASE 2: ESTATE AGENTS ─────────────────────────────────── -->
+  <div class="case">
+    <div>
+      <div class="case-label">Case Study 02 · Property</div>
+      <h2>Harrington & Webb Estate Agents</h2>
+      <p class="case-sub">Independent estate agency in Surrey. 4-person team. Competing with regional chains on limited budget.</p>
+      <span class="pkg-badge pkg-growth">Growth Package · £750/mo</span>
+
+      <div class="before-after">
+        <div class="ba-box">
+          <div class="ba-label ba-before">Before</div>
+          <p>100% reliant on Rightmove for leads. No email nurturing of past vendors. LinkedIn used sporadically — 3 posts last month. Viewing follow-up done manually, often delayed.</p>
+        </div>
+        <div class="ba-after ba-box">
+          <div class="ba-label ba-after">After</div>
+          <p>Weekly vendor email digest positioning them as the local expert. Daily LinkedIn content targeting local homeowners. Automated same-day follow-up after every viewing request.</p>
+        </div>
+      </div>
+
+      <div class="quote-block">
+        <p class="quote-text">"Three instructions in the first 60 days came directly from people on our email list who'd inquired 6–14 months ago. We didn't even know they were still in market. The system found them."</p>
+        <div class="quote-attr">— Director, Harrington & Webb</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="results-grid">
+        <div class="result-card">
+          <div class="result-num">+31%</div>
+          <div class="result-lbl">Direct enquiries (non-Rightmove)</div>
+        </div>
+        <div class="result-card">
+          <div class="result-num">3</div>
+          <div class="result-lbl">Instructions from email list, first 60 days</div>
+        </div>
+        <div class="result-card">
+          <div class="result-num">4.2×</div>
+          <div class="result-lbl">LinkedIn reach increase</div>
+        </div>
+        <div class="result-card">
+          <div class="result-num">£18k+</div>
+          <div class="result-lbl">Est. commission from reactivated leads</div>
+        </div>
+        <div class="result-card">
+          <div class="result-num">Daily</div>
+          <div class="result-lbl">Content published — zero team time</div>
+        </div>
+        <div class="result-card">
+          <div class="result-num">94%</div>
+          <div class="result-lbl">Viewing follow-up within 2hrs (was 24+)</div>
+        </div>
+      </div>
+
+      <div class="what-we-did">
+        <h4>What We Built</h4>
+        <ul>
+          <li>Weekly "Local Property Insight" email to 600-person vendor list</li>
+          <li>Daily LinkedIn posts — market commentary, listings, local expertise</li>
+          <li>Automated viewing request → confirmation → follow-up sequence</li>
+          <li>Lead re-engagement campaign for 8-month-old dead enquiries</li>
+          <li>Google Business post automation (3x/week)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CASE 3: PHYSIO ────────────────────────────────────────── -->
+  <div class="case">
+    <div>
+      <div class="case-label">Case Study 03 · Healthcare</div>
+      <h2>Peak Performance Physio</h2>
+      <p class="case-sub">Manchester physiotherapy practice. 3 physios, 120 active patients. Competing with NHS waitlists and corporate chains.</p>
+      <span class="pkg-badge pkg-dominance">Dominance Package · £1,500/mo</span>
+
+      <div class="before-after">
+        <div class="ba-box">
+          <div class="ba-label ba-before">Before</div>
+          <p>47 Google reviews accumulated over 4 years. No referral follow-up process. Social content posted when staff had time — averaging once a fortnight. No email list being worked.</p>
+        </div>
+        <div class="ba-after ba-box">
+          <div class="ba-label ba-after">After</div>
+          <p>Automated review requests sent 48hrs post-discharge. Full content stack — educational Instagram + LinkedIn. Email sequence nurturing discharged patients back for maintenance sessions.</p>
+        </div>
+      </div>
+
+      <div class="quote-block">
+        <p class="quote-text">"The review automation alone was worth every penny. We went from 47 to 112 reviews in 90 days. New patients tell us they chose us specifically because of what they read online. That wasn't happening before."</p>
+        <div class="quote-attr">— Practice Lead, Peak Performance Physio</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="results-grid">
+        <div class="result-card">
+          <div class="result-num">112</div>
+          <div class="result-lbl">Google reviews (was 47) in 90 days</div>
+        </div>
+        <div class="result-card">
+          <div class="result-num">+28%</div>
+          <div class="result-lbl">New patient inquiries month-on-month</div>
+        </div>
+        <div class="result-card">
+          <div class="result-num">+40%</div>
+          <div class="result-lbl">Referral bookings from email sequence</div>
+        </div>
+        <div class="result-card">
+          <div class="result-num">18</div>
+          <div class="result-lbl">Discharged patients rebooked via nurture email</div>
+        </div>
+        <div class="result-card">
+          <div class="result-num">4.9★</div>
+          <div class="result-lbl">Google rating maintained throughout</div>
+        </div>
+        <div class="result-card">
+          <div class="result-num">£11.2k</div>
+          <div class="result-lbl">Additional revenue, month 3</div>
+        </div>
+      </div>
+
+      <div class="what-we-did">
+        <h4>What We Built</h4>
+        <ul>
+          <li>Post-discharge review request (SMS + email, 48hr delay)</li>
+          <li>20-post/month educational content stack (Instagram + LinkedIn)</li>
+          <li>6-email re-engagement sequence for discharged patients (maintenance angle)</li>
+          <li>Referral programme automation — email existing patients asking for introductions</li>
+          <li>Google Ad headline + copy variants (handed to their existing campaign)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- CTA -->
+<div class="cta-section">
+  <h2>Want results like these?</h2>
+  <p>Start with a no-commitment Proof Sprint — 14 days, one workflow built and running. See it work before you commit to a retainer.</p>
+  <a href="pilot.html" class="btn-gold">See the Proof Sprint →</a>
+  <a href="index.html#contact" class="btn-ghost">Book a discovery call</a>
+</div>
+
+<footer>
+  <p>© 2025 Aldric Group Ltd · London · <a href="mailto:hello@aldricgroup.co.uk" style="color:var(--gold)">hello@aldricgroup.co.uk</a></p>
+</footer>
+
+</body>
+</html>

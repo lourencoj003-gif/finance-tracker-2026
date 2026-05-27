@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Outreach Copy Library — Aldric Group (Internal)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+:root {
+  --bg:#080808; --bg2:#0f0f0f; --bg3:#161616;
+  --gold:#C9A96E; --cream:#F0E8DA;
+  --muted:#6b6b6b; --border:rgba(201,169,110,0.15); --text:#e8e0d4;
+  --green:#5aad7a; --red:#e05555;
+}
+body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); line-height:1.6; -webkit-font-smoothing:antialiased; }
+.page { max-width:900px; margin:0 auto; padding:60px 32px 100px; }
+.logo { font-family:'Playfair Display',serif; font-size:18px; color:var(--gold); margin-bottom:8px; display:block; }
+.internal-tag { font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--red); background:rgba(224,85,85,0.1); border:1px solid rgba(224,85,85,0.2); padding:4px 10px; border-radius:4px; display:inline-block; margin-bottom:40px; }
+h1 { font-family:'Playfair Display',serif; font-size:36px; color:var(--cream); margin-bottom:8px; }
+.subtitle { font-size:14px; color:var(--muted); margin-bottom:48px; max-width:620px; }
+
+/* Niche sections */
+.niche { margin-bottom:56px; border-top:1px solid var(--border); padding-top:40px; }
+.niche:first-of-type { border-top:none; padding-top:0; }
+
+.niche-header { display:flex; align-items:center; gap:12px; margin-bottom:24px; }
+.niche-icon { font-size:28px; line-height:1; }
+.niche-title { font-family:'Playfair Display',serif; font-size:24px; color:var(--cream); }
+.niche-sub { font-size:12px; color:var(--muted); }
+
+.pain-summary { background:rgba(224,85,85,0.05); border:1px solid rgba(224,85,85,0.12); border-radius:8px; padding:14px 18px; margin-bottom:24px; font-size:13px; color:rgba(224,85,85,0.8); line-height:1.7; }
+
+.channel-block { margin-bottom:24px; }
+.channel-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--gold); margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+.channel-label span { background:rgba(201,169,110,0.1); border:1px solid rgba(201,169,110,0.15); padding:2px 8px; border-radius:4px; }
+
+.msg-card { background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:16px 20px; margin-bottom:8px; position:relative; }
+.msg-tag { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--muted); margin-bottom:8px; }
+.msg-text { font-size:13px; color:var(--cream); line-height:1.75; white-space:pre-wrap; }
+.copy-btn { position:absolute; top:12px; right:12px; background:rgba(201,169,110,0.1); border:1px solid rgba(201,169,110,0.18); color:var(--gold); font-size:11px; padding:4px 10px; border-radius:5px; cursor:pointer; font-family:inherit; border:none; transition:background 0.15s; }
+.copy-btn:hover { background:rgba(201,169,110,0.2); }
+
+.follow-up-note { font-size:12px; color:var(--muted); padding:10px 14px; background:rgba(255,255,255,0.02); border-left:2px solid rgba(201,169,110,0.3); border-radius:0 6px 6px 0; margin-top:4px; }
+
+/* Rules */
+.rules { background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:24px; margin-bottom:48px; }
+.rules h3 { font-size:14px; font-weight:700; color:var(--cream); margin-bottom:14px; }
+.rules ul { list-style:none; }
+.rules li { font-size:13px; color:var(--muted); padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.03); display:flex; gap:10px; }
+.rules li:last-child { border-bottom:none; }
+.rules li::before { content:'→'; color:var(--gold); flex-shrink:0; }
+
+.search-bar { width:100%; background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:12px 16px; color:var(--text); font-family:inherit; font-size:14px; outline:none; margin-bottom:32px; }
+.search-bar:focus { border-color:rgba(201,169,110,0.3); }
+
+.toast { position:fixed; bottom:24px; right:24px; background:var(--bg3); border:1px solid rgba(201,169,110,0.3); color:var(--gold); padding:9px 18px; border-radius:8px; font-size:12px; font-weight:500; opacity:0; transition:opacity 0.2s; pointer-events:none; }
+.toast.show { opacity:1; }
+</style>
+</head>
+<body>
+<div class="page">
+  <span class="logo">Aldric Group</span>
+  <span class="internal-tag">Internal — Outreach Copy Library</span>
+
+  <h1>Niche Outreach Playbook</h1>
+  <p class="subtitle">One pain-driven message per niche. Adapt the variables in [brackets]. Send via LinkedIn DM, Instagram DM, or email. All messages lead toward a discovery call or the Proof Sprint.</p>
+
+  <input class="search-bar" placeholder="Search niches or copy…" oninput="filterNiches(this.value)" />
+
+  <div class="rules">
+    <h3>Rules for every message</h3>
+    <ul>
+      <li>Lead with their problem, not our service. Never open with "we do AI marketing".</li>
+      <li>Reference something specific — their actual business, a post, a number of reviews, something real.</li>
+      <li>One CTA only. Either: "Worth a 20-min call?" or "I put together a Proof Sprint if you'd prefer to see the work before a call."</li>
+      <li>Keep messages under 120 words on LinkedIn/Instagram. Shorter on WhatsApp.</li>
+      <li>Never pitch the full retainer cold. Lead with the Sprint or a call — lower commitment = higher reply rate.</li>
+      <li>Follow up once at Day 3, once at Day 7. After that, move on. Don't chase.</li>
+      <li>Personalise the [SPECIFIC OBSERVATION] before sending — generic messages get ignored.</li>
+    </ul>
+  </div>
+
+  <!-- ── MED SPAS / AESTHETICS ──────────────────────────────────── -->
+  <div class="niche" data-niche="aesthetics med spa botox filler">
+    <div class="niche-header">
+      <div class="niche-icon">💉</div>
+      <div>
+        <div class="niche-title">Med Spas & Aesthetics Clinics</div>
+        <div class="niche-sub">Botox, filler, skin treatments, aesthetics — UK clinics</div>
+      </div>
+    </div>
+    <div class="pain-summary">Core pain: high no-show rates (15–25%), inconsistent social, leads falling through after DM. Practitioners too busy treating to market. Competing on price with clinics that have bigger social followings.</div>
+
+    <div class="channel-block">
+      <div class="channel-label">Instagram DM <span>Primary</span></div>
+      <div class="msg-card">
+        <div class="msg-tag">Message A — No-show angle</div>
+        <div class="msg-text">Hi [Name] — I noticed you're not running automated booking reminders. For aesthetics clinics, no-shows are typically costing £2,000–£4,000/month in empty slots.
+
+We configure AI systems that handle reminders, follow-ups, and lead nurture automatically — so your books stay full without you chasing anyone.
+
+Worth a quick call to see if it applies to you?</div>
+        <button class="copy-btn" onclick="copy(this)">Copy</button>
+      </div>
+      <div class="msg-card">
+        <div class="msg-tag">Message B — Content consistency angle</div>
+        <div class="msg-text">Hi [Name] — your results look amazing. The problem is inconsistent posting means half your potential clients won't see it.
+
+We set up AI agents that handle your social content, email follow-ups, and review collection — trained in your voice, running every day.
+
+Happy to show you exactly what it looks like in a 20-min call?</div>
+        <button class="copy-btn" onclick="copy(this)">Copy</button>
+      </div>
+    </div>
+
+    <div class="channel-block">
+      <div class="channel-label">LinkedIn DM</div>
+      <div class="msg-card">
+        <div class="msg-tag">For clinic owners / directors with LinkedIn presence</div>
+        <div class="msg-text">Hi [Name] — I looked at [Clinic Name] and noticed [SPECIFIC OBSERVATION — e.g. "your Instagram is active but you have 23 Google reviews for a clinic that's been running 4 years"].
+
+That's a conversion problem — people check reviews before booking. We automate review collection post-treatment and it typically doubles review count in 60–90 days.
+
+Running a Proof Sprint right now — 14 days, one system live, £499. Worth looking at?</div>
+        <button class="copy-btn" onclick="copy(this)">Copy</button>
+      </div>
+    </div>
+
+    <div class="follow-up-note">Day 3 follow-up: "Following up on this — are no-shows or lead drop-off a real issue for you, or is it more the content side?" (qualifying question, not a chase)</div>
+  </div>
+
+  <!-- ── ESTATE AGENTS ──────────────────────────────────────────── -->
+  <div class="niche" data-niche="estate agents property lettings">
+    <div class="niche-header">
+      <div class="niche-icon">🏡</div>
+      <div>
+        <div class="niche-title">Estate Agents & Lettings</div>
+        <div class="niche-sub">Independent and boutique agencies competing with nationals</div>
+      </div>
+    </div>
+    <div class="pain-summary">Core pain: 100% dependent on Rightmove/Zoopla — no owned audience, no direct lead flow. No email nurturing of past vendor relationships. LinkedIn and social treated as afterthoughts. Chains outspend them on ads.</div>
+
+    <div class="channel-block">
+      <div class="channel-label">LinkedIn DM <span>Primary</span></div>
+      <div class="msg-card">
+        <div class="msg-tag">Message A — Direct instruction angle</div>
+        <div class="msg-text">Hi [Name] — most independent agents I speak to get 80–90% of their instructions from Rightmove and referrals. The problem is neither of those is something you control.
+
+We build AI systems that turn your past vendor database into an active pipeline — automated email sequences, local market commentary, and LinkedIn content — without adding headcount.
+
+Estate agents using this are generating 2–3 instructions per quarter from lists they'd written off. Worth a call?</div>
+        <button class="copy-btn" onclick="copy(this)">Copy</button>
+      </div>
+      <div class="msg-card">
+        <div class="msg-tag">Message B — Direct from a specific observation</div>
+        <div class="msg-text">Hi [Name] — I saw [Harrington & Webb / your agency] has [X] LinkedIn followers but posts [rarely / once a month]. For a local agent, that's a direct feed to homeowners who aren't yet on Rightmove.
+
+We handle all of it — daily posts, email campaigns to your vendor list, viewing follow-ups — through AI agents that run without you managing them.
+
+15-minute call to see if it makes sense for [area]?</div>
+        <button class="copy-btn" onclick="copy(this)">Copy</button>
+      </div>
+    </div>
+
+    <div class="channel-block">
+      <div class="channel-label">Email (cold)</div>
+      <div class="msg-card">
+        <div class="msg-tag">Subject: [Area] — are you on [X] vendors' radars?</div>
+        <div class="msg-text">Hi [Name],
+
+I noticed [Agency Name] has a strong presence in [area] but isn't running any email marketing to your past vendor database.
+
+Most independent agents have a list of homeowners who inquired 6–18 months ago and never converted. That's a warm audience that's usually being completely ignored.
+
+We build AI systems that reactivate those contacts automatically. One estate agent we work with got 3 new instructions from a list they hadn't touched in 8 months.
+
+20-minute call? Or I can show you the exact workflow in a quick loom.
+
+[Name]
+Aldric Group</div>
+        <button class="copy-btn" onclick="copy(this)">Copy</button>
+      </div>
+    </div>
+
+    <div class="follow-up-note">Day 3 follow-up: "Quick one — do you actively email your past vendor list, or has it just been sitting there? Asking because the answer changes what I'd recommend."</div>
+  </div>
+
+  <!-- ── DENTAL / HEALTHCARE ────────────────────────────────────── -->
+  <div class="niche" data-niche="dental dentist healthcare physio practice">
+    <div class="niche-header">
+      <div class="niche-icon">🦷</div>
+      <div>
+        <div class="niche-title">Dental Practices & Healthcare</div>
+        <div class="niche-sub">Private dentists, physios, osteopaths, specialist clinics</div>
+      </div>
+    </div>
+    <div class="pain-summary">Core pain: no-shows, no review strategy, no patient re-engagement system. Staff too busy to manage marketing. Often competing with NHS — need to justify private fees through perceived quality and trust signals.</div>
+
+    <div class="channel-block">
+      <div class="channel-label">Instagram DM / Email</div>
+      <div class="msg-card">
+        <div class="msg-tag">Message A — Review angle</div>
+        <div class="msg-text">Hi [Name] — [Practice Name] has [X] Google reviews. Your nearest private competitor has [Y].
+
+For private dental/health practices, reviews are the primary trust signal — they directly affect new patient conversion. The gap is usually just the absence of a system to ask.
+
+We automate review collection after every appointment. One practice went from 47 to 112 reviews in 90 days. Typically adds 15–25% to new patient inquiries.
+
+Worth 20 minutes to see if it applies?</div>
+        <button class="copy-btn" onclick="copy(this)">Copy</button>
+      </div>
+      <div class="msg-card">
+        <div class="msg-tag">Message B — Patient reactivation angle</div>
+        <div class="msg-text">Hi [Name] — most private practices have a patient database full of people who came once, had a good experience, and then drifted.
+
+We build automated re-engagement sequences that bring them back — not pushy, just a useful email at the right time. One physio we work with rebooked 18 discharged patients in one campaign.
+
+Running a 14-day Proof Sprint right now — £499, one system live, results visible before you commit to anything. Interested?</div>
+        <button class="copy-btn" onclick="copy(this)">Copy</button>
+      </div>
+    </div>
+
+    <div class="follow-up-note">Day 3 follow-up: "Following up — is the main issue for you new patient acquisition, or keeping existing patients returning? Changes what I'd recommend."</div>
+  </div>
+
+  <!-- ── LAW FIRMS ──────────────────────────────────────────────── -->
+  <div class="niche" data-niche="law firm solicitor legal">
+    <div class="niche-header">
+      <div class="niche-icon">⚖️</div>
+      <div>
+        <div class="niche-title">Law Firms & Solicitors</div>
+        <div class="niche-sub">Boutique and specialist UK firms — personal injury, family, commercial, property</div>
+      </div>
+    </div>
+    <div class="pain-summary">Core pain: entirely referral-dependent with no owned marketing channel. No email list. LinkedIn treated as CV, not marketing. Missing content opportunity to demonstrate expertise that converts to inquiry.</div>
+
+    <div class="channel-block">
+      <div class="channel-label">LinkedIn DM <span>Primary</span></div>
+      <div class="msg-card">
+        <div class="msg-tag">Message A — Authority building angle</div>
+        <div class="msg-text">Hi [Name] — most boutique law firms are almost entirely referral-dependent. Referrals are great — but they're someone else's decision.
+
+We build AI content systems that position solicitors as the obvious expert for their specialism — LinkedIn articles, email newsletter, and Google content — all written in your voice, running without you.
+
+One firm we work with gets 3–4 inbound inquiries per month from LinkedIn alone now. Zero ad spend.
+
+Worth a conversation?</div>
+        <button class="copy-btn" onclick="copy(this)">Copy</button>
+      </div>
+    </div>
+
+    <div class="follow-up-note">Note: Law firms are slower to decide. Lead with credibility first — reference case studies from similarly 'professional' sectors. The Proof Sprint works well here as a low-risk entry.</div>
+  </div>
+
+  <!-- ── FITNESS / PT ───────────────────────────────────────────── -->
+  <div class="niche" data-niche="fitness personal trainer gym pt studio">
+    <div class="niche-header">
+      <div class="niche-icon">💪</div>
+      <div>
+        <div class="niche-title">Personal Trainers & Fitness Studios</div>
+        <div class="niche-sub">Independent PTs, boutique studios, online coaching businesses</div>
+      </div>
+    </div>
+    <div class="pain-summary">Core pain: inconsistent lead flow, spending hours creating content that gets low engagement, client churn after programmes end, no system to re-sell or upsell. Algorithm dependency with no owned audience.</div>
+
+    <div class="channel-block">
+      <div class="channel-label">Instagram DM <span>Primary</span></div>
+      <div class="msg-card">
+        <div class="msg-tag">Message A — Content consistency / lead gen</div>
+        <div class="msg-text">Hi [Name] — your content's good but inconsistent posting means your algorithm reach is half what it could be.
+
+We configure AI agents that post daily content in your voice — educational, engaging, conversion-focused — while you're in the gym with clients.
+
+Also build lead nurture sequences so inquiry DMs actually convert, not just get forgotten.
+
+Happy to show you what we built for another PT — 20 min?</div>
+        <button class="copy-btn" onclick="copy(this)">Copy</button>
+      </div>
+      <div class="msg-card">
+        <div class="msg-tag">Message B — Client reactivation</div>
+        <div class="msg-text">Hi [Name] — how many clients have finished a programme with you in the last 2 years and never rebooked?
+
+We set up automated re-engagement sequences that bring those people back — a simple email sequence timed around 3/6/12 months post-programme. Most PTs we work with rebook 20–30% of dormant clients from one campaign.
+
+14-day Proof Sprint if you want to see the system before committing — £499, credited to your first month if you retain.</div>
+        <button class="copy-btn" onclick="copy(this)">Copy</button>
+      </div>
+    </div>
+
+    <div class="follow-up-note">Day 3 follow-up: "Quick check — is your main issue getting new leads in, or keeping clients on after their programme ends? The answer changes what I'd build for you."</div>
+  </div>
+
+  <!-- ── FINANCIAL ADVISERS ─────────────────────────────────────── -->
+  <div class="niche" data-niche="financial adviser IFA wealth management">
+    <div class="niche-header">
+      <div class="niche-icon">📈</div>
+      <div>
+        <div class="niche-title">Financial Advisers & IFAs</div>
+        <div class="niche-sub">Independent and boutique UK wealth management, mortgage brokers</div>
+      </div>
+    </div>
+    <div class="pain-summary">Core pain: highly referral-dependent, no scalable marketing channel. Compliance concerns around content (leverage this — we help them stay within FCA guidelines while marketing consistently). Long client lifecycle means nurture matters enormously.</div>
+
+    <div class="channel-block">
+      <div class="channel-label">LinkedIn DM</div>
+      <div class="msg-card">
+        <div class="msg-tag">Message A — Authority + trust angle</div>
+        <div class="msg-text">Hi [Name] — most IFAs I speak to get 90%+ of new clients from referrals. Referrals are powerful, but they're inconsistent and you can't scale them.
+
+We build AI content systems that position advisers as the trusted expert in their specialism — LinkedIn posts, email newsletter, educational content — written in plain English within FCA guidelines.
+
+Not pitching a retainer. Running a 14-day Proof Sprint right now — we build one workflow, you see it working, then decide. £499.
+
+Worth 15 minutes?</div>
+        <button class="copy-btn" onclick="copy(this)">Copy</button>
+      </div>
+    </div>
+
+    <div class="follow-up-note">Note: Mention FCA compliance early — it disarms the biggest objection before they raise it. Frame content as educational and guidance-only, not advice.</div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast">Copied ✓</div>
+
+<script>
+function copy(btn) {
+  const text = btn.previousElementSibling.textContent;
+  navigator.clipboard.writeText(text.trim()).then(() => {
+    const t = document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+    btn.textContent = 'Copied ✓';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+  });
+}
+
+function filterNiches(q) {
+  const niches = document.querySelectorAll('.niche');
+  q = q.toLowerCase();
+  niches.forEach(n => {
+    const text = (n.dataset.niche + n.textContent).toLowerCase();
+    n.style.display = text.includes(q) ? '' : 'none';
+  });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Proof Sprint — Aldric Group</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:#080808; --bg2:#0f0f0f; --bg3:#161616;
+  --gold:#C9A96E; --gold-lt:#e0c48a; --cream:#F0E8DA;
+  --muted:#6b6b6b; --border:rgba(201,169,110,0.15); --text:#e8e0d4;
+  --green:#5aad7a;
+}
+html { scroll-behavior:smooth; }
+body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); line-height:1.6; -webkit-font-smoothing:antialiased; }
+a { color:inherit; text-decoration:none; }
+
+nav {
+  position:fixed; top:0; left:0; right:0; z-index:100;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:20px 48px; background:rgba(8,8,8,0.92);
+  border-bottom:1px solid rgba(201,169,110,0.08); backdrop-filter:blur(20px);
+}
+.nav-logo { font-family:'Playfair Display',serif; font-size:20px; font-weight:700; color:var(--gold); }
+.nav-links { display:flex; gap:32px; align-items:center; }
+.nav-links a { font-size:13px; font-weight:500; color:var(--muted); transition:color 0.2s; }
+.nav-links a:hover { color:var(--cream); }
+.nav-cta { color:var(--gold) !important; border:1px solid rgba(201,169,110,0.3); padding:8px 20px; border-radius:4px; }
+
+.hero {
+  padding:160px 48px 80px; max-width:780px; margin:0 auto; text-align:center;
+}
+.label { font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--gold); margin-bottom:20px; }
+h1 { font-family:'Playfair Display',serif; font-size:clamp(36px,5vw,64px); color:var(--cream); line-height:1.1; margin-bottom:20px; }
+h1 em { font-style:italic; color:var(--gold-lt); }
+.hero-sub { font-size:16px; color:var(--muted); max-width:520px; margin:0 auto 40px; }
+
+.price-block {
+  display:inline-flex; flex-direction:column; align-items:center;
+  background:var(--bg3); border:1px solid rgba(201,169,110,0.25);
+  border-radius:16px; padding:32px 48px; margin-bottom:40px;
+  box-shadow:0 0 60px rgba(201,169,110,0.06);
+}
+.price-num { font-family:'Playfair Display',serif; font-size:64px; color:var(--gold); line-height:1; }
+.price-period { font-size:14px; color:var(--muted); margin-top:4px; }
+.price-note { font-size:12px; color:var(--green); margin-top:8px; font-weight:600; }
+
+.btn-gold {
+  display:inline-block; background:var(--gold); color:#000;
+  font-weight:700; font-size:15px; padding:16px 44px;
+  border-radius:4px; letter-spacing:0.3px; transition:opacity 0.2s;
+}
+.btn-gold:hover { opacity:0.87; }
+.btn-wa {
+  display:inline-flex; align-items:center; gap:8px;
+  color:var(--gold); border:1px solid rgba(201,169,110,0.3);
+  font-size:14px; font-weight:500; padding:15px 28px; border-radius:4px; margin-left:12px;
+}
+
+/* What you get */
+.section { padding:80px 48px; max-width:960px; margin:0 auto; }
+
+.deliverables {
+  display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:40px;
+}
+.d-item {
+  background:var(--bg3); border:1px solid var(--border);
+  border-radius:12px; padding:24px;
+  display:flex; gap:16px; align-items:flex-start;
+}
+.d-icon { font-size:24px; flex-shrink:0; line-height:1; }
+.d-title { font-weight:600; color:var(--cream); font-size:14px; margin-bottom:4px; }
+.d-body { font-size:13px; color:var(--muted); line-height:1.6; }
+
+/* Process */
+.steps { display:flex; flex-direction:column; gap:0; margin-top:40px; border-left:1px solid var(--border); padding-left:32px; }
+.step { position:relative; padding-bottom:32px; }
+.step:last-child { padding-bottom:0; }
+.step::before {
+  content:''; position:absolute; left:-37px; top:4px;
+  width:10px; height:10px; border-radius:50%;
+  background:var(--gold); border:2px solid var(--bg);
+}
+.step-day { font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--gold); margin-bottom:4px; }
+.step-title { font-weight:600; color:var(--cream); font-size:15px; margin-bottom:4px; }
+.step-body { font-size:13px; color:var(--muted); }
+
+/* Who */
+.who-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:40px; }
+.who-card { background:var(--bg3); border:1px solid var(--border); border-radius:12px; padding:20px; text-align:center; }
+.who-icon { font-size:28px; margin-bottom:8px; }
+.who-title { font-weight:600; color:var(--cream); font-size:14px; margin-bottom:4px; }
+.who-body { font-size:12px; color:var(--muted); }
+
+/* Guarantee */
+.guarantee {
+  background:var(--bg2); border:1px solid rgba(201,169,110,0.2);
+  border-radius:16px; padding:40px; text-align:center; margin:80px 48px;
+  max-width:700px; margin-left:auto; margin-right:auto;
+}
+.guarantee h3 { font-family:'Playfair Display',serif; font-size:28px; color:var(--cream); margin-bottom:16px; }
+.guarantee p { color:var(--muted); font-size:15px; line-height:1.7; }
+
+/* FAQ */
+.faq { display:flex; flex-direction:column; gap:1px; margin-top:40px; }
+.faq-item { background:var(--bg3); border:1px solid var(--border); border-radius:10px; overflow:hidden; margin-bottom:8px; }
+.faq-q { padding:18px 20px; font-weight:600; font-size:14px; color:var(--cream); cursor:pointer; display:flex; justify-content:space-between; }
+.faq-q:after { content:'+'; color:var(--gold); font-size:18px; }
+.faq-item.open .faq-q:after { content:'−'; }
+.faq-a { display:none; padding:0 20px 18px; font-size:13px; color:var(--muted); line-height:1.7; }
+.faq-item.open .faq-a { display:block; }
+
+/* CTA bottom */
+.cta-bottom { background:var(--bg2); border-top:1px solid var(--border); padding:80px 48px; text-align:center; }
+.cta-bottom h2 { font-family:'Playfair Display',serif; font-size:36px; color:var(--cream); margin-bottom:12px; }
+.cta-bottom p { color:var(--muted); margin-bottom:32px; }
+.spots { display:inline-block; font-size:12px; font-weight:700; color:var(--red,#e05555); letter-spacing:0.5px; margin-top:16px; }
+footer { padding:40px 48px; text-align:center; font-size:12px; color:var(--muted); border-top:1px solid var(--border); }
+
+@media(max-width:768px) {
+  nav { padding:16px 20px; }
+  .hero,.section,.guarantee,.cta-bottom { padding-left:20px; padding-right:20px; }
+  .deliverables,.who-grid { grid-template-columns:1fr; }
+  .btn-wa { margin-left:0; margin-top:12px; display:inline-flex; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">Aldric Group</a>
+  <div class="nav-links">
+    <a href="index.html#services">Services</a>
+    <a href="case-studies.html">Results</a>
+    <a href="index.html#contact" class="nav-cta">Get Started</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="label">Low-Risk Entry</div>
+  <h1>The Proof<br /><em>Sprint.</em></h1>
+  <p class="hero-sub">Before you commit to a monthly retainer, see exactly what we build and how it performs. 14 days. One workflow live. Real results.</p>
+
+  <div class="price-block">
+    <div class="price-num">£499</div>
+    <div class="price-period">One-time · 14 days</div>
+    <div class="price-note">✓ Credited toward your first month if you retain</div>
+  </div>
+
+  <div>
+    <a href="onboarding.html" class="btn-gold">Start Your Sprint →</a>
+    <a href="https://wa.me/447599260032?text=Hi,%20I'm%20interested%20in%20the%20Proof%20Sprint" target="_blank" class="btn-wa">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      Ask a question
+    </a>
+  </div>
+</div>
+
+<!-- Deliverables -->
+<div class="section">
+  <div class="label">What You Get</div>
+  <h2 style="font-family:'Playfair Display',serif;font-size:clamp(28px,4vw,42px);color:var(--cream);max-width:500px;line-height:1.2;">Built, running, and handed over in 14 days.</h2>
+
+  <div class="deliverables">
+    <div class="d-item">
+      <div class="d-icon">⚡</div>
+      <div>
+        <div class="d-title">One Core Automation Workflow</div>
+        <div class="d-body">Your highest-impact automation built end-to-end — lead follow-up, booking reminders, review requests, or re-engagement. Chosen with you on day 1.</div>
+      </div>
+    </div>
+    <div class="d-item">
+      <div class="d-icon">✍️</div>
+      <div>
+        <div class="d-title">5 Brand-Voice Content Pieces</div>
+        <div class="d-body">Captions, LinkedIn posts, or email copy written in your voice. Formatted, hashtagged, ready to publish. You keep every piece regardless.</div>
+      </div>
+    </div>
+    <div class="d-item">
+      <div class="d-icon">📧</div>
+      <div>
+        <div class="d-title">One Email Sequence (3 emails)</div>
+        <div class="d-body">A short, high-converting sequence for your most important audience — new leads, lapsed clients, or post-purchase follow-up.</div>
+      </div>
+    </div>
+    <div class="d-item">
+      <div class="d-icon">📋</div>
+      <div>
+        <div class="d-title">Full Brand Brief</div>
+        <div class="d-body">A documented brand voice guide and audience map — the foundation that feeds everything we build. Yours to keep, use, and pass to any future agency.</div>
+      </div>
+    </div>
+    <div class="d-item">
+      <div class="d-icon">📊</div>
+      <div>
+        <div class="d-title">Performance Report (Day 14)</div>
+        <div class="d-body">What was built, what's running, early results, and a clear recommendation on which package makes sense — or if the timing isn't right.</div>
+      </div>
+    </div>
+    <div class="d-item">
+      <div class="d-icon">🔄</div>
+      <div>
+        <div class="d-title">Retainer Credit</div>
+        <div class="d-body">The full £499 is credited toward your first month if you proceed to a retainer. You're not paying twice — you're paying forward.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Process -->
+<div class="section" style="padding-top:0">
+  <div class="label">How It Works</div>
+  <h2 style="font-family:'Playfair Display',serif;font-size:clamp(24px,3vw,36px);color:var(--cream);margin-bottom:8px;">14 days. No hand-holding required.</h2>
+  <p style="color:var(--muted);margin-bottom:0">You fill one form. We build everything.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-day">Day 1</div>
+      <div class="step-title">Onboarding form + strategy call (30 min)</div>
+      <div class="step-body">You complete our brand brief form. We review it and jump on a 30-minute call to confirm priorities, pick the automation, and align on tone.</div>
+    </div>
+    <div class="step">
+      <div class="step-day">Days 2–5</div>
+      <div class="step-title">Brand brief built + content drafted</div>
+      <div class="step-body">We build your brand voice guide and produce the 5 content pieces. You review and give one round of feedback.</div>
+    </div>
+    <div class="step">
+      <div class="step-day">Days 6–11</div>
+      <div class="step-title">Automation + email sequence built</div>
+      <div class="step-body">The core workflow is configured and the email sequence is written. You get a loom walkthrough showing exactly what was built and why.</div>
+    </div>
+    <div class="step">
+      <div class="step-day">Days 12–14</div>
+      <div class="step-title">Live, tested, handed over</div>
+      <div class="step-body">Everything is tested live. You receive the Day 14 report with performance data, assets, and a clear recommendation. Sprint complete.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Who it's for -->
+<div class="section" style="padding-top:0">
+  <div class="label">Who It's For</div>
+  <h2 style="font-family:'Playfair Display',serif;font-size:clamp(24px,3vw,36px);color:var(--cream);margin-bottom:8px;">Right for you if…</h2>
+
+  <div class="who-grid">
+    <div class="who-card">
+      <div class="who-icon">🤔</div>
+      <div class="who-title">You're not sure yet</div>
+      <div class="who-body">You like what you've read but want to see work before committing to a monthly contract. This is built for that.</div>
+    </div>
+    <div class="who-card">
+      <div class="who-icon">💼</div>
+      <div class="who-title">You have a specific problem</div>
+      <div class="who-body">There's one painful gap in your marketing — no-shows, dead leads, zero reviews, inconsistent content. We fix one thing, completely.</div>
+    </div>
+    <div class="who-card">
+      <div class="who-icon">🚀</div>
+      <div class="who-title">You want it fast</div>
+      <div class="who-body">No lengthy onboarding. No kick-off decks. One form, one call, 14 days. Something real is running before most agencies have finished their proposal.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Guarantee -->
+<div class="guarantee">
+  <h3>If we don't deliver, you don't pay.</h3>
+  <p>If the five content pieces, automation workflow, and email sequence aren't completed and handed over within 14 days, we refund the sprint in full. No questions, no admin. This is our commitment to doing the work we say we'll do.</p>
+</div>
+
+<!-- FAQ -->
+<div class="section" style="padding-top:0">
+  <div class="label">Questions</div>
+  <div class="faq">
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggle(this)">What tools do you use for the automation?</div>
+      <div class="faq-a">We use whatever makes sense for your business — typically a combination of Make (Integromat), email providers like Mailchimp or ActiveCampaign, and direct API connections. We document everything so you're never locked to us.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggle(this)">What if I already have a CRM or email platform?</div>
+      <div class="faq-a">We build within it. We don't ask you to switch tools — we configure what you already have and use the AI layer to make it do more.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggle(this)">How much time does this take from me?</div>
+      <div class="faq-a">The onboarding form (20–30 minutes) and one 30-minute strategy call. After that, you review content once and approve. That's it. Total your time: under 2 hours over 14 days.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggle(this)">Can I choose what the automation does?</div>
+      <div class="faq-a">Yes. In the strategy call we review your biggest friction points and build around whatever is causing you the most pain or the most missed revenue. You decide the priority.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggle(this)">What happens after 14 days?</div>
+      <div class="faq-a">You decide. If you want to retain, your £499 is credited against month one. If you want to pause and think, the assets are yours and nothing automatically renews. There is no pressure.</div>
+    </div>
+  </div>
+</div>
+
+<!-- CTA bottom -->
+<div class="cta-bottom">
+  <h2>Ready to see it work?</h2>
+  <p>Complete the onboarding form to start. We'll confirm your sprint within one business day.</p>
+  <a href="onboarding.html" class="btn-gold">Start the Sprint — £499 →</a>
+  <br/>
+  <span class="spots">⚡ Limited to 3 sprints per month</span>
+</div>
+
+<footer>
+  <p>© 2025 Aldric Group Ltd · London · <a href="mailto:hello@aldricgroup.co.uk" style="color:var(--gold)">hello@aldricgroup.co.uk</a></p>
+</footer>
+
+<script>
+function toggle(el) { el.closest('.faq-item').classList.toggle('open'); }
+</script>
+</body>
+</html>
