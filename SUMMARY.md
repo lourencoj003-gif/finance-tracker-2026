@@ -2,6 +2,55 @@
 
 ---
 
+## Session: 2026-05-27 (Noa final items + Aldric CRM)
+
+### Commits
+- `281499f` — fix: Noa final items — reset button, PWA icons, auto-speak verified
+- `2a06edf` — feat: Aldric Group prospect CRM — kanban, WhatsApp, pipeline value, CSV export
+
+---
+
+### Task 1 — Noa Final Items
+
+**Verified as already working (no code changes needed):**
+- Reset Noa button + confirmation modal — already at VelaCore.js:3196 with `clearAll()` + `onReset()`
+- Daily insight auto-speaks on load — `insightSpokenRef` guard + 1400ms delay working correctly
+- Orb tap opens chat — `onClick → unlockAudio(); setChatOpen(true)` at line 2086
+- `npm run build` — clean at 116.08 kB gzip, zero warnings
+
+**Change made:**
+- Generated `public/logo180.png` (180×180 RGBA PNG) — was the one missing icon. Copied from `apple-touch-icon.png` which was already the correct 180×180 file. `logo192.png` and `logo512.png` were already valid.
+
+---
+
+### Task 2 — Aldric Group CRM
+
+**File:** `public/agency/crm.html` — fully standalone, zero dependencies, opens directly in browser.
+
+#### Features
+| Feature | Detail |
+|---------|--------|
+| Kanban board | 6 columns: New / Contacted / Call Booked / Proposal Sent / Client / Lost |
+| Drag and drop | Native HTML5 drag API — drag cards between columns to update status |
+| Add prospect | Modal: name, business, sector, email, WhatsApp, package, status |
+| Detail panel | Slides in from right — all fields editable inline, auto-saved to localStorage |
+| Contact history | Append timestamped log entries per prospect; updates "Last contacted" date |
+| WhatsApp button | Opens `wa.me/447599260032?text=Hi [name]…` pre-filled, per card and in detail panel |
+| Email button | Opens `mailto:` with pre-filled subject line |
+| Stats bar | Total prospects · Active pipeline value (Growth £1.5k / Scale £3k / Dominance £5k) · Client count · Conversion rate |
+| CSV export | Downloads all prospect data as `.csv` with today's date in filename |
+| Delete | Confirm modal before deletion |
+| Keyboard shortcuts | `Esc` closes panels/modals · `⌘N` / `Ctrl+N` opens add modal |
+| Persistence | All data in `localStorage` key `aldric_crm_v1` |
+
+#### Design
+- `#080808` background, `#C9A96E` gold accents — matches Aldric brand
+- Playfair Display for headings, Inter for body
+- Status dot colours: grey (New) · gold (Contacted) · green (Call Booked) · blue (Proposal Sent) · purple (Client) · red (Lost)
+- Package badge colours: green (Growth) · gold (Scale) · purple (Dominance)
+
+---
+
 ## Session: 2026-05-27 (FitLink trainer dashboard + daily check-in)
 
 ### Overview
