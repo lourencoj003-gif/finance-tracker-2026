@@ -2,6 +2,36 @@
 
 ---
 
+## Session: 2026-05-27 (Aldric AI agent system + full nav)
+
+### Commits
+- `9bbe0c6` — feat: Aldric AI agent execution system + full nav update
+
+### agent-system.html (`public/agency/acquisition/`)
+
+Live Claude API execution system. 5 modular components, each calling `claude-sonnet-4-20250514` with `max_tokens: 1000` via `fetch` with `anthropic-dangerous-direct-browser-access: true`.
+
+API key stored in `localStorage` key `aldric_claude_key`, loaded on page init.
+
+| Component | Inputs | Output |
+|-----------|--------|--------|
+| 01 — Outreach Generator | Niche, day, prospect name, business | Personalised LinkedIn message; logs to `aldric_outreach_log_v1` |
+| 02 — Reply Handler | Niche, prospect name, reply text | Classification + suggested response + RED/AMBER/GREEN escalation flag |
+| 03 — Weekly Report | Client, week, package, next action, ask | Reads KPI data from `aldric_kpi_v1` localStorage; formatted client update |
+| 04 — Content Batch | Business, niche, tone, offer | 20 social posts (8 educational, 5 proof, 4 promotional, 3 BTS); download .txt |
+| 05 — Email Sequence | Niche, offer, audience, goal, sender | 5-email sequence (Day 0/3/7/10/14) formatted for Instantly.ai; download .txt |
+
+UX: collapsible panels (one open at a time), system prompt preview (expandable), loading spinner, token count display, char count, copy + download buttons, outreach log with click-to-load.
+
+### index.html nav update
+
+Added "Resources" dropdown (CSS hover, no JS) with 12 links in 3 sections:
+- **Acquisition**: 7-Day Plan, AI SDR System, Automation Safety, Client Retention, AI Agent System
+- **Operations**: CRM, KPI Tracker, Contract Generator, Client Onboarding, Sales Call Framework
+- **Client-Facing**: Case Studies, Pilot Sprint
+
+---
+
 ## Session: 2026-05-27 (Aldric Group COO execution system)
 
 ### Commit
