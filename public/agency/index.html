@@ -51,7 +51,7 @@
       letter-spacing: 0.05em;
       text-decoration: none;
     }
-    .nav-links { display: flex; gap: 36px; align-items: center; }
+    .nav-links { display: flex; gap: 28px; align-items: center; }
     .nav-links a {
       font-size: 13px; font-weight: 500; color: var(--muted);
       text-decoration: none; letter-spacing: 0.04em;
@@ -241,6 +241,85 @@
     }
     .service-card.featured .service-cta:hover { background: var(--gold-lt); }
 
+    /* RESULTS / CASE STUDIES */
+    .results-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px;
+      margin-top: 56px;
+    }
+    .result-card {
+      background: var(--bg3); padding: 44px 36px;
+      position: relative; transition: background 0.25s;
+    }
+    .result-card:hover { background: #1c1c1c; }
+    .result-niche {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.22em;
+      text-transform: uppercase; color: var(--gold); margin-bottom: 14px;
+    }
+    .result-client {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px; font-weight: 700; color: var(--cream);
+      margin-bottom: 6px; line-height: 1.25;
+    }
+    .result-pkg {
+      font-size: 12px; color: var(--muted); margin-bottom: 28px;
+    }
+    .result-stats { display: flex; flex-direction: column; gap: 16px; margin-bottom: 28px; }
+    .result-stat { }
+    .result-stat-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 34px; font-weight: 700; color: var(--gold);
+      line-height: 1; margin-bottom: 4px;
+    }
+    .result-stat-label { font-size: 13px; color: rgba(240,232,218,0.5); line-height: 1.5; }
+    .result-link {
+      font-size: 12px; font-weight: 600; color: var(--gold);
+      text-decoration: none; letter-spacing: 0.06em;
+      border-bottom: 1px solid rgba(201,169,110,0.25);
+      padding-bottom: 2px; transition: border-color 0.2s;
+    }
+    .result-link:hover { border-color: var(--gold); }
+
+    /* PILOT SPRINT */
+    .pilot-wrap {
+      background: linear-gradient(135deg, #0d0b07 0%, #141008 50%, #0d0b07 100%);
+      border-top: 1px solid rgba(201,169,110,0.12);
+      border-bottom: 1px solid rgba(201,169,110,0.12);
+    }
+    .pilot-inner {
+      display: grid; grid-template-columns: 1fr 1.2fr; gap: 80px; align-items: center;
+    }
+    .pilot-left { }
+    .pilot-price-tag {
+      display: inline-block; padding: 6px 14px;
+      background: rgba(201,169,110,0.12);
+      border: 1px solid rgba(201,169,110,0.25);
+      border-radius: 2px;
+      font-size: 12px; font-weight: 700; letter-spacing: 0.1em;
+      color: var(--gold); text-transform: uppercase; margin-bottom: 24px;
+    }
+    .pilot-left h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(28px, 3.5vw, 44px); font-weight: 700;
+      color: var(--cream); line-height: 1.2; margin-bottom: 16px;
+    }
+    .pilot-left p { font-size: 15px; color: rgba(240,232,218,0.5); line-height: 1.8; margin-bottom: 28px; }
+    .pilot-right { }
+    .pilot-list { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+    .pilot-list li {
+      display: flex; align-items: flex-start; gap: 14px;
+      font-size: 14px; color: rgba(240,232,218,0.65);
+      line-height: 1.6;
+    }
+    .pilot-list li .pi { color: var(--gold); flex-shrink: 0; font-weight: 700; margin-top: 1px; }
+    .pilot-guarantee {
+      margin-top: 28px; padding: 16px 20px;
+      background: rgba(201,169,110,0.06);
+      border: 1px solid rgba(201,169,110,0.18);
+      border-radius: 3px;
+      font-size: 13px; color: var(--cream); font-weight: 500;
+    }
+    .pilot-guarantee span { color: var(--gold); }
+
     /* HOW IT WORKS */
     .hiw-wrap { background: var(--bg2); }
     .steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 48px; margin-top: 56px; }
@@ -388,6 +467,8 @@
       .hero-stats { gap: 32px; flex-wrap: wrap; }
       .problem-wrap section { grid-template-columns: 1fr; gap: 40px; }
       .services-grid { grid-template-columns: 1fr; }
+      .results-grid { grid-template-columns: 1fr; }
+      .pilot-inner { grid-template-columns: 1fr; gap: 40px; }
       .steps-grid { grid-template-columns: 1fr; gap: 40px; }
       .who-grid { grid-template-columns: 1fr 1fr; }
       .contact-grid { grid-template-columns: 1fr; gap: 40px; }
@@ -406,6 +487,8 @@
     <a href="#" class="nav-logo">Aldric Group</a>
     <div class="nav-links">
       <a href="#services">Services</a>
+      <a href="#results">Results</a>
+      <a href="#pilot">Pilot Sprint</a>
       <a href="#how">How It Works</a>
       <a href="#who">Who It's For</a>
       <a href="#contact" class="nav-cta">Get Started</a>
@@ -524,6 +607,104 @@
       </div>
     </div>
   </section>
+
+  <!-- RESULTS / CASE STUDIES -->
+  <section id="results" class="fade-up">
+    <div class="section-label">Client Results</div>
+    <div class="section-divider"></div>
+    <h2 style="font-family:'Playfair Display',serif;font-size:clamp(28px,3.5vw,44px);font-weight:700;color:var(--cream);max-width:600px;line-height:1.2;">Real businesses. Measurable outcomes.</h2>
+    <div class="results-grid">
+      <div class="result-card">
+        <div class="result-niche">Med Spa &amp; Aesthetics</div>
+        <div class="result-client">Luxe Aesthetics Studio</div>
+        <div class="result-pkg">Scale Package — £1,250/mo</div>
+        <div class="result-stats">
+          <div class="result-stat">
+            <div class="result-stat-num">+£8.4k</div>
+            <div class="result-stat-label">Additional MRR by month 3</div>
+          </div>
+          <div class="result-stat">
+            <div class="result-stat-num">18% → 6%</div>
+            <div class="result-stat-label">No-show rate reduced via automated reminders</div>
+          </div>
+          <div class="result-stat">
+            <div class="result-stat-num">+47%</div>
+            <div class="result-stat-label">Instagram booking enquiries in 90 days</div>
+          </div>
+        </div>
+        <a href="case-studies.html" class="result-link">Read full case study →</a>
+      </div>
+      <div class="result-card">
+        <div class="result-niche">Estate Agency</div>
+        <div class="result-client">Harrington &amp; Webb</div>
+        <div class="result-pkg">Growth Package — £750/mo</div>
+        <div class="result-stats">
+          <div class="result-stat">
+            <div class="result-stat-num">+31%</div>
+            <div class="result-stat-label">Direct website enquiries in 60 days</div>
+          </div>
+          <div class="result-stat">
+            <div class="result-stat-num">3</div>
+            <div class="result-stat-label">New instructions directly from email list</div>
+          </div>
+          <div class="result-stat">
+            <div class="result-stat-num">8×</div>
+            <div class="result-stat-label">Return on retainer in first 60 days</div>
+          </div>
+        </div>
+        <a href="case-studies.html" class="result-link">Read full case study →</a>
+      </div>
+      <div class="result-card">
+        <div class="result-niche">Healthcare &amp; Physio</div>
+        <div class="result-client">Peak Performance Physio</div>
+        <div class="result-pkg">Dominance Package — £1,500/mo</div>
+        <div class="result-stats">
+          <div class="result-stat">
+            <div class="result-stat-num">47 → 112</div>
+            <div class="result-stat-label">Google reviews in 90 days</div>
+          </div>
+          <div class="result-stat">
+            <div class="result-stat-num">+28%</div>
+            <div class="result-stat-label">New patient enquiries month-on-month</div>
+          </div>
+          <div class="result-stat">
+            <div class="result-stat-num">#1</div>
+            <div class="result-stat-label">Local search ranking for target keywords</div>
+          </div>
+        </div>
+        <a href="case-studies.html" class="result-link">Read full case study →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- PILOT SPRINT -->
+  <div class="pilot-wrap fade-up" id="pilot">
+    <section>
+      <div class="pilot-inner">
+        <div class="pilot-left">
+          <div class="pilot-price-tag">Proof Sprint — £499</div>
+          <h2>Not ready to commit? Start with 14 days of proof.</h2>
+          <p>Before committing to a monthly retainer, the Proof Sprint shows you exactly what working with Aldric Group looks like — a real automation, real content, and a real strategy brief built for your business.</p>
+          <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;">
+            <a href="pilot.html" class="btn-primary">Learn about the Sprint →</a>
+            <a href="#contact" class="btn-ghost">Skip to retainer</a>
+          </div>
+        </div>
+        <div class="pilot-right">
+          <ul class="pilot-list">
+            <li><span class="pi">01</span> One complete automation workflow — built and activated in your business</li>
+            <li><span class="pi">02</span> 5 on-brand content pieces ready to publish</li>
+            <li><span class="pi">03</span> 3-email nurture sequence written and configured</li>
+            <li><span class="pi">04</span> Brand brief created from a 45-minute onboarding call</li>
+            <li><span class="pi">05</span> Day 14 report — what we built, what it did, what to do next</li>
+          </ul>
+          <div class="pilot-guarantee">
+            <span>£499 fully credited</span> against your first retainer month if you continue within 30 days. Delivery guaranteed within 14 days or your money back.
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
 
   <!-- HOW IT WORKS -->
   <div class="hiw-wrap fade-up" id="how">
@@ -665,6 +846,8 @@
     <div class="footer-copy">© 2026 Aldric Group. London. All rights reserved.</div>
     <div class="footer-links">
       <a href="#services">Services</a>
+      <a href="case-studies.html">Results</a>
+      <a href="pilot.html">Pilot Sprint</a>
       <a href="#contact">Contact</a>
     </div>
   </footer>
