@@ -5,6 +5,45 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Noa — your AI financial navigator. She knows your money, remembers your goals, and tells you the truth." />
   <title>Noa — AI Financial Navigator</title>
+
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://finance-tracker-2026-navy.vercel.app/noa-landing/" />
+
+  <!-- Open Graph / Social Preview -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Noa — Your AI Financial Navigator" />
+  <meta property="og:description" content="Meet Noa. She knows your money, remembers your goals, and tells you the truth." />
+  <meta property="og:image" content="https://finance-tracker-2026-navy.vercel.app/logo512.png" />
+  <meta property="og:url" content="https://finance-tracker-2026-navy.vercel.app/noa-landing/" />
+  <meta property="og:site_name" content="Noa" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Noa — Your AI Financial Navigator" />
+  <meta name="twitter:description" content="Meet Noa. She knows your money, remembers your goals, and tells you the truth." />
+  <meta name="twitter:image" content="https://finance-tracker-2026-navy.vercel.app/logo512.png" />
+
+  <!-- Structured Data — SoftwareApplication -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Noa",
+    "description": "Noa is your personal AI financial navigator. She knows your money, remembers your goals, and tells you the truth.",
+    "applicationCategory": "FinanceApplication",
+    "operatingSystem": "iOS, Web",
+    "url": "https://finance-tracker-2026-navy.vercel.app",
+    "offers": {
+      "@type": "Offer",
+      "price": "6.99",
+      "priceCurrency": "GBP",
+      "availability": "https://schema.org/InStock"
+    },
+    "author": {
+      "@type": "Organization",
+      "name": "Noa"
+    }
+  }
+  </script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -447,6 +486,47 @@
     }
     .final-cta p { font-size: 17px; color: var(--muted); margin-bottom: 40px; }
 
+    /* WAITLIST */
+    .waitlist-section {
+      text-align: center; padding: 80px 40px 60px;
+      border-top: 1px solid rgba(200,184,154,0.07);
+    }
+    .waitlist-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.25em;
+      text-transform: uppercase; color: var(--green); margin-bottom: 14px;
+    }
+    .waitlist-title {
+      font-size: clamp(20px, 3vw, 28px); font-weight: 700;
+      color: var(--text); margin-bottom: 8px;
+    }
+    .waitlist-sub { font-size: 14px; color: var(--muted); margin-bottom: 28px; }
+    .waitlist-form {
+      display: flex; gap: 10px; justify-content: center;
+      flex-wrap: wrap; max-width: 480px; margin: 0 auto;
+    }
+    .waitlist-input {
+      flex: 1; min-width: 200px; padding: 12px 16px;
+      background: rgba(200,184,154,0.06); border: 1px solid rgba(200,184,154,0.18);
+      color: var(--text); font-family: 'Inter', sans-serif;
+      font-size: 14px; border-radius: 4px; outline: none;
+      transition: border-color 0.2s;
+    }
+    .waitlist-input:focus { border-color: rgba(200,184,154,0.4); }
+    .waitlist-input::placeholder { color: var(--muted); }
+    .waitlist-btn {
+      padding: 12px 24px; background: var(--green); border: none;
+      color: var(--bg); font-size: 13px; font-weight: 700;
+      border-radius: 4px; cursor: pointer; font-family: 'Inter', sans-serif;
+      transition: opacity 0.2s; white-space: nowrap;
+    }
+    .waitlist-btn:hover { opacity: 0.85; }
+    .waitlist-confirm {
+      display: none; font-size: 14px; color: var(--green);
+      margin-top: 12px; font-weight: 500;
+    }
+    .waitlist-confirm.show { display: block; }
+    .waitlist-note { font-size: 11px; color: rgba(168,152,128,0.4); margin-top: 12px; }
+
     /* FOOTER */
     footer {
       border-top: 1px solid rgba(200,184,154,0.07);
@@ -714,6 +794,19 @@
     <p style="margin-top:14px;font-size:12px;color:rgba(168,152,128,0.4);">14-day trial · No card needed · Cancel any time</p>
   </div>
 
+  <!-- WAITLIST -->
+  <div class="waitlist-section fade-up" id="waitlist">
+    <div class="waitlist-label">App Store Launch</div>
+    <h2 class="waitlist-title">Be first to know when Noa<br />launches on the App Store</h2>
+    <p class="waitlist-sub">iOS version coming soon. Drop your email and we'll notify you the moment it's live.</p>
+    <div class="waitlist-form">
+      <input class="waitlist-input" type="email" id="waitlist-email" placeholder="your@email.com" autocomplete="email" />
+      <button class="waitlist-btn" onclick="joinWaitlist()">Notify Me →</button>
+    </div>
+    <div class="waitlist-confirm" id="waitlist-confirm">✓ You're on the list — we'll email you when Noa hits the App Store.</div>
+    <p class="waitlist-note">No spam, ever. One email when it launches. Unsubscribe any time.</p>
+  </div>
+
   <!-- FOOTER -->
   <footer>
     <div class="footer-brand">noa</div>
@@ -768,6 +861,50 @@
     dots.forEach(dot => {
       dot.addEventListener('click', () => showBubble(parseInt(dot.dataset.i)));
     });
+
+    // ── Waitlist capture ───────────────────────────────────────────────
+    function joinWaitlist() {
+      const input = document.getElementById('waitlist-email');
+      const confirm = document.getElementById('waitlist-confirm');
+      const email = input.value.trim();
+      const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!email || !re.test(email)) {
+        input.style.borderColor = 'rgba(226,75,74,0.5)';
+        input.focus();
+        setTimeout(() => { input.style.borderColor = ''; }, 2000);
+        return;
+      }
+      // Save to localStorage
+      const list = JSON.parse(localStorage.getItem('noa_waitlist') || '[]');
+      if (!list.includes(email)) {
+        list.push(email);
+        localStorage.setItem('noa_waitlist', JSON.stringify(list));
+      }
+      // Show confirmation
+      input.style.display = 'none';
+      document.querySelector('.waitlist-btn').style.display = 'none';
+      confirm.classList.add('show');
+    }
+
+    // Allow Enter key in waitlist input
+    document.getElementById('waitlist-email')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') joinWaitlist();
+    });
+
+    // Check if already on waitlist
+    (function() {
+      const list = JSON.parse(localStorage.getItem('noa_waitlist') || '[]');
+      if (list.length > 0) {
+        const input = document.getElementById('waitlist-email');
+        const btn = document.querySelector('.waitlist-btn');
+        const confirm = document.getElementById('waitlist-confirm');
+        if (input && btn && confirm) {
+          input.style.display = 'none';
+          btn.style.display = 'none';
+          confirm.classList.add('show');
+        }
+      }
+    })();
   </script>
 
 </body>
