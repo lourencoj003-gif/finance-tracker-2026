@@ -2386,7 +2386,7 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
                 >{narrativeLoading ? '…' : 'How did I do?'}</button>
               </div>
               <button
-                onClick={() => { setTxComment(''); setShowLogTx(true); }}
+                onClick={() => { setTxComment(''); setTxError(''); setTxCatSuggested(false); setTxForm({ amount: '', category: 'essentials', note: '', date: new Date().toISOString().slice(0, 10) }); setShowLogTx(true); }}
                 style={{ background: 'rgba(200,184,154,0.12)', border: '1px solid rgba(200,184,154,0.25)', borderRadius: 8, color: PURPLE, fontSize: 14, fontWeight: 700, padding: '1px 10px', cursor: 'pointer', lineHeight: 1.5 }}
               >+</button>
             </div>
@@ -2803,15 +2803,15 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
         const catColors = { essentials: PURPLE, lifestyle: AMBER, savings: GREEN };
         const catLabel  = c => c === 'essentials' ? 'Essentials' : c === 'lifestyle' ? 'Lifestyle' : c === 'savings' ? 'Savings' : c;
 
-        function confirmDelete(id) {
-          if (historyDeleteId === id) {
-            // confirmed — delete it
-            const updated = getExpenseLog().filter(tx => tx.id !== id);
+        function confirmDelete(ts) {
+          if (historyDeleteId === ts) {
+            // confirmed — match by ts (always present) falling back to amount+date combo
+            const updated = getExpenseLog().filter(tx => (tx.ts || (tx.date + tx.amount)) !== ts);
             saveExpenseLog(updated);
             setExpenseLog(updated);
             setHistoryDeleteId(null);
           } else {
-            setHistoryDeleteId(id);
+            setHistoryDeleteId(ts);
           }
         }
 
@@ -2920,11 +2920,12 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
                 filtered.map(tx => {
                   const cat   = (tx.category || 'essentials');
                   const color = catColors[cat] || PURPLE;
-                  const isDel = historyDeleteId === tx.id;
+                  const txKey = tx.ts || (tx.date + tx.amount);
+                  const isDel = historyDeleteId === txKey;
                   return (
                     <div
-                      key={tx.id || tx.date + tx.amount}
-                      onClick={() => confirmDelete(tx.id || (tx.date + tx.amount))}
+                      key={txKey}
+                      onClick={() => confirmDelete(txKey)}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 12,
                         padding: '10px 12px', marginBottom: 5,
@@ -2948,11 +2949,11 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
                       </div>
                       {isDel ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                          <span style={{ fontSize: 10, color: RED, fontWeight: 600 }}>Delete?</span>
+                          <span style={{ fontSize: 10, color: RED, fontWeight: 600 }}>Tap again to delete</span>
                           <button
                             onClick={e => { e.stopPropagation(); setHistoryDeleteId(null); }}
                             style={{ background: 'none', border: '1px solid rgba(232,221,208,0.18)', borderRadius: 6, color: 'rgba(232,221,208,0.4)', fontSize: 11, padding: '2px 8px', cursor: 'pointer', fontFamily: 'inherit' }}
-                          >Cancel</button>
+                          >✕</button>
                         </div>
                       ) : (
                         <div style={{ fontSize: 14, fontWeight: 600, color: '#E8DDD0', flexShrink: 0 }}>
@@ -3300,8 +3301,10 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
           <div style={{
             background: 'rgba(16,14,36,0.97)', border: '1px solid rgba(200,184,154,0.22)',
             borderRadius: 26, padding: 28, width: '100%', maxWidth: 320,
+            maxHeight: '85dvh', overflowY: 'auto',
             backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
             animation: 'cardIn 0.28s ease-out',
+            WebkitOverflowScrolling: 'touch',
           }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: '#E8DDD0', marginBottom: 22 }}>Settings</div>
             <Label>Your name</Label>
@@ -3553,7 +3556,9 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
           <div style={{
             background: 'rgba(16,14,36,0.97)', border: '1px solid rgba(200,184,154,0.24)',
             borderRadius: 26, padding: 28, width: '100%', maxWidth: 320,
+            maxHeight: '85dvh', overflowY: 'auto',
             animation: 'cardIn 0.28s ease-out',
+            WebkitOverflowScrolling: 'touch',
           }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: '#E8DDD0', marginBottom: 20 }}>Log a transaction</div>
 
@@ -3570,6 +3575,10 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
 
             <Label>Merchant / Note</Label>
             <input
+              type="text"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
               value={txForm.note}
               onChange={e => {
                 const note = e.target.value;
@@ -3627,6 +3636,7 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
                 const amount = parseFloat(txForm.amount);
                 if (isNaN(amount) || amount <= 0) { setTxError('Enter a valid amount greater than £0'); return; }
                 const entry = {
+                  id: Math.random().toString(36).slice(2, 10),
                   amount,
                   category: txForm.category,
                   date: txForm.date || new Date().toISOString().slice(0, 10),
@@ -3646,7 +3656,7 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
               color={PURPLE}
               text="Log transaction"
             />
-            <button onClick={() => { setShowLogTx(false); setTxError(''); setTxCatSuggested(false); }} style={{ width: '100%', padding: 12, background: 'none', border: 'none', color: 'rgba(232,221,208,0.3)', fontSize: 14, cursor: 'pointer' }}>
+            <button onClick={() => { setShowLogTx(false); setTxError(''); setTxCatSuggested(false); setTxForm({ amount: '', category: 'essentials', note: '', date: new Date().toISOString().slice(0, 10) }); }} style={{ width: '100%', padding: 12, background: 'none', border: 'none', color: 'rgba(232,221,208,0.3)', fontSize: 14, cursor: 'pointer' }}>
               Cancel
             </button>
           </div>
