@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Axontra Operational Efficiency Assessment — discover where your brokerage is losing time and money." />
+  <title>Operational Efficiency Assessment — Axontra Partners</title>
+
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Axontra Operational Assessment" />
+  <meta property="og:description" content="10 questions. Instant efficiency score. Personalised recommendations for your brokerage." />
+  <meta property="og:url" content="https://axontrapartners.co.uk/diagnostic" />
+  <meta property="og:site_name" content="Axontra Partners" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,600;0,700;1,400;1,600&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #05111f;
+      --bg2:      #071828;
+      --bg3:      #0a1e30;
+      --bg4:      #0e2438;
+      --navy:     #112840;
+      --silver:   #b8c4d0;
+      --silver-lt:#d4dde6;
+      --white:    #f0f4f8;
+      --accent:   #7eb8d4;
+      --muted:    #4a6070;
+      --border:   rgba(184,196,208,0.12);
+      --teal:     #2a9d8f;
+      --green:    #4caf80;
+      --amber:    #f4a261;
+      --red:      #e76f51;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--silver);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    /* HEADER */
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 48px; border-bottom: 1px solid var(--border);
+      background: rgba(5,17,31,0.96); backdrop-filter: blur(20px);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .logo { font-family: 'Cormorant Garamond', serif; font-size: 19px; font-weight: 600; color: var(--white); text-decoration: none; letter-spacing: 0.04em; }
+    .logo span { color: var(--accent); }
+    .header-badge { font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
+    .back-link { font-size: 12px; color: var(--muted); text-decoration: none; transition: color 0.15s; }
+    .back-link:hover { color: var(--accent); }
+
+    /* PAGE */
+    .page { max-width: 700px; margin: 0 auto; padding: 0 32px 80px; }
+
+    /* HERO */
+    .hero { padding: 56px 0 44px; }
+    .hero-badge { font-size: 10px; font-weight: 700; letter-spacing: 0.28em; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
+    .hero-title { font-family: 'Cormorant Garamond', serif; font-size: clamp(30px, 4vw, 46px); font-weight: 700; color: var(--white); line-height: 1.1; margin-bottom: 14px; }
+    .hero-sub { font-size: 15px; color: rgba(184,196,208,0.6); max-width: 520px; line-height: 1.75; }
+
+    /* PROGRESS BAR */
+    .progress-wrap { margin-bottom: 40px; }
+    .progress-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-bottom: 6px; letter-spacing: 0.04em; }
+    .progress-track { height: 3px; background: rgba(184,196,208,0.08); border-radius: 2px; overflow: hidden; }
+    .progress-fill { height: 100%; background: var(--accent); transition: width 0.4s ease; border-radius: 2px; }
+
+    /* QUESTION */
+    .question-block {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 12px; padding: 28px 28px 24px;
+      margin-bottom: 16px; transition: border-color 0.2s;
+    }
+    .q-number { font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); margin-bottom: 10px; }
+    .q-text { font-size: 17px; color: var(--white); font-weight: 600; line-height: 1.4; margin-bottom: 18px; letter-spacing: -0.01em; }
+
+    /* OPTION BUTTONS */
+    .options { display: flex; flex-direction: column; gap: 8px; }
+    .opt {
+      display: flex; align-items: center; gap: 12;
+      padding: 12px 16px; border-radius: 8px;
+      border: 1px solid rgba(184,196,208,0.1);
+      background: transparent; cursor: pointer;
+      transition: all 0.15s; text-align: left;
+      font-family: 'Inter', sans-serif; font-size: 14px;
+      color: rgba(184,196,208,0.65); width: 100%;
+    }
+    .opt:hover { background: rgba(126,184,212,0.06); border-color: rgba(126,184,212,0.25); color: var(--white); }
+    .opt.selected { background: rgba(126,184,212,0.12); border-color: rgba(126,184,212,0.45); color: var(--white); }
+    .opt-dot {
+      width: 16px; height: 16px; border-radius: 50%;
+      border: 1.5px solid rgba(184,196,208,0.25);
+      flex-shrink: 0; transition: all 0.15s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .opt.selected .opt-dot { background: var(--accent); border-color: var(--accent); }
+    .opt-dot::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #fff; opacity: 0; transition: opacity 0.15s; }
+    .opt.selected .opt-dot::after { opacity: 1; }
+
+    /* MULTI-SELECT */
+    .opt-check { width: 16px; height: 16px; border-radius: 3px; border: 1.5px solid rgba(184,196,208,0.25); flex-shrink: 0; transition: all 0.15s; background: transparent; display: flex; align-items: center; justify-content: center; }
+    .opt.selected .opt-check { background: var(--accent); border-color: var(--accent); }
+    .opt-check::after { content: '✓'; font-size: 10px; color: #fff; opacity: 0; transition: opacity 0.15s; }
+    .opt.selected .opt-check::after { opacity: 1; }
+
+    /* FREE TEXT */
+    .free-text {
+      width: 100%; background: var(--bg3);
+      border: 1px solid rgba(184,196,208,0.1);
+      border-radius: 8px; color: var(--white);
+      font-family: 'Inter', sans-serif; font-size: 14px;
+      padding: 12px 14px; resize: none; outline: none;
+      transition: border-color 0.15s; line-height: 1.6;
+    }
+    .free-text:focus { border-color: rgba(126,184,212,0.35); }
+    .free-text::placeholder { color: var(--muted); }
+
+    /* NAV BUTTONS */
+    .nav-row { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
+    .btn-next {
+      padding: 11px 28px; background: var(--accent);
+      border: none; border-radius: 6px;
+      color: var(--bg); font-size: 13px; font-weight: 700;
+      cursor: pointer; font-family: 'Inter', sans-serif;
+      letter-spacing: 0.04em; transition: opacity 0.15s;
+    }
+    .btn-next:hover { opacity: 0.88; }
+    .btn-next:disabled { opacity: 0.35; cursor: default; }
+    .btn-back {
+      padding: 11px 20px; background: transparent;
+      border: 1px solid var(--border); border-radius: 6px;
+      color: var(--muted); font-size: 13px; cursor: pointer;
+      font-family: 'Inter', sans-serif; transition: all 0.15s;
+    }
+    .btn-back:hover { border-color: rgba(184,196,208,0.3); color: var(--silver); }
+
+    /* RESULTS */
+    .results { padding-top: 16px; display: none; }
+    .results.show { display: block; }
+
+    /* GAUGE */
+    .gauge-wrap { text-align: center; margin-bottom: 36px; }
+    .gauge-svg { max-width: 260px; width: 100%; }
+    .gauge-score-label { font-size: 13px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; margin-top: 8px; }
+    .gauge-sub { font-size: 14px; color: rgba(184,196,208,0.5); margin-top: 4px; }
+
+    /* SCORE BAND */
+    .score-band {
+      display: flex; align-items: flex-start; gap: 16;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px 22px; margin-bottom: 28px;
+    }
+    .score-num { font-size: 48px; font-weight: 800; line-height: 1; letter-spacing: -0.04em; flex-shrink: 0; }
+    .score-band-text .score-title { font-size: 18px; font-weight: 700; color: var(--white); margin-bottom: 4px; letter-spacing: -0.01em; }
+    .score-band-text .score-desc { font-size: 13px; color: rgba(184,196,208,0.55); line-height: 1.6; }
+
+    /* INEFFICIENCY AREAS */
+    .areas-title { font-size: 11px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+    .area-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 18px 20px; margin-bottom: 10px;
+    }
+    .area-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .area-icon { font-size: 16px; flex-shrink: 0; }
+    .area-name { font-size: 14px; font-weight: 700; color: var(--white); }
+    .area-rec { font-size: 13px; color: rgba(184,196,208,0.6); line-height: 1.65; }
+    .area-tag { display: inline-block; margin-top: 8px; font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; padding: 3px 10px; border-radius: 20px; background: rgba(46,157,143,0.15); color: var(--teal); border: 1px solid rgba(46,157,143,0.25); }
+
+    /* OPPORTUNITY */
+    .opportunity {
+      background: linear-gradient(135deg, rgba(126,184,212,0.08), rgba(42,157,143,0.05));
+      border: 1px solid rgba(126,184,212,0.2);
+      border-radius: 12px; padding: 22px;
+      margin-bottom: 28px;
+    }
+    .opp-label { font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+    .opp-text { font-size: 22px; font-weight: 700; color: var(--white); letter-spacing: -0.02em; line-height: 1.25; margin-bottom: 6px; }
+    .opp-sub { font-size: 13px; color: rgba(184,196,208,0.55); line-height: 1.6; }
+
+    /* CTA */
+    .cta-block { text-align: center; padding: 36px 0 0; }
+    .cta-title { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 700; color: var(--white); margin-bottom: 10px; }
+    .cta-sub { font-size: 14px; color: rgba(184,196,208,0.5); margin-bottom: 24px; line-height: 1.6; }
+    .btn-cta {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 14px 32px; background: #25D366;
+      border: none; border-radius: 8px;
+      color: #fff; font-size: 15px; font-weight: 700;
+      cursor: pointer; text-decoration: none;
+      font-family: 'Inter', sans-serif; letter-spacing: 0.02em;
+      transition: opacity 0.15s;
+    }
+    .btn-cta:hover { opacity: 0.88; }
+    .cta-note { font-size: 11px; color: var(--muted); margin-top: 12px; }
+
+    /* RESTART */
+    .btn-restart { background: none; border: 1px solid var(--border); padding: 10px 20px; border-radius: 6px; color: var(--muted); font-size: 12px; cursor: pointer; margin-top: 20px; font-family: 'Inter', sans-serif; transition: all 0.15s; }
+    .btn-restart:hover { border-color: rgba(184,196,208,0.25); color: var(--silver); }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fadeIn 0.4s ease-out; }
+
+    @media (max-width: 600px) {
+      header { padding: 16px 20px; }
+      .page { padding: 0 20px 60px; }
+      .hero { padding: 36px 0 28px; }
+      .question-block { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div style="display:flex;align-items:center;gap:24px;">
+      <a href="index.html" class="logo">Axontra<span>.</span></a>
+      <div class="header-badge">Diagnostic Assessment</div>
+    </div>
+    <a href="index.html" class="back-link">← Back to site</a>
+  </header>
+
+  <div class="page">
+
+    <!-- HERO -->
+    <div class="hero fade-in">
+      <div class="hero-badge">Operational Intelligence</div>
+      <h1 class="hero-title">How efficient is<br />your brokerage?</h1>
+      <p class="hero-sub">10 questions. Less than 4 minutes. You'll receive an Operational Efficiency Score out of 100, your top 3 inefficiency areas, and a specific recommendation for each — before your call with Axontra.</p>
+    </div>
+
+    <!-- PROGRESS -->
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-label">
+        <span id="progressText">Question 1 of 10</span>
+        <span id="progressPct">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <!-- QUESTIONS CONTAINER -->
+    <div id="questionsContainer"></div>
+
+    <!-- RESULTS -->
+    <div class="results" id="results"></div>
+
+  </div>
+
+  <script>
+    // ── QUESTION DEFINITIONS ─────────────────────────────────────────
+    const QUESTIONS = [
+      {
+        id: 'team_size',
+        text: 'How many brokers or staff are in your team?',
+        type: 'single',
+        options: [
+          { value: '1-5',  label: '1–5 people' },
+          { value: '6-20', label: '6–20 people' },
+          { value: '21-50',label: '21–50 people' },
+          { value: '50+',  label: 'Over 50 people' },
+        ],
+        scoreMap: { '1-5': 0, '6-20': 0, '21-50': 0, '50+': 0 }, // informational
+      },
+      {
+        id: 'tracking',
+        text: 'How do you currently track submissions?',
+        type: 'single',
+        options: [
+          { value: 'crm',         label: 'CRM system (Salesforce, HubSpot, etc.)' },
+          { value: 'spreadsheet', label: 'Spreadsheets (Excel / Google Sheets)' },
+          { value: 'email',       label: 'Email folders and threads' },
+          { value: 'other',       label: 'Other / paper-based / no formal system' },
+        ],
+        scoreMap: { crm: 25, spreadsheet: 15, email: 7, other: 2 },
+        maxScore: 25,
+      },
+      {
+        id: 'response_rate',
+        text: 'What percentage of submissions receive an immediate underwriter response?',
+        type: 'single',
+        options: [
+          { value: '75plus', label: '75%+ respond quickly' },
+          { value: '50-75',  label: '50–75% respond quickly' },
+          { value: '25-50',  label: '25–50% respond quickly' },
+          { value: '0-25',   label: 'Under 25% respond quickly' },
+        ],
+        scoreMap: { '75plus': 20, '50-75': 14, '25-50': 7, '0-25': 2 },
+        maxScore: 20,
+      },
+      {
+        id: 'placement_speed',
+        text: 'How long does an average placement take from submission to bind?',
+        type: 'single',
+        options: [
+          { value: 'under1w', label: 'Under 1 week' },
+          { value: '1-2w',    label: '1–2 weeks' },
+          { value: '2-4w',    label: '2–4 weeks' },
+          { value: 'over1m',  label: 'Over a month' },
+        ],
+        scoreMap: { under1w: 25, '1-2w': 17, '2-4w': 9, over1m: 2 },
+        maxScore: 25,
+      },
+      {
+        id: 'external_data',
+        text: 'Do you use external data sources beyond your CRM?',
+        type: 'single',
+        options: [
+          { value: 'yes',      label: 'Yes — market data, risk databases, analytics tools' },
+          { value: 'planning', label: 'Planning to, but not yet' },
+          { value: 'no',       label: 'No, we rely on internal records only' },
+        ],
+        scoreMap: { yes: 0, planning: 0, no: 0 }, // informational
+      },
+      {
+        id: 'consistency',
+        text: 'How consistent is your submission format across brokers and clients?',
+        type: 'single',
+        options: [
+          { value: 'very',     label: 'Very consistent — we have a standard format' },
+          { value: 'somewhat', label: 'Somewhat — varies by broker or risk type' },
+          { value: 'not',      label: 'Not at all — each submission looks different' },
+        ],
+        scoreMap: { very: 15, somewhat: 8, not: 1 },
+        maxScore: 15,
+      },
+      {
+        id: 'challenge',
+        text: 'What is your biggest operational challenge?',
+        type: 'multi',
+        options: [
+          { value: 'speed',        label: 'Speed — placements take too long' },
+          { value: 'consistency',  label: 'Consistency — every submission looks different' },
+          { value: 'data_quality', label: 'Data quality — inaccurate or incomplete risk info' },
+          { value: 'uw_relations', label: 'Underwriter relationships — limited market access' },
+          { value: 'technology',   label: 'Technology — outdated or disconnected tools' },
+        ],
+        scoreMap: {}, // informational
+      },
+      {
+        id: 'ai_adoption',
+        text: 'Have you tried any AI or automation tools in your operation?',
+        type: 'single',
+        options: [
+          { value: 'yes_active', label: 'Yes — actively using AI or automation tools' },
+          { value: 'tried',      label: 'Tried it, but stopped using' },
+          { value: 'interested', label: "No, but we're interested in exploring" },
+          { value: 'not',        label: "No, and we don't see the need" },
+        ],
+        scoreMap: { yes_active: 15, tried: 8, interested: 4, not: 0 },
+        maxScore: 15,
+      },
+      {
+        id: 'gwp',
+        text: 'What is your estimated annual GWP (Gross Written Premium)?',
+        type: 'single',
+        options: [
+          { value: 'under5m', label: 'Under £5M' },
+          { value: '5-20m',   label: '£5M – £20M' },
+          { value: '20-50m',  label: '£20M – £50M' },
+          { value: 'over50m', label: 'Over £50M' },
+        ],
+        scoreMap: { under5m: 0, '5-20m': 0, '20-50m': 0, over50m: 0 }, // informational
+      },
+      {
+        id: 'improvement_impact',
+        text: 'What would a 20% improvement in placement speed mean for your business?',
+        type: 'text',
+        placeholder: 'e.g. Faster renewals, better client retention, ability to handle more volume…',
+        scoreMap: {},
+      },
+    ];
+
+    // ── STATE ────────────────────────────────────────────────────────
+    let currentQ   = 0;
+    const answers  = {};
+
+    // ── RENDER ───────────────────────────────────────────────────────
+    function renderQuestion(idx) {
+      const q = QUESTIONS[idx];
+      const container = document.getElementById('questionsContainer');
+      container.innerHTML = '';
+
+      const block = document.createElement('div');
+      block.className = 'question-block fade-in';
+
+      const numEl = document.createElement('div');
+      numEl.className = 'q-number';
+      numEl.textContent = `Question ${idx + 1} of ${QUESTIONS.length}`;
+
+      const textEl = document.createElement('div');
+      textEl.className = 'q-text';
+      textEl.textContent = q.text;
+
+      block.appendChild(numEl);
+      block.appendChild(textEl);
+
+      if (q.type === 'text') {
+        const ta = document.createElement('textarea');
+        ta.className = 'free-text';
+        ta.rows = 4;
+        ta.placeholder = q.placeholder || '';
+        ta.value = answers[q.id] || '';
+        ta.addEventListener('input', () => { answers[q.id] = ta.value; updateNav(); });
+        block.appendChild(ta);
+
+      } else if (q.type === 'multi') {
+        const sel = answers[q.id] || [];
+        const optsEl = document.createElement('div');
+        optsEl.className = 'options';
+        q.options.forEach(opt => {
+          const btn = document.createElement('button');
+          btn.className = 'opt' + (sel.includes(opt.value) ? ' selected' : '');
+          btn.innerHTML = `<span class="opt-check"></span><span>${opt.label}</span>`;
+          btn.addEventListener('click', () => {
+            const cur = answers[q.id] || [];
+            if (cur.includes(opt.value)) {
+              answers[q.id] = cur.filter(v => v !== opt.value);
+            } else {
+              answers[q.id] = [...cur, opt.value];
+            }
+            renderQuestion(idx);
+          });
+          optsEl.appendChild(btn);
+        });
+        block.appendChild(optsEl);
+
+      } else {
+        const optsEl = document.createElement('div');
+        optsEl.className = 'options';
+        q.options.forEach(opt => {
+          const btn = document.createElement('button');
+          btn.className = 'opt' + (answers[q.id] === opt.value ? ' selected' : '');
+          btn.innerHTML = `<span class="opt-dot"></span><span>${opt.label}</span>`;
+          btn.addEventListener('click', () => {
+            answers[q.id] = opt.value;
+            renderQuestion(idx);
+            // Auto-advance after short delay for single-select
+            setTimeout(() => {
+              if (currentQ < QUESTIONS.length - 1) advance();
+            }, 280);
+          });
+          optsEl.appendChild(btn);
+        });
+        block.appendChild(optsEl);
+      }
+
+      // Nav
+      const nav = document.createElement('div');
+      nav.className = 'nav-row';
+
+      if (idx > 0) {
+        const back = document.createElement('button');
+        back.className = 'btn-back';
+        back.textContent = '← Back';
+        back.addEventListener('click', () => { currentQ--; renderQuestion(currentQ); updateProgress(); });
+        nav.appendChild(back);
+      }
+
+      const next = document.createElement('button');
+      next.className = 'btn-next';
+      next.id = 'nextBtn';
+      next.textContent = idx === QUESTIONS.length - 1 ? 'Get my score →' : 'Next →';
+      next.disabled = !hasAnswer(q);
+      next.addEventListener('click', () => advance());
+      nav.appendChild(next);
+
+      block.appendChild(nav);
+      container.appendChild(block);
+    }
+
+    function hasAnswer(q) {
+      if (q.type === 'text') return true; // optional
+      if (q.type === 'multi') return true; // optional (can submit with none selected)
+      return !!answers[q.id];
+    }
+
+    function updateNav() {
+      const btn = document.getElementById('nextBtn');
+      if (btn) btn.disabled = !hasAnswer(QUESTIONS[currentQ]);
+    }
+
+    function updateProgress() {
+      const pct = Math.round((currentQ / QUESTIONS.length) * 100);
+      document.getElementById('progressFill').style.width = pct + '%';
+      document.getElementById('progressText').textContent = currentQ < QUESTIONS.length
+        ? `Question ${currentQ + 1} of ${QUESTIONS.length}`
+        : 'Complete';
+      document.getElementById('progressPct').textContent = pct + '%';
+    }
+
+    function advance() {
+      if (currentQ < QUESTIONS.length - 1) {
+        currentQ++;
+        renderQuestion(currentQ);
+        updateProgress();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        showResults();
+      }
+    }
+
+    // ── SCORING ──────────────────────────────────────────────────────
+    function calcScore() {
+      let total = 0;
+      const maxTotal = 80; // sum of all maxScores: 25+20+25+15+15
+
+      // Scored questions
+      const scored = ['tracking', 'response_rate', 'placement_speed', 'consistency', 'ai_adoption'];
+      scored.forEach(id => {
+        const q = QUESTIONS.find(q => q.id === id);
+        const ans = answers[id];
+        if (ans && q.scoreMap[ans] !== undefined) total += q.scoreMap[ans];
+      });
+
+      return Math.round((total / maxTotal) * 100);
+    }
+
+    function getInefficiencies() {
+      // Returns [{area, score, maxScore, recommendation, icon}] sorted by gap (worst first)
+      const areas = [
+        {
+          id: 'tracking',
+          area: 'Submission Tracking',
+          icon: '📂',
+          score: (() => { const q = QUESTIONS.find(q => q.id === 'tracking'); const a = answers['tracking']; return a ? (q.scoreMap[a] || 0) : 0; })(),
+          maxScore: 25,
+          recommendation: 'Centralising submissions in a structured system eliminates manual triage and duplicate entry. Axontra\'s intake module auto-routes by risk class from point of entry — reducing admin time by 35–50% for most teams.',
+        },
+        {
+          id: 'response_rate',
+          area: 'Underwriter Engagement',
+          icon: '📡',
+          score: (() => { const q = QUESTIONS.find(q => q.id === 'response_rate'); const a = answers['response_rate']; return a ? (q.scoreMap[a] || 0) : 0; })(),
+          maxScore: 20,
+          recommendation: 'Low first-response rates are almost always a submission quality issue, not a relationship one. Axontra builds structured submission packs matched to each underwriter\'s appetite — teams typically see a 40–60% improvement in first-response rates within 60 days.',
+        },
+        {
+          id: 'placement_speed',
+          area: 'Placement Cycle Time',
+          icon: '⏱',
+          score: (() => { const q = QUESTIONS.find(q => q.id === 'placement_speed'); const a = answers['placement_speed']; return a ? (q.scoreMap[a] || 0) : 0; })(),
+          maxScore: 25,
+          recommendation: 'Most placement delays occur between submission and the first underwriter touch point. Axontra\'s priority routing and automated follow-up sequences reduce average placement time by 30–40% — freeing your brokers to focus on relationships, not chasing.',
+        },
+        {
+          id: 'consistency',
+          area: 'Submission Format Consistency',
+          icon: '📋',
+          score: (() => { const q = QUESTIONS.find(q => q.id === 'consistency'); const a = answers['consistency']; return a ? (q.scoreMap[a] || 0) : 0; })(),
+          maxScore: 15,
+          recommendation: 'Inconsistent submission formats are the single largest cause of underwriter delays and declines. Axontra enforces standardised templates at entry, with dynamic fields per risk class — ensuring every submission looks professional and complete, every time.',
+        },
+        {
+          id: 'ai_adoption',
+          area: 'Technology & Automation',
+          icon: '⚙️',
+          score: (() => { const q = QUESTIONS.find(q => q.id === 'ai_adoption'); const a = answers['ai_adoption']; return a ? (q.scoreMap[a] || 0) : 0; })(),
+          maxScore: 15,
+          recommendation: 'Teams actively using AI for submission analysis and market matching report 20–30% efficiency gains within the first quarter. Axontra\'s intelligence layer is trained specifically on insurance placement data — not generic AI applied to a different domain.',
+        },
+      ];
+
+      // Sort by gap (maxScore - score), worst first
+      return areas.sort((a, b) => (b.maxScore - b.score) - (a.maxScore - a.score)).slice(0, 3);
+    }
+
+    function scoreLabel(score) {
+      if (score >= 80) return { label: 'High Efficiency', desc: 'Your brokerage is operating at a high level. The marginal gains from here are about optimising edge cases — and protecting what\'s working as you scale.', color: '#4caf80' };
+      if (score >= 60) return { label: 'Above Average', desc: 'Solid foundations with clear room to improve. A few targeted interventions — particularly in your weaker areas — would have an outsized impact on throughput and client experience.', color: '#7eb8d4' };
+      if (score >= 40) return { label: 'Room to Improve', desc: 'Your team is managing, but relying heavily on manual effort to compensate for process gaps. The opportunity here is significant — most of these inefficiencies are straightforward to address.', color: '#f4a261' };
+      return { label: 'Significant Gaps', desc: 'Operational friction is likely costing your team real money — in slow placements, lost business, and broker time absorbed by admin. This is fixable. The right system changes would compound quickly.', color: '#e76f51' };
+    }
+
+    function placementGain(placementAnswer) {
+      const gains = {
+        under1w: null,
+        '1-2w':  '20–30%',
+        '2-4w':  '30–45%',
+        over1m:  '40–55%',
+      };
+      return gains[placementAnswer];
+    }
+
+    // ── RESULTS ──────────────────────────────────────────────────────
+    function showResults() {
+      document.getElementById('questionsContainer').innerHTML = '';
+      document.getElementById('progressWrap').style.display = 'none';
+
+      const score = calcScore();
+      const band  = scoreLabel(score);
+      const areas = getInefficiencies();
+      const gain  = placementGain(answers['placement_speed']);
+
+      // Build WA message
+      const gwpLabel = { under5m: 'Under £5M', '5-20m': '£5–20M', '20-50m': '£20–50M', over50m: 'Over £50M' };
+      const msg = encodeURIComponent(
+        `Hi, I just completed the Axontra operational assessment.\n\n` +
+        `My score: ${score}/100 (${band.label})\n` +
+        `Team size: ${answers['team_size'] || 'not provided'}\n` +
+        `GWP: ${gwpLabel[answers['gwp']] || 'not provided'}\n` +
+        `Biggest challenge: ${(answers['challenge'] || []).join(', ') || 'not provided'}\n\n` +
+        `I'd like to book a diagnostic call.`
+      );
+
+      const r = document.getElementById('results');
+      r.innerHTML = `
+        <div class="fade-in">
+
+          <!-- Score gauge SVG -->
+          <div class="gauge-wrap">
+            ${buildGaugeSVG(score, band.color)}
+            <div class="gauge-score-label" style="color:${band.color}">${band.label}</div>
+            <div class="gauge-sub">Operational Efficiency Score</div>
+          </div>
+
+          <!-- Score band -->
+          <div class="score-band">
+            <div class="score-num" style="color:${band.color}">${score}</div>
+            <div class="score-band-text">
+              <div class="score-title">${band.label}</div>
+              <div class="score-desc">${band.desc}</div>
+            </div>
+          </div>
+
+          <!-- Opportunity highlight -->
+          ${gain ? `
+          <div class="opportunity">
+            <div class="opp-label">Estimated opportunity</div>
+            <div class="opp-text">A ${gain} reduction in placement time is achievable.</div>
+            <div class="opp-sub">Based on your current placement cycle, Axontra clients with similar profiles typically see this improvement within 90 days of implementation.</div>
+          </div>` : ''}
+
+          <!-- Top 3 inefficiencies -->
+          <div style="margin-bottom:28px">
+            <div class="areas-title">Your top 3 inefficiency areas</div>
+            ${areas.map((a, i) => `
+              <div class="area-card">
+                <div class="area-header">
+                  <span class="area-icon">${a.icon}</span>
+                  <span class="area-name">${i + 1}. ${a.area}</span>
+                  <span style="margin-left:auto;font-size:11px;font-weight:600;color:${a.score / a.maxScore >= 0.7 ? '#4caf80' : a.score / a.maxScore >= 0.4 ? '#f4a261' : '#e76f51'}">
+                    ${a.score}/${a.maxScore}
+                  </span>
+                </div>
+                <div class="area-rec">${a.recommendation}</div>
+                <span class="area-tag">Axontra recommendation</span>
+              </div>
+            `).join('')}
+          </div>
+
+          <!-- CTA -->
+          <div class="cta-block">
+            <div class="cta-title">Ready to close the gap?</div>
+            <div class="cta-sub">Book a 30-minute diagnostic call. We'll walk through your specific numbers, show you exactly where the biggest gains are, and whether Axontra is the right fit.</div>
+            <a href="https://wa.me/447599260032?text=${msg}" target="_blank" rel="noopener" class="btn-cta">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              Book diagnostic call
+            </a>
+            <div class="cta-note">WhatsApp +44 7599 260032 · Response within 2 hours</div>
+            <div><button class="btn-restart" onclick="restart()">Start over</button></div>
+          </div>
+
+        </div>
+      `;
+
+      r.classList.add('show');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // Save to localStorage
+      try {
+        const saved = JSON.parse(localStorage.getItem('axontra_assessments') || '[]');
+        saved.push({ date: new Date().toISOString(), score, band: band.label, answers });
+        localStorage.setItem('axontra_assessments', JSON.stringify(saved));
+      } catch(e) {}
+    }
+
+    function buildGaugeSVG(score, color) {
+      const radius = 80;
+      const cx = 130, cy = 100;
+      const startAngle = 210; // degrees
+      const endAngle   = -30; // degrees (total arc = 240°)
+      const totalArc   = 240;
+
+      function polarToXY(angle, r) {
+        const rad = (angle - 90) * Math.PI / 180;
+        return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+      }
+
+      const bgStart = polarToXY(startAngle, radius);
+      const bgEnd   = polarToXY(endAngle, radius);
+      const bgPath  = `M ${bgStart.x} ${bgStart.y} A ${radius} ${radius} 0 1 1 ${bgEnd.x} ${bgEnd.y}`;
+
+      const fillArc    = (score / 100) * totalArc;
+      const fillEndAng = startAngle - fillArc;
+      const fillEnd    = polarToXY(fillEndAng, radius);
+      const largeArc   = fillArc > 180 ? 1 : 0;
+      const fillPath   = `M ${bgStart.x} ${bgStart.y} A ${radius} ${radius} 0 ${largeArc} 1 ${fillEnd.x} ${fillEnd.y}`;
+
+      return `
+        <svg class="gauge-svg" viewBox="0 0 260 140" xmlns="http://www.w3.org/2000/svg">
+          <path d="${bgPath}" fill="none" stroke="rgba(184,196,208,0.1)" stroke-width="12" stroke-linecap="round"/>
+          <path d="${fillPath}" fill="none" stroke="${color}" stroke-width="12" stroke-linecap="round"
+            style="transition:stroke-dasharray 1s ease"/>
+          <text x="${cx}" y="${cy + 8}" text-anchor="middle" font-family="Inter,sans-serif"
+            font-size="36" font-weight="800" fill="${color}">${score}</text>
+          <text x="${cx}" y="${cy + 26}" text-anchor="middle" font-family="Inter,sans-serif"
+            font-size="11" fill="rgba(184,196,208,0.45)" letter-spacing="1">/100</text>
+        </svg>`;
+    }
+
+    function restart() {
+      currentQ = 0;
+      Object.keys(answers).forEach(k => delete answers[k]);
+      document.getElementById('results').classList.remove('show');
+      document.getElementById('results').innerHTML = '';
+      document.getElementById('progressWrap').style.display = '';
+      renderQuestion(0);
+      updateProgress();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ── INIT ─────────────────────────────────────────────────────────
+    renderQuestion(0);
+    updateProgress();
+  </script>
+
+</body>
+</html>
