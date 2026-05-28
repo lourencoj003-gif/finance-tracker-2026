@@ -1736,6 +1736,16 @@ Output the quote only — no quotes around it, no emoji.`;
       sendLocalNotif(reg, 'Noa', body, 'noa-morning');
       saveNotifLast({ ...last, morning: today });
     }
+    // Payday alert — fires on the actual payday day
+    if (prefs.payday && last.payday !== today && dtpay === 0 && income > 0) {
+      const accounts = getAccounts();
+      const accountsLine = accounts.length > 0
+        ? ` — ${accounts.slice(0,2).map(a => a.name).join(' & ')}`
+        : '';
+      const body = `Payday${accountsLine}${name ? `, ${name}` : ''}. £${income.toLocaleString('en-GB')} in. Move savings first — £${Math.round(income * 0.2).toLocaleString('en-GB')} target. Open Noa for your plan.`;
+      sendLocalNotif(reg, '💰 Payday', body, 'noa-payday');
+      saveNotifLast({ ...getNotifLast(), payday: today });
+    }
     // Streak at risk — if past 7pm and user is on a streak
     if (prefs.streak && last.streak !== today && h >= 19 && sk >= 3) {
       const body = `Your ${sk}-day streak is still going${name ? `, ${name}` : ''}. Don't let today break it.`;
@@ -1749,6 +1759,41 @@ Output the quote only — no quotes around it, no emoji.`;
       sendLocalNotif(reg, 'Noa', body, 'noa-weekly');
       saveNotifLast({ ...getNotifLast(), weekly: today });
     }
+  }
+
+  // Build a preview string for each notification type, using real data
+  function buildNotifPreview(key) {
+    const d     = getData() || {};
+    const { income = 0, expenses = 0, payday = 25, debt: dbt = 0 } = d;
+    const surplus = income - expenses;
+    const name  = getUserName() || '';
+    const sk    = parseInt(localStorage.getItem('vela_streak_count') || '0', 10);
+    const dtpay = daysUntilPayday(payday);
+    switch (key) {
+      case 'morning': {
+        if (dtpay <= 2) return `Payday in ${dtpay} day${dtpay===1?'':'s'}${name?`, ${name}`:''}. Make sure it goes somewhere useful before it disappears.`;
+        if (sk >= 7)   return `Day ${sk} of your streak${name?`, ${name}`:''}. £${surplus.toFixed(0)} monthly surplus on track.`;
+        if (surplus > 0) return `£${surplus.toFixed(0)} surplus this month${name?`, ${name}`:''}. ${dtpay} days to payday — hold the line.`;
+        return `Watch your spend today${name?`, ${name}`:''}. Budget is tight this month.`;
+      }
+      case 'payday':
+        return `Payday${name?`, ${name}`:''}. £${income.toLocaleString('en-GB')} in. Move savings first — £${Math.round(income*0.2).toLocaleString('en-GB')} target. Open Noa for your plan.`;
+      case 'streak':
+        return `Your ${Math.max(sk,3)}-day streak is still going${name?`, ${name}`:''}. Don't let today break it.`;
+      case 'weekly': {
+        const vs = calcVelaScore({ income, expenses, debt: dbt, streak: sk });
+        return `Week done${name?`, ${name}`:''}. VELA score ${vs}, surplus £${surplus.toFixed(0)}/month, streak at ${sk} days.`;
+      }
+      default: return '';
+    }
+  }
+
+  async function sendTestNotification(key) {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    const titles = { morning: 'Noa', payday: '💰 Payday', streak: 'Noa', weekly: 'Noa' };
+    const body   = buildNotifPreview(key);
+    const reg    = swRegRef.current || (await navigator.serviceWorker.ready.catch(() => null));
+    sendLocalNotif(reg, titles[key] || 'Noa', body, 'noa-test-' + key);
   }
 
   function sendLocalNotif(reg, title, body, tag) {
@@ -3371,19 +3416,32 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
                     { key: 'streak',  label: 'Streak at risk',sub: '7pm if you haven\'t opened today' },
                     { key: 'weekly',  label: 'Weekly summary',sub: 'Sunday 6pm — VELA score + surplus' },
                   ].map(({ key, label, sub }) => (
-                    <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                      <div>
-                        <div style={{ fontSize: 13, color: '#E8DDD0', marginBottom: 2 }}>{label}</div>
-                        <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.34)' }}>{sub}</div>
+                    <div key={key} style={{ marginBottom: 14 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <div>
+                          <div style={{ fontSize: 13, color: '#E8DDD0', marginBottom: 1 }}>{label}</div>
+                          <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.34)' }}>{sub}</div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <button
+                            onClick={() => sendTestNotification(key)}
+                            style={{ fontSize: 10, fontWeight: 600, color: 'rgba(200,184,154,0.55)', background: 'rgba(200,184,154,0.07)', border: '1px solid rgba(200,184,154,0.15)', borderRadius: 5, padding: '3px 8px', cursor: 'pointer', fontFamily: 'inherit', letterSpacing: '0.3px' }}
+                          >Test</button>
+                          <Toggle
+                            on={notifPrefs[key]}
+                            onToggle={() => {
+                              const next = { ...notifPrefs, [key]: !notifPrefs[key] };
+                              setNotifPrefsState(next);
+                              saveNotifPrefs(next);
+                            }}
+                          />
+                        </div>
                       </div>
-                      <Toggle
-                        on={notifPrefs[key]}
-                        onToggle={() => {
-                          const next = { ...notifPrefs, [key]: !notifPrefs[key] };
-                          setNotifPrefsState(next);
-                          saveNotifPrefs(next);
-                        }}
-                      />
+                      {notifPrefs[key] && (
+                        <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.28)', lineHeight: 1.5, padding: '6px 9px', background: 'rgba(232,221,208,0.03)', borderRadius: 6, borderLeft: '2px solid rgba(200,184,154,0.2)', fontStyle: 'italic' }}>
+                          "{buildNotifPreview(key)}"
+                        </div>
+                      )}
                     </div>
                   ))}
                   {(/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.matchMedia('(display-mode: standalone)').matches) && (
