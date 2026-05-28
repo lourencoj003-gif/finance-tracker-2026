@@ -537,6 +537,9 @@ export default function VelaCore({ onReset }) {
   const [shareQuoteLoading, setShareQuoteLoading] = useState(false);
   const [shareCopied, setShareCopied]         = useState(false);
 
+  // What's New — one-time v1.0 tooltip
+  const [showWhatsNew, setShowWhatsNew]       = useState(false);
+
   // Task 1 — Privacy Mode
   const [privacyMode, setPrivacyModeState]     = useState(() => getPrivacyMode());
   const privacyModeRef                         = useRef(getPrivacyMode());
@@ -615,6 +618,14 @@ export default function VelaCore({ onReset }) {
     document.addEventListener('visibilitychange', handler);
     return () => document.removeEventListener('visibilitychange', handler);
   }, []);
+
+  // What's New — show once after v1.0 launch, never again
+  useEffect(() => {
+    if (!localStorage.getItem('noa_v1_seen')) {
+      const t = setTimeout(() => setShowWhatsNew(true), 1200);
+      return () => clearTimeout(t);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Lazy-mount DetailView the first time the user swipes up — keeps it mounted after
   useEffect(() => { if (detailOpen && !detailMounted) setDetailMounted(true); }, [detailOpen]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -4023,6 +4034,66 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
             onClick={() => setVoiceError('')}
             style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', fontSize: 16, cursor: 'pointer', padding: 0, lineHeight: 1, flexShrink: 0 }}
           >×</button>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════
+          WHAT'S NEW — v1.0 ONE-TIME TOOLTIP
+      ══════════════════════════════════════════ */}
+      {showWhatsNew && (
+        <div
+          onClick={() => { localStorage.setItem('noa_v1_seen', '1'); setShowWhatsNew(false); }}
+          style={{
+            position: 'absolute', inset: 0, zIndex: 80,
+            background: 'rgba(10,10,12,0.72)',
+            display: 'flex', alignItems: 'flex-end',
+            justifyContent: 'center',
+            paddingBottom: 'max(env(safe-area-inset-bottom), 32px)',
+            animation: 'cardIn 0.35s ease-out',
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: 'rgba(17,17,20,0.97)',
+              border: '1px solid rgba(200,184,154,0.28)',
+              borderRadius: 20,
+              padding: '22px 22px 18px',
+              maxWidth: 340, width: 'calc(100% - 48px)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              boxShadow: '0 12px 48px rgba(0,0,0,0.6)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <div style={{
+                width: 32, height: 32, borderRadius: '50%',
+                background: 'linear-gradient(135deg, rgba(200,184,154,0.25), rgba(200,184,154,0.08))',
+                border: '1px solid rgba(200,184,154,0.3)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 14, flexShrink: 0,
+              }}>✦</div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#C8B89A', letterSpacing: '0.02em' }}>Noa v1.0 Beta</div>
+                <div style={{ fontSize: 10, color: 'rgba(232,221,208,0.35)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>What's new</div>
+              </div>
+            </div>
+            <div style={{ fontSize: 13, color: 'rgba(232,221,208,0.75)', lineHeight: 1.65, marginBottom: 18 }}>
+              Bank connect, Payday Plan, Health Score and more. Your finances — finally in one place.
+            </div>
+            <button
+              onClick={() => { localStorage.setItem('noa_v1_seen', '1'); setShowWhatsNew(false); }}
+              style={{
+                width: '100%', padding: '11px 0',
+                background: 'rgba(200,184,154,0.15)',
+                border: '1px solid rgba(200,184,154,0.3)',
+                borderRadius: 12, color: '#C8B89A',
+                fontSize: 14, fontWeight: 600,
+                cursor: 'pointer', letterSpacing: '0.02em',
+                fontFamily: 'inherit',
+              }}
+            >Got it</button>
+          </div>
         </div>
       )}
 
