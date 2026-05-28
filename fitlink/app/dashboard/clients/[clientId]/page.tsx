@@ -16,7 +16,7 @@ async function getClientData(trainerId: string, clientId: string): Promise<Profi
   const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
   const todayEnd   = new Date(); todayEnd.setHours(23, 59, 59, 999)
 
-  const [client, healthLogs, nutritionLogs, tasks, todaySummary] = await Promise.all([
+  const [client, healthLogs, nutritionLogs, tasks, workouts, todaySummary] = await Promise.all([
     prisma.user.findUnique({
       where:  { id: clientId },
       select: { id: true, name: true, email: true, xp: true, level: true, avatarUrl: true, bio: true },
@@ -37,6 +37,12 @@ async function getClientData(trainerId: string, clientId: string): Promise<Profi
       orderBy: { createdAt: 'desc' },
       take:    25,
       select:  { id: true, title: true, category: true, status: true, dueDate: true, xpReward: true, createdAt: true, completedAt: true },
+    }),
+    prisma.workout.findMany({
+      where:   { userId: clientId },
+      orderBy: { createdAt: 'desc' },
+      take:    20,
+      select:  { id: true, title: true, description: true, status: true, scheduledAt: true, xpReward: true, createdAt: true },
     }),
     prisma.dailySummary.findFirst({
       where:  { userId: clientId, date: { gte: todayStart, lte: todayEnd } },
@@ -60,6 +66,7 @@ async function getClientData(trainerId: string, clientId: string): Promise<Profi
     healthLogs:    healthLogs.map(serialise),
     nutritionLogs: nutritionLogs.map(serialise),
     tasks:         tasks.map(serialise),
+    workouts:      workouts.map(serialise),
     todayCheckin,
     trainerNotes:  link.notes ?? '',
   }

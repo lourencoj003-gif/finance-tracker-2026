@@ -27,6 +27,11 @@ type Task = {
   status: string; dueDate: string | null; xpReward: number; createdAt: string
 }
 
+type AssignedWorkout = {
+  id: string; title: string; description: string | null
+  status: string; scheduledAt: string | null; xpReward: number; createdAt: string
+}
+
 type ClientData = {
   id: string; name: string; email: string
   xp: number; level: number; avatarUrl: string | null; bio: string | null
@@ -35,12 +40,13 @@ type ClientData = {
 type CheckIn = { mood?: number; energy?: number; weight?: number; trainerNote?: string } | null
 
 export type ProfileProps = {
-  client:       ClientData
-  healthLogs:   HealthLog[]
-  nutritionLogs: NutritionLog[]
-  tasks:        Task[]
-  todayCheckin: CheckIn
-  trainerNotes: string
+  client:          ClientData
+  healthLogs:      HealthLog[]
+  nutritionLogs:   NutritionLog[]
+  tasks:           Task[]
+  workouts:        AssignedWorkout[]
+  todayCheckin:    CheckIn
+  trainerNotes:    string
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -52,6 +58,55 @@ const STATUS_COLOR: Record<string, string> = {
 }
 
 const CATEGORIES = ['workout', 'nutrition', 'habit', 'recovery']
+
+// ── Assign workout modal ──────────────────────────────────────────────────────
+function AssignWorkoutModal({ clientId, onClose, onDone }: { clientId: string; onClose: () => void; onDone: () => void }) {
+  const [title,       setTitle]       = useState('')
+  const [description, setDescription] = useState('')
+  const [scheduledAt, setScheduledAt] = useState('')
+  const [err,         setErr]         = useState('')
+  const [pending,     start]          = useTransition()
+
+  function submit() {
+    if (!title.trim()) { setErr('Title is required'); return }
+    setErr('')
+    start(async () => {
+      const res = await fetch('/api/workouts', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          targetUserId: clientId,
+          title:        title.trim(),
+          description:  description.trim() || null,
+          scheduledAt:  scheduledAt || null,
+          xpReward:     100,
+        }),
+      })
+      if (res.ok) { onDone(); onClose() }
+      else { const d = await res.json(); setErr(d.error ?? 'Failed') }
+    })
+  }
+
+  return (
+    <Overlay onClose={onClose}>
+      <Modal title="Assign Workout">
+        <Label>Workout Name *</Label>
+        <Input value={title} onChange={setTitle} placeholder="e.g. Upper Body Push, Leg Day, 5K Run" />
+        <Label>Description</Label>
+        <Input value={description} onChange={setDescription} placeholder="Optional overview" />
+        <Label>Scheduled Date</Label>
+        <input
+          type="date" value={scheduledAt} onChange={e => setScheduledAt(e.target.value)}
+          style={{ ...selectStyle, marginBottom: 4, colorScheme: 'dark' }}
+        />
+        {err && <p className="text-[#f87171] text-xs mb-2">{err}</p>}
+        <ModalBtn onClick={submit} disabled={pending} primary>
+          {pending ? 'Assigning…' : 'Assign Workout'}
+        </ModalBtn>
+      </Modal>
+    </Overlay>
+  )
+}
 
 // ── Assign task modal ─────────────────────────────────────────────────────────
 function AssignTaskModal({ clientId, onClose, onDone }: { clientId: string; onClose: () => void; onDone: () => void }) {
@@ -192,11 +247,20 @@ function TrainerNotes({ clientId, initial }: { clientId: string; initial: string
   )
 }
 
+const WORKOUT_STATUS_COLOR: Record<string, string> = {
+  PLANNED:     '#888',
+  IN_PROGRESS: '#facc15',
+  COMPLETED:   '#a3f510',
+  SKIPPED:     '#f87171',
+}
+
 // ── Main view ─────────────────────────────────────────────────────────────────
-export default function ClientProfileView({ client, healthLogs, nutritionLogs, tasks, todayCheckin, trainerNotes }: ProfileProps) {
-  const [showAssignTask, setShowAssignTask] = useState(false)
-  const [showAwardXp,   setShowAwardXp]    = useState(false)
-  const [taskList,      setTaskList]        = useState(tasks)
+export default function ClientProfileView({ client, healthLogs, nutritionLogs, tasks, workouts, todayCheckin, trainerNotes }: ProfileProps) {
+  const [showAssignTask,    setShowAssignTask]    = useState(false)
+  const [showAssignWorkout, setShowAssignWorkout] = useState(false)
+  const [showAwardXp,       setShowAwardXp]       = useState(false)
+  const [taskList,          setTaskList]           = useState(tasks)
+  const [workoutList,       setWorkoutList]        = useState<AssignedWorkout[]>(workouts)
 
   // Build chart data — one point per day, fill missing with null
   const chartData = healthLogs.map(l => ({
@@ -218,16 +282,21 @@ export default function ClientProfileView({ client, healthLogs, nutritionLogs, t
               <span>{client.xp.toLocaleString()} XP</span>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={() => setShowAssignWorkout(true)}
+              className="text-xs px-3 py-2 rounded-xl bg-[#38bdf8]/10 border border-[#38bdf8]/20 text-[#38bdf8] font-semibold hover:bg-[#38bdf8]/15 transition">
+              💪 Workout
+            </button>
             <button
               onClick={() => setShowAssignTask(true)}
               className="text-xs px-3 py-2 rounded-xl bg-primary/10 border border-primary/20 text-primary font-semibold hover:bg-primary/15 transition">
-              + Assign Task
+              + Task
             </button>
             <button
               onClick={() => setShowAwardXp(true)}
               className="text-xs px-3 py-2 rounded-xl bg-[#facc15]/10 border border-[#facc15]/20 text-[#facc15] font-semibold hover:bg-[#facc15]/15 transition">
-              ✦ Award XP
+              ✦ XP
             </button>
           </div>
         </div>
@@ -303,6 +372,35 @@ export default function ClientProfileView({ client, healthLogs, nutritionLogs, t
         )}
       </div>
 
+      {/* Assigned workouts */}
+      <div className="bg-[#1a1a1a] border border-white/8 rounded-2xl p-5 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-heading text-xl font-bold">Workouts</h2>
+          <button onClick={() => setShowAssignWorkout(true)} className="text-xs text-[#38bdf8] font-medium hover:underline">💪 Assign</button>
+        </div>
+        {workoutList.length === 0 ? (
+          <p className="text-[#555] text-sm text-center py-6">No workouts assigned yet</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {workoutList.slice(0, 8).map(w => (
+              <li key={w.id} className="flex items-start gap-3 py-2 border-b border-white/4 last:border-0">
+                <span className="w-2 h-2 mt-1.5 rounded-full flex-shrink-0" style={{ background: WORKOUT_STATUS_COLOR[w.status] ?? '#888' }} />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm text-white truncate">{w.title}</div>
+                  <div className="text-[11px] text-[#555] mt-0.5">
+                    {w.scheduledAt ? new Date(w.scheduledAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'No date'}
+                    {' · '}+{w.xpReward} XP
+                  </div>
+                </div>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/5 text-[#666] flex-shrink-0">
+                  {w.status.toLowerCase().replace('_', ' ')}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
       {/* Nutrition (last 7 logs) */}
       <div className="bg-[#1a1a1a] border border-white/8 rounded-2xl p-5 mb-6">
         <h2 className="font-heading text-xl font-bold mb-4">Recent Nutrition</h2>
@@ -332,8 +430,16 @@ export default function ClientProfileView({ client, healthLogs, nutritionLogs, t
           clientId={client.id}
           onClose={() => setShowAssignTask(false)}
           onDone={() => {
-            // Optimistically reload — in prod you'd re-fetch
             setTaskList(prev => [{ id: Date.now().toString(), title: '(new task)', category: null, status: 'PENDING', dueDate: null, xpReward: 50, createdAt: new Date().toISOString() }, ...prev])
+          }}
+        />
+      )}
+      {showAssignWorkout && (
+        <AssignWorkoutModal
+          clientId={client.id}
+          onClose={() => setShowAssignWorkout(false)}
+          onDone={() => {
+            setWorkoutList(prev => [{ id: Date.now().toString(), title: '(new workout)', description: null, status: 'PLANNED', scheduledAt: null, xpReward: 100, createdAt: new Date().toISOString() }, ...prev])
           }}
         />
       )}
