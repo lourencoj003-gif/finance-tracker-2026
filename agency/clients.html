@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Client Dashboard — Aldric Group (Internal)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+:root {
+  --bg:#080808; --bg2:#0f0f0f; --bg3:#161616; --bg4:#1b1b1b;
+  --gold:#C9A96E; --gold-lt:#e0c48a; --cream:#F0E8DA;
+  --muted:#6b6b6b; --border:rgba(201,169,110,0.15); --text:#e8e0d4;
+  --green:#5aad7a; --red:#e05555; --amber:#c9883e; --blue:#5a8fad;
+}
+html { scroll-behavior:smooth; }
+body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); line-height:1.6; -webkit-font-smoothing:antialiased; min-height:100vh; }
+::-webkit-scrollbar{width:5px;height:5px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:rgba(201,169,110,0.2);border-radius:3px}
+
+/* NAV */
+nav { position:fixed; top:0; left:0; right:0; z-index:100; display:flex; align-items:center; justify-content:space-between; padding:14px 40px; border-bottom:1px solid rgba(201,169,110,0.08); background:rgba(8,8,8,0.96); backdrop-filter:blur(20px); }
+.nav-logo { font-family:'Playfair Display',serif; font-size:18px; font-weight:700; color:var(--gold); text-decoration:none; letter-spacing:0.05em; }
+.nav-links { display:flex; gap:22px; align-items:center; }
+.nav-links a { font-size:12px; font-weight:500; color:var(--muted); text-decoration:none; letter-spacing:0.04em; transition:color 0.2s; }
+.nav-links a:hover { color:var(--cream); }
+.nav-links a.active { color:var(--gold); }
+.internal-badge { font-size:10px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--red); background:rgba(224,85,85,0.1); border:1px solid rgba(224,85,85,0.2); padding:3px 9px; border-radius:3px; }
+
+/* HEADER STATS BAR */
+.stats-bar { background:var(--bg2); border-bottom:1px solid var(--border); padding:14px 40px; margin-top:57px; display:flex; gap:32px; align-items:center; flex-wrap:wrap; }
+.stat-item { display:flex; flex-direction:column; gap:2px; }
+.stat-val { font-size:22px; font-weight:700; color:var(--cream); letter-spacing:-0.02em; }
+.stat-val.gold { color:var(--gold); }
+.stat-val.red  { color:var(--red); }
+.stat-val.amber { color:var(--amber); }
+.stat-lbl { font-size:11px; color:var(--muted); font-weight:500; letter-spacing:0.06em; text-transform:uppercase; }
+.stats-divider { width:1px; height:40px; background:var(--border); }
+.stats-actions { margin-left:auto; display:flex; gap:10px; }
+
+/* MAIN */
+.main { max-width:1280px; margin:0 auto; padding:32px 40px 80px; }
+@media(max-width:768px){ .main{padding:24px 16px 60px;} .stats-bar{padding:12px 16px;} nav{padding:12px 20px;} }
+
+/* TOOLBAR */
+.toolbar { display:flex; gap:12px; align-items:center; margin-bottom:24px; flex-wrap:wrap; }
+.search-wrap { position:relative; flex:1; min-width:200px; }
+.search-wrap input { width:100%; background:var(--bg2); border:1px solid var(--border); border-radius:7px; color:var(--text); font-family:'Inter',sans-serif; font-size:13px; padding:9px 13px 9px 36px; outline:none; transition:border-color 0.2s; }
+.search-wrap input:focus { border-color:rgba(201,169,110,0.35); }
+.search-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:14px; pointer-events:none; }
+.filter-tabs { display:flex; gap:4px; }
+.filter-tab { padding:7px 14px; border-radius:6px; border:1px solid transparent; background:transparent; color:var(--muted); font-size:12px; font-weight:500; cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.18s; }
+.filter-tab:hover { color:var(--text); }
+.filter-tab.active { background:rgba(201,169,110,0.1); border-color:rgba(201,169,110,0.3); color:var(--gold); }
+
+/* BUTTONS */
+.btn { border:none; border-radius:7px; cursor:pointer; font-family:'Inter',sans-serif; font-weight:600; font-size:12px; padding:8px 16px; transition:all 0.18s; letter-spacing:0.04em; }
+.btn-gold { background:linear-gradient(135deg,#C9A96E,#e0c48a); color:#0a0804; }
+.btn-gold:hover { opacity:0.85; }
+.btn-ghost { background:var(--bg3); border:1px solid var(--border); color:var(--text); }
+.btn-ghost:hover { border-color:rgba(201,169,110,0.3); }
+.btn-danger { background:rgba(224,85,85,0.1); border:1px solid rgba(224,85,85,0.25); color:var(--red); }
+.btn-danger:hover { background:rgba(224,85,85,0.18); }
+
+/* CLIENT GRID */
+.client-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(380px,1fr)); gap:20px; }
+@media(max-width:640px){ .client-grid{grid-template-columns:1fr;} }
+
+/* CLIENT CARD */
+.client-card { background:var(--bg2); border:1px solid var(--border); border-radius:12px; overflow:hidden; transition:border-color 0.2s; }
+.client-card:hover { border-color:rgba(201,169,110,0.3); }
+.client-card.status-at-risk { border-left:3px solid var(--red); }
+.client-card.status-churned { border-left:3px solid var(--muted); opacity:0.6; }
+
+.card-header { padding:16px 18px 12px; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; border-bottom:1px solid rgba(201,169,110,0.06); }
+.card-name { font-family:'Playfair Display',serif; font-size:18px; color:var(--cream); line-height:1.2; }
+.card-business { font-size:11px; color:var(--muted); margin-top:2px; }
+.status-badge { font-size:10px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; padding:3px 9px; border-radius:20px; white-space:nowrap; flex-shrink:0; }
+.status-active  { background:rgba(90,173,122,0.12); color:var(--green); border:1px solid rgba(90,173,122,0.25); }
+.status-at-risk { background:rgba(224,85,85,0.1); color:var(--red); border:1px solid rgba(224,85,85,0.25); }
+.status-churned { background:rgba(107,107,107,0.12); color:var(--muted); border:1px solid rgba(107,107,107,0.2); }
+
+.card-meta { padding:12px 18px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; border-bottom:1px solid rgba(201,169,110,0.06); }
+.meta-item { display:flex; flex-direction:column; gap:2px; }
+.meta-val { font-size:15px; font-weight:700; color:var(--cream); }
+.meta-val.gold { color:var(--gold); }
+.meta-lbl { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em; }
+
+/* DELIVERABLES */
+.card-deliverables { padding:12px 18px; border-bottom:1px solid rgba(201,169,110,0.06); }
+.del-title { font-size:10px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+.del-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+.del-item { display:flex; flex-direction:column; align-items:center; gap:4px; padding:7px 4px; border-radius:7px; background:var(--bg3); border:1px solid transparent; cursor:pointer; transition:all 0.18s; }
+.del-item:hover { border-color:rgba(201,169,110,0.2); }
+.del-item.done { background:rgba(90,173,122,0.08); border-color:rgba(90,173,122,0.2); }
+.del-check { font-size:14px; line-height:1; }
+.del-label { font-size:9px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; text-align:center; }
+.del-item.done .del-label { color:var(--green); }
+
+/* RENEWAL */
+.renewal-bar { padding:10px 18px; display:flex; align-items:center; gap:10px; border-bottom:1px solid rgba(201,169,110,0.06); }
+.renewal-label { font-size:11px; color:var(--muted); flex-shrink:0; }
+.renewal-progress { flex:1; height:4px; background:rgba(201,169,110,0.1); border-radius:2px; overflow:hidden; }
+.renewal-fill { height:100%; border-radius:2px; background:var(--gold); transition:width 0.3s; }
+.renewal-fill.urgent { background:var(--red); }
+.renewal-fill.warning { background:var(--amber); }
+.renewal-days { font-size:11px; font-weight:600; color:var(--text); white-space:nowrap; }
+.renewal-days.urgent { color:var(--red); }
+.renewal-days.warning { color:var(--amber); }
+
+/* ACTIONS ROW */
+.card-actions { padding:12px 18px 14px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.action-btn { padding:6px 12px; border-radius:6px; border:1px solid var(--border); background:var(--bg3); color:var(--muted); font-size:11px; font-weight:500; cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.18s; text-decoration:none; display:inline-flex; align-items:center; gap:5px; }
+.action-btn:hover { color:var(--text); border-color:rgba(201,169,110,0.25); }
+.action-btn.wa { color:#25d366; border-color:rgba(37,211,102,0.2); }
+.action-btn.wa:hover { background:rgba(37,211,102,0.06); }
+.card-edit { margin-left:auto; font-size:11px; color:var(--muted); background:none; border:none; cursor:pointer; font-family:'Inter',sans-serif; padding:4px 8px; border-radius:4px; transition:color 0.18s; }
+.card-edit:hover { color:var(--gold); }
+
+/* NEXT ACTION */
+.next-action { padding:8px 18px 12px; }
+.next-action-inner { display:flex; align-items:center; gap:8px; padding:8px 12px; background:rgba(201,169,110,0.04); border:1px solid rgba(201,169,110,0.1); border-radius:7px; }
+.next-action-dot { width:7px; height:7px; border-radius:50%; background:var(--gold); flex-shrink:0; }
+.next-action-text { font-size:12px; color:var(--text); flex:1; }
+.next-action-due { font-size:11px; color:var(--muted); white-space:nowrap; }
+
+/* NOTES */
+.card-notes { padding:0 18px 12px; }
+.notes-toggle { font-size:11px; color:var(--muted); background:none; border:none; cursor:pointer; font-family:'Inter',sans-serif; padding:0; transition:color 0.18s; }
+.notes-toggle:hover { color:var(--gold); }
+.notes-area { margin-top:8px; width:100%; background:var(--bg3); border:1px solid rgba(201,169,110,0.1); border-radius:7px; color:var(--text); font-family:'Inter',sans-serif; font-size:12px; padding:10px 12px; outline:none; resize:vertical; min-height:70px; transition:border-color 0.2s; }
+.notes-area:focus { border-color:rgba(201,169,110,0.3); }
+
+/* EMPTY STATE */
+.empty-state { text-align:center; padding:80px 40px; }
+.empty-icon { font-size:40px; margin-bottom:12px; opacity:0.4; }
+.empty-title { font-size:16px; color:var(--muted); font-weight:500; margin-bottom:8px; }
+.empty-sub { font-size:13px; color:rgba(107,107,107,0.7); }
+
+/* MODAL */
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:200; display:flex; align-items:center; justify-content:center; padding:20px; animation:fadeIn 0.2s ease-out; }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+.modal { background:var(--bg2); border:1px solid var(--border); border-radius:14px; width:100%; max-width:560px; max-height:90vh; overflow-y:auto; animation:slideUp 0.22s ease-out; }
+@keyframes slideUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+.modal-header { padding:22px 24px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.modal-title { font-family:'Playfair Display',serif; font-size:20px; color:var(--cream); }
+.modal-close { background:none; border:none; color:var(--muted); font-size:20px; cursor:pointer; padding:4px 8px; border-radius:4px; transition:color 0.18s; }
+.modal-close:hover { color:var(--text); }
+.modal-body { padding:20px 24px; }
+.modal-footer { padding:14px 24px 20px; display:flex; gap:10px; justify-content:flex-end; border-top:1px solid var(--border); }
+
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+@media(max-width:500px){ .form-row{grid-template-columns:1fr;} }
+.form-group { margin-bottom:14px; }
+.form-label { font-size:11px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); display:block; margin-bottom:6px; }
+.form-input { width:100%; background:var(--bg3); border:1px solid rgba(201,169,110,0.12); border-radius:7px; color:var(--text); font-family:'Inter',sans-serif; font-size:13px; padding:9px 13px; outline:none; transition:border-color 0.2s; }
+.form-input:focus { border-color:rgba(201,169,110,0.4); }
+select.form-input { cursor:pointer; }
+option { background:#1a1a1a; }
+.form-row-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:14px; }
+
+/* DELIVERABLES FORM */
+.del-form-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+.del-form-item { display:flex; flex-direction:column; align-items:center; gap:5px; padding:10px 6px; border-radius:8px; background:var(--bg3); border:1px solid rgba(201,169,110,0.08); cursor:pointer; transition:all 0.18s; }
+.del-form-item:hover { border-color:rgba(201,169,110,0.2); }
+.del-form-item.checked { background:rgba(90,173,122,0.08); border-color:rgba(90,173,122,0.25); }
+.del-form-item input { display:none; }
+.del-form-icon { font-size:16px; }
+.del-form-label { font-size:10px; font-weight:600; color:var(--muted); text-align:center; letter-spacing:0.05em; }
+.del-form-item.checked .del-form-label { color:var(--green); }
+
+/* WEEKLY SUMMARY */
+.weekly-header { font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--gold); margin-bottom:12px; }
+.weekly-list { list-style:none; display:flex; flex-direction:column; gap:5px; margin-bottom:20px; }
+.weekly-list li { font-size:13px; color:var(--text); padding:7px 10px; background:var(--bg3); border-radius:6px; display:flex; align-items:center; gap:8px; }
+.weekly-list li::before { content:'•'; color:var(--gold); font-size:16px; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="nav-logo">Aldric Group</a>
+  <div class="nav-links">
+    <a href="index.html">Home</a>
+    <a href="crm.html">CRM</a>
+    <a href="kpi.html">KPIs</a>
+    <a href="email-outreach.html">Email Generator</a>
+    <a href="clients.html" class="active">Clients</a>
+    <a href="case-studies.html">Case Studies</a>
+    <a href="results-simulator.html">Simulator</a>
+    <span class="internal-badge">Internal</span>
+  </div>
+</nav>
+
+<!-- STATS BAR -->
+<div class="stats-bar">
+  <div class="stat-item">
+    <div class="stat-val gold" id="s-mrr">£0</div>
+    <div class="stat-lbl">Monthly MRR</div>
+  </div>
+  <div class="stats-divider"></div>
+  <div class="stat-item">
+    <div class="stat-val" id="s-active">0</div>
+    <div class="stat-lbl">Active Clients</div>
+  </div>
+  <div class="stats-divider"></div>
+  <div class="stat-item">
+    <div class="stat-val red" id="s-atrisk">0</div>
+    <div class="stat-lbl">At Risk</div>
+  </div>
+  <div class="stats-divider"></div>
+  <div class="stat-item">
+    <div class="stat-val amber" id="s-due">0</div>
+    <div class="stat-lbl">Deliverables Due</div>
+  </div>
+  <div class="stats-divider"></div>
+  <div class="stat-item">
+    <div class="stat-val" id="s-renew">0</div>
+    <div class="stat-lbl">Renewals This Month</div>
+  </div>
+  <div class="stats-actions">
+    <button class="btn btn-ghost" onclick="exportCSV()">↓ Export CSV</button>
+    <button class="btn btn-gold" onclick="openModal()">+ Add Client</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <div class="search-wrap">
+      <span class="search-icon">⌕</span>
+      <input type="text" id="searchInput" placeholder="Search clients…" oninput="renderClients()" />
+    </div>
+    <div class="filter-tabs">
+      <button class="filter-tab active" data-filter="all" onclick="setFilter(this)">All</button>
+      <button class="filter-tab" data-filter="active" onclick="setFilter(this)">Active</button>
+      <button class="filter-tab" data-filter="at-risk" onclick="setFilter(this)">At Risk</button>
+      <button class="filter-tab" data-filter="churned" onclick="setFilter(this)">Churned</button>
+    </div>
+  </div>
+
+  <!-- GRID -->
+  <div class="client-grid" id="clientGrid"></div>
+</div>
+
+<!-- ADD / EDIT MODAL -->
+<div class="modal-overlay" id="modalOverlay" style="display:none" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">Add Client</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Contact Name *</label>
+          <input type="text" class="form-input" id="f-name" placeholder="e.g. Sarah Johnson" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Business Name *</label>
+          <input type="text" class="form-input" id="f-business" placeholder="e.g. Revive Aesthetics" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-input" id="f-email" placeholder="sarah@revive.co.uk" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone / WhatsApp</label>
+          <input type="text" class="form-input" id="f-phone" placeholder="+44 7700 000000" />
+        </div>
+      </div>
+      <div class="form-row-3">
+        <div class="form-group">
+          <label class="form-label">Package</label>
+          <select class="form-input" id="f-package">
+            <option value="Starter">Starter</option>
+            <option value="Growth">Growth</option>
+            <option value="Accelerator">Accelerator</option>
+            <option value="Custom">Custom</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">MRR (£)</label>
+          <input type="number" class="form-input" id="f-mrr" placeholder="2000" min="0" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-input" id="f-status">
+            <option value="active">Active</option>
+            <option value="at-risk">At Risk</option>
+            <option value="churned">Churned</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Start Date</label>
+          <input type="date" class="form-input" id="f-start" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Renewal Date</label>
+          <input type="date" class="form-input" id="f-renewal" />
+        </div>
+      </div>
+
+      <!-- DELIVERABLES -->
+      <div class="form-group">
+        <label class="form-label">Deliverables Completed This Week</label>
+        <div class="del-form-grid">
+          <label class="del-form-item" id="df-posts" onclick="toggleDel('posts')">
+            <span class="del-form-icon">📸</span>
+            <span class="del-form-label">Social Posts</span>
+          </label>
+          <label class="del-form-item" id="df-emails" onclick="toggleDel('emails')">
+            <span class="del-form-icon">📧</span>
+            <span class="del-form-label">Email Campaign</span>
+          </label>
+          <label class="del-form-item" id="df-linkedin" onclick="toggleDel('linkedin')">
+            <span class="del-form-icon">💼</span>
+            <span class="del-form-label">LinkedIn</span>
+          </label>
+          <label class="del-form-item" id="df-report" onclick="toggleDel('report')">
+            <span class="del-form-icon">📊</span>
+            <span class="del-form-label">Report Sent</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- NEXT ACTION -->
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Next Action</label>
+          <input type="text" class="form-input" id="f-action" placeholder="e.g. Send monthly report" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Due Date</label>
+          <input type="date" class="form-input" id="f-actiondue" />
+        </div>
+      </div>
+
+      <!-- NOTES -->
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-input notes-area" id="f-notes" placeholder="Anything important — goals, concerns, what they care about..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" id="deleteBtnModal" onclick="deleteClient()" style="display:none;margin-right:auto">Delete Client</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-gold" onclick="saveClient()">Save Client</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORE_KEY = 'aldric_clients_v2';
+let clients = [];
+let editId   = null;
+let activeFilter = 'all';
+let delState = {}; // form deliverables toggle state
+
+// ─── INIT ────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  load();
+  if (!clients.length) seedDemo();
+  renderAll();
+});
+
+function load() {
+  try { clients = JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); } catch { clients = []; }
+}
+function save() { localStorage.setItem(STORE_KEY, JSON.stringify(clients)); }
+
+function seedDemo() {
+  const today = new Date();
+  const addDays = (d, n) => { const r = new Date(d); r.setDate(r.getDate() + n); return r.toISOString().slice(0,10); };
+  clients = [
+    {
+      id:1001, name:'Charlotte Webb', business:'Revive Aesthetics London',
+      email:'charlotte@reviveaesthetics.co.uk', phone:'+44 7700 900123',
+      package:'Accelerator', mrr:3500, status:'active',
+      start: addDays(today,-120), renewal: addDays(today,60),
+      deliverables:{ posts:true, emails:true, linkedin:false, report:true },
+      nextAction:'Prep June content calendar', actionDue: addDays(today,3),
+      notes:'Very engaged. Wants more LinkedIn focus from July. Introduced us to her accountant.',
+    },
+    {
+      id:1002, name:'Marcus Cole', business:'Cole & Partners Estate Agents',
+      email:'marcus@colepartners.co.uk', phone:'+44 7700 900456',
+      package:'Growth', mrr:2200, status:'active',
+      start: addDays(today,-75), renewal: addDays(today,15),
+      deliverables:{ posts:true, emails:false, linkedin:true, report:false },
+      nextAction:'Send May performance report', actionDue: addDays(today,1),
+      notes:'Renewal coming up. Has mentioned budget squeeze — be ready to address ROI clearly.',
+    },
+    {
+      id:1003, name:'Priya Sharma', business:'Clarity Mortgage Solutions',
+      email:'priya@claritymortgages.co.uk', phone:'+44 7700 900789',
+      package:'Growth', mrr:2000, status:'at-risk',
+      start: addDays(today,-200), renewal: addDays(today,8),
+      deliverables:{ posts:false, emails:false, linkedin:false, report:false },
+      nextAction:'Call Priya — renewal conversation', actionDue: addDays(today,0),
+      notes:'Went quiet after last month. Paused social approval. Likely considering leaving.',
+    },
+  ];
+  save();
+}
+
+// ─── RENDER ──────────────────────────────────────────────
+function renderAll() {
+  updateStats();
+  renderClients();
+}
+
+function updateStats() {
+  const active  = clients.filter(c => c.status === 'active');
+  const atRisk  = clients.filter(c => c.status === 'at-risk');
+  const mrr     = clients.filter(c => c.status !== 'churned').reduce((s,c) => s + (c.mrr||0), 0);
+  const today   = new Date().toISOString().slice(0,10);
+  const thisMonth = today.slice(0,7);
+
+  // Count deliverables NOT completed this week across active clients
+  let delDue = 0;
+  clients.filter(c=>c.status==='active').forEach(c=>{
+    const d = c.deliverables || {};
+    if(!d.posts) delDue++;
+    if(!d.emails) delDue++;
+    if(!d.linkedin) delDue++;
+    if(!d.report) delDue++;
+  });
+
+  // Renewals this month
+  const renew = clients.filter(c => c.renewal && c.renewal.slice(0,7) === thisMonth).length;
+
+  document.getElementById('s-mrr').textContent    = '£' + mrr.toLocaleString('en-GB');
+  document.getElementById('s-active').textContent = active.length;
+  document.getElementById('s-atrisk').textContent = atRisk.length;
+  document.getElementById('s-due').textContent    = delDue;
+  document.getElementById('s-renew').textContent  = renew;
+}
+
+function renderClients() {
+  const q      = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+  const filter = activeFilter;
+  const grid   = document.getElementById('clientGrid');
+
+  let list = clients;
+  if (filter !== 'all') list = list.filter(c => c.status === filter);
+  if (q) list = list.filter(c =>
+    c.name.toLowerCase().includes(q) ||
+    c.business.toLowerCase().includes(q) ||
+    (c.package||'').toLowerCase().includes(q)
+  );
+
+  if (!list.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">📋</div><div class="empty-title">No clients found</div><div class="empty-sub">${clients.length ? 'Try a different filter' : 'Click "Add Client" to get started'}</div></div>`;
+    return;
+  }
+
+  // Sort: active first, then at-risk, then churned; within active sort by renewal date
+  list = [...list].sort((a,b) => {
+    const order = {active:0,'at-risk':1,churned:2};
+    if (order[a.status] !== order[b.status]) return order[a.status] - order[b.status];
+    if (a.renewal && b.renewal) return a.renewal.localeCompare(b.renewal);
+    return 0;
+  });
+
+  grid.innerHTML = list.map(c => buildCard(c)).join('');
+}
+
+function buildCard(c) {
+  const today    = new Date();
+  const del      = c.deliverables || {};
+  const statusLabel = { active:'Active', 'at-risk':'At Risk', churned:'Churned' }[c.status] || c.status;
+
+  // Renewal countdown
+  let renewalHTML = '';
+  if (c.renewal) {
+    const renewDate = new Date(c.renewal);
+    const daysLeft  = Math.round((renewDate - today) / 86400000);
+    const pct       = Math.max(0, Math.min(100, (180 - daysLeft) / 180 * 100));
+    const cls       = daysLeft <= 7 ? 'urgent' : daysLeft <= 21 ? 'warning' : '';
+    const label     = daysLeft < 0 ? `${Math.abs(daysLeft)}d overdue` : daysLeft === 0 ? 'Due today' : `${daysLeft}d until renewal`;
+    renewalHTML = `<div class="renewal-bar">
+      <span class="renewal-label">Renewal</span>
+      <div class="renewal-progress"><div class="renewal-fill ${cls}" style="width:${pct}%"></div></div>
+      <span class="renewal-days ${cls}">${label}</span>
+    </div>`;
+  }
+
+  // Next action
+  let nextHTML = '';
+  if (c.nextAction) {
+    const dueStr = c.actionDue ? (() => {
+      const d = new Date(c.actionDue);
+      const diff = Math.round((d - today) / 86400000);
+      if (diff < 0) return `<span style="color:var(--red)">Overdue ${Math.abs(diff)}d</span>`;
+      if (diff === 0) return `<span style="color:var(--amber)">Due today</span>`;
+      if (diff <= 3) return `<span style="color:var(--amber)">Due in ${diff}d</span>`;
+      return `Due ${d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})}`;
+    })() : '';
+    nextHTML = `<div class="next-action"><div class="next-action-inner"><div class="next-action-dot"></div><div class="next-action-text">${esc(c.nextAction)}</div>${dueStr ? `<div class="next-action-due">${dueStr}</div>` : ''}</div></div>`;
+  }
+
+  // Notes
+  const notesHTML = `<div class="card-notes">
+    <button class="notes-toggle" onclick="toggleNotes(${c.id})">${c.notes ? '📝 Notes' : '+ Add note'}</button>
+    <div id="notes-${c.id}" style="display:none">
+      <textarea class="notes-area" placeholder="Notes about this client…" onchange="saveNote(${c.id},this.value)">${esc(c.notes||'')}</textarea>
+    </div>
+  </div>`;
+
+  // Quick links
+  const waLink   = c.phone ? `<a class="action-btn wa" href="https://wa.me/${c.phone.replace(/\D/g,'')}" target="_blank" rel="noopener">📱 WhatsApp</a>` : '';
+  const mailLink = c.email ? `<a class="action-btn" href="mailto:${esc(c.email)}" >📧 Email</a>` : '';
+  const briefLink = `<a class="action-btn" href="onboarding.html" target="_blank">📋 Brief</a>`;
+
+  return `<div class="client-card status-${c.status}" id="card-${c.id}">
+    <div class="card-header">
+      <div>
+        <div class="card-name">${esc(c.name)}</div>
+        <div class="card-business">${esc(c.business)} · ${esc(c.package||'—')}</div>
+      </div>
+      <span class="status-badge status-${c.status}">${statusLabel}</span>
+    </div>
+
+    <div class="card-meta">
+      <div class="meta-item"><div class="meta-val gold">£${(c.mrr||0).toLocaleString('en-GB')}</div><div class="meta-lbl">MRR</div></div>
+      <div class="meta-item"><div class="meta-val">${c.start ? formatDate(c.start) : '—'}</div><div class="meta-lbl">Started</div></div>
+      <div class="meta-item"><div class="meta-val">${mrrToArr(c.mrr)}</div><div class="meta-lbl">ARR</div></div>
+    </div>
+
+    <div class="card-deliverables">
+      <div class="del-title">Deliverables This Week</div>
+      <div class="del-grid">
+        <div class="del-item ${del.posts?'done':''}" onclick="toggleDeliverable(${c.id},'posts')"><div class="del-check">${del.posts?'✅':'📸'}</div><div class="del-label">Posts</div></div>
+        <div class="del-item ${del.emails?'done':''}" onclick="toggleDeliverable(${c.id},'emails')"><div class="del-check">${del.emails?'✅':'📧'}</div><div class="del-label">Email</div></div>
+        <div class="del-item ${del.linkedin?'done':''}" onclick="toggleDeliverable(${c.id},'linkedin')"><div class="del-check">${del.linkedin?'✅':'💼'}</div><div class="del-label">LinkedIn</div></div>
+        <div class="del-item ${del.report?'done':''}" onclick="toggleDeliverable(${c.id},'report')"><div class="del-check">${del.report?'✅':'📊'}</div><div class="del-label">Report</div></div>
+      </div>
+    </div>
+
+    ${renewalHTML}
+    ${nextHTML}
+    ${notesHTML}
+
+    <div class="card-actions">
+      ${waLink}${mailLink}${briefLink}
+      <button class="card-edit" onclick="openModal(${c.id})">✏️ Edit</button>
+    </div>
+  </div>`;
+}
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function formatDate(d) { return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'}); }
+function mrrToArr(mrr) { const a = (mrr||0)*12; return a ? '£'+a.toLocaleString('en-GB') : '—'; }
+
+// ─── INTERACTIONS ─────────────────────────────────────────
+function setFilter(btn) {
+  document.querySelectorAll('.filter-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  activeFilter = btn.dataset.filter;
+  renderClients();
+}
+
+function toggleDeliverable(id, key) {
+  const c = clients.find(c=>c.id===id);
+  if (!c) return;
+  if (!c.deliverables) c.deliverables = {};
+  c.deliverables[key] = !c.deliverables[key];
+  save();
+  renderAll();
+}
+
+function toggleNotes(id) {
+  const el = document.getElementById(`notes-${id}`);
+  if (!el) return;
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function saveNote(id, val) {
+  const c = clients.find(c=>c.id===id);
+  if (!c) return;
+  c.notes = val;
+  save();
+  updateStats();
+}
+
+// ─── MODAL ────────────────────────────────────────────────
+function openModal(id) {
+  editId   = id || null;
+  delState = { posts:false, emails:false, linkedin:false, report:false };
+
+  if (id) {
+    const c = clients.find(c=>c.id===id);
+    if (!c) return;
+    document.getElementById('modalTitle').textContent = 'Edit Client';
+    document.getElementById('f-name').value     = c.name || '';
+    document.getElementById('f-business').value = c.business || '';
+    document.getElementById('f-email').value    = c.email || '';
+    document.getElementById('f-phone').value    = c.phone || '';
+    document.getElementById('f-package').value  = c.package || 'Growth';
+    document.getElementById('f-mrr').value      = c.mrr || '';
+    document.getElementById('f-status').value   = c.status || 'active';
+    document.getElementById('f-start').value    = c.start || '';
+    document.getElementById('f-renewal').value  = c.renewal || '';
+    document.getElementById('f-action').value   = c.nextAction || '';
+    document.getElementById('f-actiondue').value= c.actionDue || '';
+    document.getElementById('f-notes').value    = c.notes || '';
+    delState = { ...(c.deliverables||{}) };
+    document.getElementById('deleteBtnModal').style.display = 'block';
+  } else {
+    document.getElementById('modalTitle').textContent = 'Add Client';
+    ['f-name','f-business','f-email','f-phone','f-mrr','f-start','f-renewal','f-action','f-actiondue','f-notes'].forEach(id => {
+      const el = document.getElementById(id); if(el) el.value = '';
+    });
+    document.getElementById('f-package').value = 'Growth';
+    document.getElementById('f-status').value  = 'active';
+    document.getElementById('deleteBtnModal').style.display = 'none';
+  }
+
+  // Sync deliverable form
+  ['posts','emails','linkedin','report'].forEach(k => {
+    const el = document.getElementById(`df-${k}`);
+    if (el) el.classList.toggle('checked', !!delState[k]);
+  });
+
+  document.getElementById('modalOverlay').style.display = 'flex';
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').style.display = 'none';
+  editId = null;
+}
+
+function closeModalOutside(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+}
+
+function toggleDel(key) {
+  delState[key] = !delState[key];
+  const el = document.getElementById(`df-${key}`);
+  if (el) el.classList.toggle('checked', delState[key]);
+}
+
+function saveClient() {
+  const name     = document.getElementById('f-name').value.trim();
+  const business = document.getElementById('f-business').value.trim();
+  if (!name || !business) { alert('Name and business are required.'); return; }
+
+  const data = {
+    name, business,
+    email:      document.getElementById('f-email').value.trim(),
+    phone:      document.getElementById('f-phone').value.trim(),
+    package:    document.getElementById('f-package').value,
+    mrr:        parseFloat(document.getElementById('f-mrr').value) || 0,
+    status:     document.getElementById('f-status').value,
+    start:      document.getElementById('f-start').value,
+    renewal:    document.getElementById('f-renewal').value,
+    nextAction: document.getElementById('f-action').value.trim(),
+    actionDue:  document.getElementById('f-actiondue').value,
+    notes:      document.getElementById('f-notes').value.trim(),
+    deliverables: { ...delState },
+  };
+
+  if (editId) {
+    const idx = clients.findIndex(c=>c.id===editId);
+    if (idx > -1) clients[idx] = { ...clients[idx], ...data };
+  } else {
+    data.id = Date.now();
+    clients.push(data);
+  }
+
+  save();
+  closeModal();
+  renderAll();
+}
+
+function deleteClient() {
+  if (!editId) return;
+  const c = clients.find(c=>c.id===editId);
+  if (!c) return;
+  if (!confirm(`Remove ${c.name} from the dashboard? This cannot be undone.`)) return;
+  clients = clients.filter(c=>c.id!==editId);
+  save();
+  closeModal();
+  renderAll();
+}
+
+// ─── EXPORT ───────────────────────────────────────────────
+function exportCSV() {
+  const headers = ['Name','Business','Email','Phone','Package','MRR','ARR','Status','Start','Renewal','Next Action','Action Due','Posts','Emails','LinkedIn','Report','Notes'];
+  const rows = clients.map(c => [
+    c.name, c.business, c.email, c.phone, c.package, c.mrr||0, (c.mrr||0)*12,
+    c.status, c.start, c.renewal, c.nextAction, c.actionDue,
+    c.deliverables?.posts?'✓':'', c.deliverables?.emails?'✓':'',
+    c.deliverables?.linkedin?'✓':'', c.deliverables?.report?'✓':'',
+    (c.notes||'').replace(/"/g,'""'),
+  ].map(v => `"${v||''}"`).join(','));
+  const csv  = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type:'text/csv' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = `aldric-clients-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+// Keyboard shortcut
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+</script>
+</body>
+</html>

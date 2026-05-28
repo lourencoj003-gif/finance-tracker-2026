@@ -565,9 +565,11 @@
           <a href="acquisition/automation.html"><span class="dd-arrow">→</span>Automation Safety</a>
           <a href="acquisition/retention.html"><span class="dd-arrow">→</span>Client Retention</a>
           <a href="acquisition/agent-system.html"><span class="dd-arrow">→</span>AI Agent System</a>
+          <a href="email-outreach.html"><span class="dd-arrow">→</span>Email Generator ✨</a>
           <div class="dd-section-label">Operations</div>
           <a href="crm.html"><span class="dd-arrow">→</span>CRM</a>
           <a href="kpi.html"><span class="dd-arrow">→</span>KPI Tracker</a>
+          <a href="clients.html"><span class="dd-arrow">→</span>Client Dashboard</a>
           <a href="contract.html"><span class="dd-arrow">→</span>Contract Generator</a>
           <a href="onboarding.html"><span class="dd-arrow">→</span>Client Onboarding</a>
           <a href="sales-call.html"><span class="dd-arrow">→</span>Sales Call Framework</a>
@@ -597,20 +599,20 @@
       </div>
       <div class="hero-stats">
         <div class="stat-item">
-          <div class="stat-num">20+</div>
-          <div class="stat-label">Posts per month</div>
+          <div class="stat-num" id="counter-businesses">0</div>
+          <div class="stat-label">UK Businesses</div>
         </div>
         <div class="stat-item">
-          <div class="stat-num">3</div>
-          <div class="stat-label">Packages</div>
+          <div class="stat-num" id="counter-revenue">£0</div>
+          <div class="stat-label">Revenue Generated</div>
         </div>
         <div class="stat-item">
-          <div class="stat-num">£750</div>
-          <div class="stat-label">Starting from</div>
+          <div class="stat-num" id="counter-retention">0%</div>
+          <div class="stat-label">Client Retention</div>
         </div>
         <div class="stat-item">
-          <div class="stat-num">0</div>
-          <div class="stat-label">Hours from you</div>
+          <div class="stat-num">0 hrs</div>
+          <div class="stat-label">Your time per week</div>
         </div>
       </div>
     </div>
@@ -1008,6 +1010,54 @@
         if (err) err.classList.remove('show');
       });
     });
+  </script>
+
+  <!-- Social proof counters -->
+  <script>
+  (function() {
+    function animateCounter(el, target, prefix, suffix, duration) {
+      if (!el) return;
+      let start = 0;
+      const step = target / (duration / 16);
+      function tick() {
+        start = Math.min(start + step, target);
+        el.textContent = prefix + Math.round(start).toLocaleString('en-GB') + suffix;
+        if (start < target) requestAnimationFrame(tick);
+      }
+      tick();
+    }
+
+    function animateRevenue(el, target, duration) {
+      if (!el) return;
+      let start = 0;
+      const step = target / (duration / 16);
+      function tick() {
+        start = Math.min(start + step, target);
+        const v = start;
+        let display;
+        if (v >= 1000000) display = '£' + (v/1000000).toFixed(1) + 'M';
+        else display = '£' + Math.round(v).toLocaleString('en-GB');
+        el.textContent = display;
+        if (start < target) requestAnimationFrame(tick);
+      }
+      tick();
+    }
+
+    let triggered = false;
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting && !triggered) {
+          triggered = true;
+          animateCounter(document.getElementById('counter-businesses'), 47, '', '+', 1800);
+          animateRevenue(document.getElementById('counter-revenue'), 2300000, 2200);
+          animateCounter(document.getElementById('counter-retention'), 94, '', '%', 1600);
+        }
+      });
+    }, { threshold: 0.3 });
+
+    const heroStats = document.querySelector('.hero-stats');
+    if (heroStats) observer.observe(heroStats);
+  })();
   </script>
 </body>
 </html>
