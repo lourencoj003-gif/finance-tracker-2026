@@ -2,6 +2,75 @@
 
 ---
 
+## Session: 2026-05-28 — Part 2 (beta checks, history, diagnostic, gh-pages fix)
+
+### Commits
+- `bde3645` — feat: Noa v1.0 beta — skip bank connect, whats new tooltip, version label
+- `f7cb24a` — fix: gh-pages workflow — remove build step, copy static files only
+- `fe2c8f9` — feat: Aldric agent system UI polish — API key management, status, loading states
+- `b61f272` — feat: Noa transaction history page — filters, monthly chart, delete
+- `8af2c8f` — feat: Axontra diagnostic assessment tool — 10 questions, efficiency score, recommendations
+
+### TASK 1 — Noa v1.0 beta final checks ✅
+- **Skip for now**: Already wired in `Onboarding.js` line 1110 — `onSkip → advanceFromAccounts([])` — confirmed working
+- **What's New tooltip**: One-time overlay, appears after 1.2s on first dashboard load. Bottom-sheet style. Stores `noa_v1_seen` in localStorage on dismiss. Never shows again.
+- **Version label**: Already present in Settings modal at line 3290 (`Noa v1.0 — Beta`)
+- **Share feature**: `generateShareQuote()` calls `/api/chat` (Groq), falls back to personality-based quote. `doShare()` uses `navigator.share` on mobile, clipboard fallback on desktop.
+
+### TASK 2 — gh-pages workflow fix ✅
+- Fixed `cp noa-landing` → `cp -r noa-landing` (missing recursive flag was silently skipping the directory)
+- Added `.nojekyll` to prevent GitHub Pages Jekyll processing
+- Added comments: "NO build step, NO npm install — static files only"
+- Clarified: React app (Noa) deploys via Vercel; this workflow deploys only agency/, axontra/, noa-landing/
+
+### TASK 3 — Aldric agent system UI polish ✅
+- **Eye icon**: `👁` → `🙈` toggle button to show/hide API key input
+- **Status dot**: Green dot (key set ✓) / Red dot (not set / error) — live updates
+- **Test connection**: Sends minimal 10-token API call to `api.anthropic.com/v1/messages`, shows "Connected ✓" or specific error type
+- Refactored `saveKey`/`loadKey` → `setApiStatusUI(isSet, label)` helper
+- CSS: `.api-input-wrap`, `.api-eye`, `.api-dot`, `.btn-test` added
+
+### TASK 4 — Noa transaction history page ✅
+- **History button** `≡` added left of Ask Noa bar in bottom nav (full-screen overlay, zIndex 20)
+- **Header**: back arrow (←), "Transaction History" title
+- **Total this month**: prominently at top with % of budget indicator (coloured: green/amber/red)
+- **Monthly CSS bar chart**: Essentials / Lifestyle / Savings with spend vs budget and % fill bars
+- **Category filter**: All / Essentials / Lifestyle / Savings (pill buttons, colour-coded)
+- **Date range**: This week / This month / Last month / All time
+- **Transaction list**: sorted newest first; date, amount, category, note/merchant
+- **Delete**: tap → shows "Delete?" + Cancel; second tap removes via `saveExpenseLog`
+- **Empty state**: "No transactions logged yet. Tap + to log your first one."
+- Uses existing `getExpenseLog` / `saveExpenseLog` — no new storage
+
+### TASK 5 — Axontra diagnostic assessment tool ✅
+`public/axontra/diagnostic.html` — standalone, no frameworks, dark navy design:
+
+**10 questions:**
+1. Team size (informational)
+2. Submission tracking (CRM/spreadsheet/email/other) — 25pts
+3. Underwriter response rate (75%+ / 50-75% / 25-50% / 0-25%) — 20pts
+4. Placement speed (<1wk / 1-2wks / 2-4wks / >1mo) — 25pts
+5. External data sources (informational)
+6. Submission format consistency (very/somewhat/not) — 15pts
+7. Biggest challenge (multi-select, informational)
+8. AI/automation adoption (actively/tried/interested/not) — 15pts
+9. Annual GWP (informational)
+10. Free text: impact of 20% speed improvement
+
+**Scoring**: 5 weighted dimensions → total 80pts → normalised to /100
+
+**Results page:**
+- SVG arc gauge with score and colour-coded band
+- 4 bands: High Efficiency (80+), Above Average (60+), Room to Improve (40+), Significant Gaps
+- Top 3 inefficiency areas sorted by gap, each with specific Axontra recommendation
+- Opportunity highlight: placement time reduction estimate
+- WhatsApp CTA pre-filled with assessment summary → +447599260032
+- Results saved to `axontra_assessments` in localStorage
+
+**index.html**: "Take the Assessment →" added as primary hero CTA
+
+---
+
 ## Session: 2026-05-28 (Noa intelligence pass, Aldric brand prompts, DEPLOYMENT.md)
 
 ### Commits
