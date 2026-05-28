@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LinkedIn Outreach — Aldric Group</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080808;
+    --surface: #111111;
+    --surface2: #1a1a1a;
+    --border: #2a2a2a;
+    --gold: #C9A96E;
+    --gold-dim: #a07840;
+    --text: #f0ede8;
+    --muted: #888;
+    --danger: #e05555;
+    --green: #5cb85c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; }
+
+  /* HEADER */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header-brand { display: flex; align-items: center; gap: 12px; }
+  .header-logo { width: 28px; height: 28px; }
+  .header-name { font-family: 'Playfair Display', serif; font-size: 18px; color: var(--gold); }
+  .header-nav { display: flex; gap: 24px; }
+  .header-nav a { color: var(--muted); text-decoration: none; font-size: 13px; font-weight: 500; transition: color .2s; }
+  .header-nav a:hover, .header-nav a.active { color: var(--gold); }
+
+  /* LAYOUT */
+  .layout { display: grid; grid-template-columns: 1fr 320px; gap: 32px; max-width: 1200px; margin: 0 auto; padding: 32px; }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } .sidebar { order: -1; } }
+
+  /* PAGE TITLE */
+  .page-title { margin-bottom: 28px; }
+  .page-title h1 { font-family: 'Playfair Display', serif; font-size: 28px; color: var(--gold); margin-bottom: 6px; }
+  .page-title p { color: var(--muted); font-size: 14px; }
+
+  /* CARD */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+  .card-title { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--gold); margin-bottom: 16px; }
+
+  /* FORM ELEMENTS */
+  label { display: block; font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .06em; }
+  select, input[type="text"] {
+    width: 100%; padding: 10px 14px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-family: 'Inter', sans-serif;
+    font-size: 14px; outline: none; transition: border-color .2s;
+    appearance: none; -webkit-appearance: none;
+  }
+  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; cursor: pointer; }
+  select:focus, input[type="text"]:focus { border-color: var(--gold); }
+  .form-row { margin-bottom: 16px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+
+  /* MESSAGE TYPE PILLS */
+  .stage-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .stage-pill {
+    padding: 7px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    cursor: pointer; border: 1px solid var(--border); background: var(--surface2);
+    color: var(--muted); transition: all .2s; white-space: nowrap;
+  }
+  .stage-pill:hover { border-color: var(--gold-dim); color: var(--text); }
+  .stage-pill.active { background: var(--gold); border-color: var(--gold); color: #080808; }
+
+  /* GENERATE BUTTON */
+  .btn-generate {
+    width: 100%; padding: 14px; background: var(--gold); color: #080808;
+    border: none; border-radius: 10px; font-family: 'Inter', sans-serif;
+    font-size: 15px; font-weight: 700; cursor: pointer; transition: all .2s;
+    letter-spacing: .02em;
+  }
+  .btn-generate:hover { background: #d4b27a; transform: translateY(-1px); }
+  .btn-generate:active { transform: translateY(0); }
+  .btn-generate:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; transform: none; }
+
+  /* OUTPUT */
+  .output-wrap { position: relative; margin-top: 20px; display: none; }
+  .output-wrap.visible { display: block; }
+  .output-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--gold); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .char-count { font-size: 12px; color: var(--muted); font-weight: 400; }
+  .char-count.over { color: var(--danger); }
+  .output-textarea {
+    width: 100%; min-height: 180px; padding: 16px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; color: var(--text); font-family: 'Inter', sans-serif;
+    font-size: 14px; line-height: 1.6; outline: none; resize: vertical;
+    transition: border-color .2s;
+  }
+  .output-textarea:focus { border-color: var(--gold); }
+  .copy-btn {
+    margin-top: 10px; padding: 9px 20px;
+    background: transparent; border: 1px solid var(--gold);
+    color: var(--gold); border-radius: 8px; font-family: 'Inter', sans-serif;
+    font-size: 13px; font-weight: 600; cursor: pointer; transition: all .2s;
+  }
+  .copy-btn:hover { background: var(--gold); color: #080808; }
+  .copy-btn.copied { background: var(--green); border-color: var(--green); color: #fff; }
+
+  /* REGENERATE */
+  .regen-btn {
+    margin-top: 10px; margin-left: 8px; padding: 9px 20px;
+    background: transparent; border: 1px solid var(--border);
+    color: var(--muted); border-radius: 8px; font-family: 'Inter', sans-serif;
+    font-size: 13px; font-weight: 600; cursor: pointer; transition: all .2s;
+  }
+  .regen-btn:hover { border-color: var(--gold-dim); color: var(--text); }
+
+  /* LOADING */
+  .loading-ring {
+    display: inline-block; width: 18px; height: 18px;
+    border: 2px solid #08080880; border-top-color: #080808;
+    border-radius: 50%; animation: spin .7s linear infinite; margin-right: 8px;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* TRACKER */
+  .tracker-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .tracker-stat { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; text-align: center; }
+  .tracker-num { font-size: 28px; font-weight: 700; color: var(--gold); font-variant-numeric: tabular-nums; }
+  .tracker-label { font-size: 11px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: .06em; }
+  .tracker-bar-wrap { margin-top: 16px; }
+  .tracker-bar-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .tracker-bar-bg { background: var(--surface2); border-radius: 4px; height: 6px; overflow: hidden; }
+  .tracker-bar-fill { height: 100%; background: var(--gold); border-radius: 4px; transition: width .4s; }
+  .tracker-bar-fill.warning { background: #e0a545; }
+  .tracker-bar-fill.danger { background: var(--danger); }
+  .reset-btn { margin-top: 12px; width: 100%; padding: 8px; background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 7px; font-family: 'Inter', sans-serif; font-size: 12px; cursor: pointer; transition: all .2s; }
+  .reset-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+  /* TIPS */
+  .tips-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .tips-list li { display: flex; gap: 10px; font-size: 13px; line-height: 1.5; }
+  .tip-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .tip-text { color: #ccc; }
+  .tip-text strong { color: var(--text); }
+
+  /* HISTORY */
+  .history-list { display: flex; flex-direction: column; gap: 8px; }
+  .history-item {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 14px; cursor: pointer; transition: border-color .2s;
+  }
+  .history-item:hover { border-color: var(--gold-dim); }
+  .history-item-meta { display: flex; justify-content: space-between; margin-bottom: 5px; }
+  .history-item-stage { font-size: 11px; font-weight: 600; color: var(--gold); text-transform: uppercase; letter-spacing: .06em; }
+  .history-item-time { font-size: 11px; color: var(--muted); }
+  .history-item-niche { font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+  .history-item-preview { font-size: 12px; color: #aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .history-empty { text-align: center; color: var(--muted); font-size: 13px; padding: 20px 0; }
+  .history-clear { margin-top: 10px; width: 100%; padding: 8px; background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 7px; font-family: 'Inter', sans-serif; font-size: 12px; cursor: pointer; transition: all .2s; }
+  .history-clear:hover { border-color: var(--danger); color: var(--danger); }
+
+  /* API KEY STATUS */
+  .api-status-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px; border-radius: 8px; font-size: 13px;
+    background: var(--surface2); border: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  .api-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); flex-shrink: 0; }
+  .api-dot.set { background: var(--green); }
+  .api-status-text { flex: 1; color: var(--muted); }
+  .api-key-link { color: var(--gold); text-decoration: none; font-size: 12px; font-weight: 600; }
+  .api-key-link:hover { text-decoration: underline; }
+
+  /* ERROR */
+  .error-msg { color: var(--danger); font-size: 13px; margin-top: 10px; display: none; }
+  .error-msg.visible { display: block; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-brand">
+    <svg class="header-logo" viewBox="0 0 28 28" fill="none">
+      <rect width="28" height="28" rx="6" fill="#C9A96E" fill-opacity=".15"/>
+      <path d="M8 20L14 8l6 12M10.5 16h7" stroke="#C9A96E" stroke-width="1.8" stroke-linecap="round"/>
+    </svg>
+    <span class="header-name">Aldric Group</span>
+  </div>
+  <nav class="header-nav">
+    <a href="index.html">Dashboard</a>
+    <a href="crm.html">CRM</a>
+    <a href="acquisition/agent-system.html">AI Agent</a>
+    <a href="delivery.html">Delivery</a>
+    <a href="linkedin.html" class="active">LinkedIn</a>
+    <a href="results-simulator.html">Simulator</a>
+  </nav>
+</div>
+
+<div class="layout">
+  <!-- MAIN COLUMN -->
+  <main>
+    <div class="page-title">
+      <h1>LinkedIn Outreach</h1>
+      <p>Generate personalised, high-converting messages for every stage of your outreach sequence.</p>
+    </div>
+
+    <!-- API KEY STATUS -->
+    <div class="api-status-bar" id="apiStatusBar">
+      <div class="api-dot" id="apiDot"></div>
+      <span class="api-status-text" id="apiStatusText">Claude API key not set — go to <a href="acquisition/agent-system.html" class="api-key-link">AI Agent System</a> to configure.</span>
+    </div>
+
+    <!-- STEP 1: NICHE + PROSPECT -->
+    <div class="card">
+      <div class="card-title">Step 1 — Target Prospect</div>
+      <div class="form-grid">
+        <div class="form-row">
+          <label for="nicheSelect">Business Niche</label>
+          <select id="nicheSelect">
+            <option value="med_spa">Med Spa / Aesthetics Clinic</option>
+            <option value="estate_agent">Estate Agent</option>
+            <option value="mortgage_broker">Mortgage Broker</option>
+            <option value="financial_advisor">Financial Advisor / IFA</option>
+            <option value="restaurant">Restaurant / Hospitality</option>
+            <option value="law_firm">Law Firm / Solicitor</option>
+            <option value="gym">Gym / Personal Trainer</option>
+            <option value="cosmetic_dentist">Cosmetic Dentist</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label for="prospectName">Prospect First Name</label>
+          <input type="text" id="prospectName" placeholder="e.g. Sarah" autocomplete="off">
+        </div>
+      </div>
+      <div class="form-row">
+        <label for="businessName">Business Name <span style="color:#555;font-weight:400;text-transform:none;">(optional)</span></label>
+        <input type="text" id="businessName" placeholder="e.g. Pure Aesthetics London" autocomplete="off">
+      </div>
+    </div>
+
+    <!-- STEP 2: MESSAGE TYPE -->
+    <div class="card">
+      <div class="card-title">Step 2 — Message Stage</div>
+      <div class="stage-pills">
+        <div class="stage-pill active" data-stage="connection">Connection Request</div>
+        <div class="stage-pill" data-stage="first">First Message</div>
+        <div class="stage-pill" data-stage="followup1">Follow Up 1</div>
+        <div class="stage-pill" data-stage="followup2">Follow Up 2</div>
+        <div class="stage-pill" data-stage="final">Final Touch</div>
+      </div>
+      <div id="stageDescription" style="font-size:13px;color:var(--muted);padding:10px 14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);line-height:1.6;"></div>
+    </div>
+
+    <!-- STEP 3: GENERATE -->
+    <div class="card">
+      <div class="card-title">Step 3 — Generate</div>
+      <button class="btn-generate" id="generateBtn" onclick="generateMessage()">
+        ✦ Generate Message
+      </button>
+      <div class="error-msg" id="errorMsg"></div>
+
+      <div class="output-wrap" id="outputWrap">
+        <div class="output-label">
+          <span>Generated Message</span>
+          <span class="char-count" id="charCount">0 chars</span>
+        </div>
+        <textarea class="output-textarea" id="outputText" spellcheck="false" oninput="updateCharCount()" onchange="updateCharCount()"></textarea>
+        <div style="display:flex;flex-wrap:wrap;gap:0;">
+          <button class="copy-btn" id="copyBtn" onclick="copyMessage()">Copy Message</button>
+          <button class="regen-btn" onclick="generateMessage()">↺ Regenerate</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <!-- DAILY TRACKER -->
+    <div class="card">
+      <div class="card-title">Daily Tracker</div>
+      <div class="tracker-grid">
+        <div class="tracker-stat">
+          <div class="tracker-num" id="todayCount">0</div>
+          <div class="tracker-label">Today</div>
+        </div>
+        <div class="tracker-stat">
+          <div class="tracker-num" id="weekCount">0</div>
+          <div class="tracker-label">This Week</div>
+        </div>
+      </div>
+      <div class="tracker-bar-wrap">
+        <div class="tracker-bar-label">
+          <span>Daily limit (safe: 20)</span>
+          <span id="dailyPct">0%</span>
+        </div>
+        <div class="tracker-bar-bg">
+          <div class="tracker-bar-fill" id="dailyBar" style="width:0%"></div>
+        </div>
+      </div>
+      <div class="tracker-bar-wrap" style="margin-top:12px;">
+        <div class="tracker-bar-label">
+          <span>Weekly limit (safe: 100)</span>
+          <span id="weeklyPct">0%</span>
+        </div>
+        <div class="tracker-bar-bg">
+          <div class="tracker-bar-fill" id="weeklyBar" style="width:0%"></div>
+        </div>
+      </div>
+      <button class="reset-btn" onclick="resetTracker()">Reset Today's Count</button>
+    </div>
+
+    <!-- TIPS -->
+    <div class="card">
+      <div class="card-title">LinkedIn Rules</div>
+      <ul class="tips-list">
+        <li>
+          <span class="tip-icon">⚡</span>
+          <span class="tip-text"><strong>Connection requests:</strong> max 20–25/day to avoid restriction.</span>
+        </li>
+        <li>
+          <span class="tip-icon">⏰</span>
+          <span class="tip-text"><strong>Best times:</strong> Tue–Thu, 8–10am or 5–7pm. Avoid weekends.</span>
+        </li>
+        <li>
+          <span class="tip-icon">📏</span>
+          <span class="tip-text"><strong>Connection note:</strong> keep under <strong>300 chars</strong>. Shorter = higher accept rate.</span>
+        </li>
+        <li>
+          <span class="tip-icon">⏳</span>
+          <span class="tip-text"><strong>Wait 24–48h</strong> after connection before sending first message.</span>
+        </li>
+        <li>
+          <span class="tip-icon">🚫</span>
+          <span class="tip-text"><strong>Never:</strong> pitch in the connection request. Instant unread.</span>
+        </li>
+        <li>
+          <span class="tip-icon">🔁</span>
+          <span class="tip-text"><strong>Follow-up gaps:</strong> 3 days, 5 days, 7 days.</span>
+        </li>
+        <li>
+          <span class="tip-icon">✨</span>
+          <span class="tip-text"><strong>Personalise</strong> every message — at minimum use their first name.</span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="card">
+      <div class="card-title">Recent Messages</div>
+      <div class="history-list" id="historyList"></div>
+      <button class="history-clear" id="clearHistoryBtn" onclick="clearHistory()" style="display:none;">Clear History</button>
+    </div>
+  </aside>
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let currentStage = 'connection';
+
+const STAGE_META = {
+  connection: {
+    label: 'Connection Request',
+    desc: 'A brief, human note attached to your connection request. No pitch — just a reason to connect. Keep under 300 characters.',
+    limit: 300,
+  },
+  first: {
+    label: 'First Message',
+    desc: 'Sent 24–48h after they accept. Acknowledge the connection, show you\'ve done research, open a conversation. No hard pitch.',
+    limit: 600,
+  },
+  followup1: {
+    label: 'Follow Up 1',
+    desc: 'Sent 3 days after first message if no reply. Short, light, adds value — share an insight or relevant result.',
+    limit: 400,
+  },
+  followup2: {
+    label: 'Follow Up 2',
+    desc: 'Sent 5 days after Follow Up 1. Slightly more direct — introduce the idea of a quick call without pressure.',
+    limit: 400,
+  },
+  final: {
+    label: 'Final Touch',
+    desc: 'Last message in the sequence (7 days after FU2). Keep the door open. No desperation — professional close.',
+    limit: 300,
+  },
+};
+
+const NICHE_LABELS = {
+  med_spa: 'Med Spa / Aesthetics Clinic',
+  estate_agent: 'Estate Agent',
+  mortgage_broker: 'Mortgage Broker',
+  financial_advisor: 'Financial Advisor / IFA',
+  restaurant: 'Restaurant / Hospitality',
+  law_firm: 'Law Firm / Solicitor',
+  gym: 'Gym / Personal Trainer',
+  cosmetic_dentist: 'Cosmetic Dentist',
+};
+
+// ─── SYSTEM PROMPTS ──────────────────────────────────────────────────────────
+const SYSTEM_PROMPTS = {
+  connection: `You are a LinkedIn outreach specialist for Aldric Group, a premium social media and AI marketing agency.
+Write a LinkedIn connection request note. Rules:
+- Under 300 characters (hard limit — count carefully)
+- No pitch whatsoever — just a genuine reason to connect
+- Sound human, curious, warm
+- Reference their industry/niche naturally
+- Do NOT start with "Hi" or "Hello" — start with their name or a direct observation
+- No emojis unless they feel completely natural
+- No "I'd love to connect" cliché
+Output ONLY the message text, nothing else.`,
+
+  first: `You are a LinkedIn outreach specialist for Aldric Group, a premium social media and AI marketing agency.
+Write the first message to send after a connection is accepted (24–48h after). Rules:
+- 3–5 sentences maximum
+- Acknowledge the connection naturally, not mechanically
+- Show you've noticed something specific about their business/industry
+- Open a conversation — ask one thoughtful question or offer one specific insight
+- No pitch, no mention of services yet
+- Keep it conversational, not corporate
+- Use their first name once near the start
+- No bullet points, no subject line — just flowing natural message
+Output ONLY the message text, nothing else.`,
+
+  followup1: `You are a LinkedIn outreach specialist for Aldric Group, a premium social media and AI marketing agency.
+Write Follow Up 1 — sent 3 days after first message with no reply. Rules:
+- Maximum 4 sentences
+- Acknowledge you're following up without being apologetic
+- Add genuine value: share a relevant stat, trend, or quick insight specific to their niche
+- End with a soft, open question — not a CTA to book a call
+- No desperation — calm and confident
+- Keep it under 400 characters ideally
+Output ONLY the message text, nothing else.`,
+
+  followup2: `You are a LinkedIn outreach specialist for Aldric Group, a premium social media and AI marketing agency.
+Write Follow Up 2 — sent 5 days after Follow Up 1 with no reply. Rules:
+- 3–4 sentences
+- Reference what Aldric Group does briefly (social media + AI content for [their niche])
+- Suggest a 15-minute call — frame it as valuable for them, not a sales call
+- Confident, direct, no fluff
+- Make it easy to say yes
+Output ONLY the message text, nothing else.`,
+
+  final: `You are a LinkedIn outreach specialist for Aldric Group, a premium social media and AI marketing agency.
+Write the Final Touch — last message in the sequence (7 days after FU2). Rules:
+- 2–3 sentences maximum
+- Professional close — no hard sell, no desperation
+- Leave the door permanently open
+- Could reference the timing being wrong right now, or that they can reach out when ready
+- End on a positive, forward-looking note
+- Under 300 characters ideally
+Output ONLY the message text, nothing else.`,
+};
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  updateStageUI();
+  checkApiKey();
+  renderHistory();
+  updateTracker();
+});
+
+// ─── STAGE PILLS ─────────────────────────────────────────────────────────────
+document.querySelectorAll('.stage-pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    document.querySelectorAll('.stage-pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    currentStage = pill.dataset.stage;
+    updateStageUI();
+    hideOutput();
+  });
+});
+
+function updateStageUI() {
+  document.getElementById('stageDescription').textContent = STAGE_META[currentStage].desc;
+}
+
+function hideOutput() {
+  document.getElementById('outputWrap').classList.remove('visible');
+  document.getElementById('errorMsg').classList.remove('visible');
+}
+
+// ─── API KEY CHECK ────────────────────────────────────────────────────────────
+function checkApiKey() {
+  const key = localStorage.getItem('aldric_claude_key') || '';
+  const dot = document.getElementById('apiDot');
+  const text = document.getElementById('apiStatusText');
+  if (key.startsWith('sk-ant-')) {
+    dot.classList.add('set');
+    text.textContent = 'Claude API connected — ready to generate.';
+    text.style.color = 'var(--text)';
+  } else {
+    dot.classList.remove('set');
+    text.innerHTML = 'Claude API key not set — go to <a href="acquisition/agent-system.html" class="api-key-link">AI Agent System</a> to configure.';
+  }
+}
+
+// ─── GENERATE ────────────────────────────────────────────────────────────────
+async function generateMessage() {
+  const key = localStorage.getItem('aldric_claude_key') || '';
+  if (!key.startsWith('sk-ant-')) {
+    showError('Claude API key not set. Visit AI Agent System to configure.');
+    return;
+  }
+
+  const niche = document.getElementById('nicheSelect').value;
+  const nicheLabel = NICHE_LABELS[niche];
+  const prospectName = document.getElementById('prospectName').value.trim() || 'the prospect';
+  const businessName = document.getElementById('businessName').value.trim();
+
+  const userPrompt = buildUserPrompt(nicheLabel, prospectName, businessName);
+
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading-ring"></span>Generating…';
+  document.getElementById('errorMsg').classList.remove('visible');
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 300,
+        system: SYSTEM_PROMPTS[currentStage],
+        messages: [{ role: 'user', content: userPrompt }],
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || `API error ${res.status}`);
+    }
+
+    const data = await res.json();
+    const text = data.content?.[0]?.text?.trim() || '';
+
+    if (!text) throw new Error('Empty response from API.');
+
+    document.getElementById('outputText').value = text;
+    document.getElementById('outputWrap').classList.add('visible');
+    updateCharCount();
+    saveToHistory(niche, nicheLabel, currentStage, text);
+    bumpTracker();
+    renderHistory();
+    updateTracker();
+  } catch (err) {
+    showError(err.message || 'Generation failed. Check your API key and try again.');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '✦ Generate Message';
+  }
+}
+
+function buildUserPrompt(nicheLabel, name, business) {
+  let prompt = `Generate a LinkedIn ${STAGE_META[currentStage].label} message.\n\nProspect niche: ${nicheLabel}\nProspect first name: ${name}`;
+  if (business) prompt += `\nBusiness name: ${business}`;
+  prompt += `\n\nCharacter limit: ${STAGE_META[currentStage].limit} characters maximum.\n\nWrite the message now:`;
+  return prompt;
+}
+
+// ─── CHAR COUNT ───────────────────────────────────────────────────────────────
+function updateCharCount() {
+  const val = document.getElementById('outputText').value;
+  const limit = STAGE_META[currentStage].limit;
+  const el = document.getElementById('charCount');
+  el.textContent = `${val.length} / ${limit} chars`;
+  el.classList.toggle('over', val.length > limit);
+}
+
+// ─── COPY ─────────────────────────────────────────────────────────────────────
+function copyMessage() {
+  const text = document.getElementById('outputText').value;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = '✓ Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy Message'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// ─── ERROR ────────────────────────────────────────────────────────────────────
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.classList.add('visible');
+}
+
+// ─── TRACKER ─────────────────────────────────────────────────────────────────
+function getTrackerData() {
+  const today = new Date().toISOString().slice(0, 10);
+  const week = getWeekKey();
+  const raw = JSON.parse(localStorage.getItem('aldric_li_tracker') || '{}');
+  return {
+    today: raw.date === today ? (raw.today || 0) : 0,
+    week: raw.week === week ? (raw.weekCount || 0) : 0,
+    date: today,
+    week,
+  };
+}
+
+function getWeekKey() {
+  const d = new Date();
+  const day = d.getDay() || 7;
+  d.setDate(d.getDate() - day + 1);
+  return d.toISOString().slice(0, 10);
+}
+
+function bumpTracker() {
+  const t = getTrackerData();
+  const week = getWeekKey();
+  localStorage.setItem('aldric_li_tracker', JSON.stringify({
+    date: t.date,
+    today: t.today + 1,
+    week,
+    weekCount: t.week + 1,
+  }));
+}
+
+function resetTracker() {
+  const today = new Date().toISOString().slice(0, 10);
+  const week = getWeekKey();
+  const raw = JSON.parse(localStorage.getItem('aldric_li_tracker') || '{}');
+  localStorage.setItem('aldric_li_tracker', JSON.stringify({
+    ...raw,
+    date: today,
+    today: 0,
+    week,
+  }));
+  updateTracker();
+}
+
+function updateTracker() {
+  const t = getTrackerData();
+  document.getElementById('todayCount').textContent = t.today;
+  document.getElementById('weekCount').textContent = t.week;
+
+  const dailyPct = Math.min(100, Math.round((t.today / 20) * 100));
+  const weeklyPct = Math.min(100, Math.round((t.week / 100) * 100));
+
+  document.getElementById('dailyPct').textContent = dailyPct + '%';
+  document.getElementById('weeklyPct').textContent = weeklyPct + '%';
+
+  const db = document.getElementById('dailyBar');
+  db.style.width = dailyPct + '%';
+  db.className = 'tracker-bar-fill' + (dailyPct >= 100 ? ' danger' : dailyPct >= 75 ? ' warning' : '');
+
+  const wb = document.getElementById('weeklyBar');
+  wb.style.width = weeklyPct + '%';
+  wb.className = 'tracker-bar-fill' + (weeklyPct >= 100 ? ' danger' : weeklyPct >= 75 ? ' warning' : '');
+}
+
+// ─── HISTORY ─────────────────────────────────────────────────────────────────
+function getHistory() {
+  return JSON.parse(localStorage.getItem('aldric_li_history') || '[]');
+}
+
+function saveToHistory(niche, nicheLabel, stage, text) {
+  const history = getHistory();
+  history.unshift({ niche, nicheLabel, stage, stageName: STAGE_META[stage].label, text, ts: Date.now() });
+  if (history.length > 10) history.pop();
+  localStorage.setItem('aldric_li_history', JSON.stringify(history));
+}
+
+function renderHistory() {
+  const history = getHistory();
+  const list = document.getElementById('historyList');
+  const clearBtn = document.getElementById('clearHistoryBtn');
+
+  if (!history.length) {
+    list.innerHTML = '<div class="history-empty">No messages yet — generate your first one above.</div>';
+    clearBtn.style.display = 'none';
+    return;
+  }
+
+  clearBtn.style.display = 'block';
+  list.innerHTML = history.map((item, i) => `
+    <div class="history-item" onclick="loadHistoryItem(${i})">
+      <div class="history-item-meta">
+        <span class="history-item-stage">${item.stageName}</span>
+        <span class="history-item-time">${timeAgo(item.ts)}</span>
+      </div>
+      <div class="history-item-niche">${item.nicheLabel}</div>
+      <div class="history-item-preview">${escHtml(item.text)}</div>
+    </div>
+  `).join('');
+}
+
+function loadHistoryItem(index) {
+  const history = getHistory();
+  const item = history[index];
+  if (!item) return;
+
+  // Switch stage pill
+  document.querySelectorAll('.stage-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.stage === item.stage);
+  });
+  currentStage = item.stage;
+  updateStageUI();
+
+  // Switch niche
+  document.getElementById('nicheSelect').value = item.niche;
+
+  // Load text
+  document.getElementById('outputText').value = item.text;
+  document.getElementById('outputWrap').classList.add('visible');
+  updateCharCount();
+}
+
+function clearHistory() {
+  if (!confirm('Clear all message history?')) return;
+  localStorage.removeItem('aldric_li_history');
+  renderHistory();
+}
+
+function timeAgo(ts) {
+  const diff = Date.now() - ts;
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return m + 'm ago';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + 'h ago';
+  return Math.floor(h / 24) + 'd ago';
+}
+
+function escHtml(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+</script>
+</body>
+</html>
