@@ -1310,6 +1310,8 @@ export default function VelaCore({ onReset }) {
 
     // ── Temporal context ──────────────────────────────────────────────
     const now         = new Date();
+    const currentHour = now.getHours();
+    const timeOfDay   = currentHour < 12 ? 'morning' : currentHour < 17 ? 'afternoon' : 'evening';
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const dayOfMonth  = now.getDate();
     const daysLeft    = Math.max(1, daysInMonth - dayOfMonth + 1);
@@ -1368,6 +1370,23 @@ export default function VelaCore({ onReset }) {
       return acc;
     }, {});
     const txTotal = recentTx.reduce((s, e) => s + e.amount, 0);
+
+    // ── Weekly spending velocity ────────────────────────────────────
+    const weeklyBudget = income > 0 ? Math.round((income - Math.round(income * 0.20)) / 4) : 0;
+    const velocityPct  = weeklyBudget > 0 ? Math.round((txTotal / weeklyBudget) * 100) : 0;
+    const velocityLine = weeklyBudget > 0
+      ? `Spending velocity this week: £${txTotal.toFixed(0)} spent of £${weeklyBudget} weekly budget (${velocityPct}% used)`
+      : '';
+
+    // ── Last transaction within 24 hours ───────────────────────────
+    const oneDayAgo  = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const last24hTx  = allLog
+      .filter(e => e.date && e.date >= oneDayAgo)
+      .sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0] || null;
+    const lastTxLine = last24hTx
+      ? `Last transaction logged: £${last24hTx.amount.toFixed(2)} on ${last24hTx.category || 'essentials'} (${last24hTx.note || last24hTx.merchant || 'no note'})`
+      : '';
+
     const txLines = Object.entries(txByCategory).map(([cat, amt]) => {
       const budgetMap = { Essentials: alloc.essentials, Lifestyle: alloc.lifestyle, Savings: alloc.savings };
       const bud = budgetMap[cat] || 0;
@@ -1420,7 +1439,7 @@ VOICE AND TONE:
 
 BEHAVIOUR RULES:
 • Always use the user's actual financial data in every response. Never give generic advice.
-• Keep responses to 2–3 sentences maximum unless the user asks for detail. Brevity is respect.
+• CRITICAL: Maximum 2–3 sentences per response. Never exceed this. If you need to say more, ask a follow-up question instead.
 • Never say: "Great question", "Certainly", "Of course", "Absolutely", "I'd be happy to", "As an AI", or any corporate filler phrase. Ever.
 • Never lecture or repeat yourself. Make a point once, sharply, and move on.
 • Notice progress. If the user is improving — acknowledge it quietly. "Two weeks under budget. I noticed."
@@ -1460,6 +1479,9 @@ ${insights.length > 0 ? `• Prior insights:  ${insights.slice(0, 3).join(' | ')
 • Savings rate:      ${savingsRate}% of income — ${srLabel}
 • Current Baby Step: ${babyStepLabel}${paydayAlert}
 • Payday Health Score: ${bpScore}/100 (${bpLabel}) — budget vs time comparison; 85+ = on track, <65 = needs attention
+${velocityLine ? `• ${velocityLine}` : ''}
+${lastTxLine   ? `• ${lastTxLine}`   : ''}
+• Time of day:       ${timeOfDay} (${currentHour}:xx) — use this for natural greetings if opening the conversation
 
 ══ PAYDAY ROUTINE — use when user mentions payday ══
 When income lands on the ${ord(payday)}, allocate in order:
