@@ -2,6 +2,68 @@
 
 ---
 
+## Session: 2026-05-28 — Part 4 (stress test fixes, mobile Safari, Aldric delivery + LinkedIn + simulator)
+
+### Commits
+- `5a3ae84` — fix: Noa stress test bugs — tx id, history delete, modal scroll, form reset, note input
+- `eeb32f5` — fix: Noa mobile Safari — safe area padding, overscroll containment
+- `fad7ee4` — feat: Aldric delivery playbook — week by week, scripts, objections, tools
+- `b3436e1` — feat: Aldric LinkedIn outreach tool — niche + stage message generator, daily tracker
+- `920de7e` — feat: Aldric results simulator — ROI calculator, prospect-facing tool
+
+### TASK 1 — Noa stress test bug fix pass ✅
+`src/vela/screens/VelaCore.js` — 5 bugs found and fixed:
+
+1. **Transaction `id` missing** — new entries now get `id: Math.random().toString(36).slice(2, 10)`
+2. **History delete broken** — now uses `tx.ts` (always-present timestamp) as unique key; fallback `tx.date + tx.amount` for legacy entries
+3. **Settings modal clipping** — `maxHeight: '85dvh', overflowY: 'auto', WebkitOverflowScrolling: 'touch'`
+4. **Log TX modal clipping** — same `85dvh` fix applied
+5. **Note input autocorrect** — `autoComplete="off" autoCorrect="off" spellCheck={false}` added
+6. **Form state not resetting** — `+` button and Cancel both now reset full `txForm` state
+
+### TASK 2 — Mobile Safari final fixes ✅
+- **Cards bottom padding**: `calc(76px + max(env(safe-area-inset-bottom), 0px))` — covers iPhone home indicator
+- **Chat overscroll**: `overscrollBehavior: 'contain'` prevents page bounce while scrolling chat
+
+### TASK 3 — Aldric delivery playbook ✅
+`public/agency/delivery.html` — full internal ops playbook:
+- Dark premium design (`#080808` bg, `#C9A96E` gold, Inter + Playfair Display)
+- Sticky sidebar with 7 nav links, IntersectionObserver active-link highlighting
+- Section 1: Week-by-week (4 week cards: Onboarding, First Content, Performance, Month Close)
+- Section 2: Package deliverables (Growth £750, Scale £1,250, Dominance £1,500)
+- Section 3: Tools table (Buffer, Instantly £30, Claude API ~£10, PhantomBuster ~£50) — cost £15–20/client, 97%+ margin
+- Section 4: Content generation process (6 steps)
+- Section 5: Discovery call script (Opening / Diagnosis / Position / Offer / Close — word for word)
+- Section 6: Objection handling (5 objections with responses)
+- Section 7: First 48 hours checklist (6 steps)
+
+### TASK 4 — Aldric LinkedIn outreach tool ✅
+`public/agency/linkedin.html` — AI-powered message generator:
+- 8 niches: Med Spa, Estate Agent, Mortgage Broker, Financial Advisor, Restaurant, Law Firm, Gym, Cosmetic Dentist
+- 5 message stages: Connection Request / First Message / Follow Up 1 / Follow Up 2 / Final Touch
+- Stage description panel explains ideal timing and length per stage
+- Generate button calls Claude API (`aldric_claude_key`) with per-stage system prompt + character limits
+- Output textarea with char count, copy button, regenerate button
+- **Daily tracker**: messages generated today / this week, progress bars with warning/danger colouring, reset button
+- **Tips sidebar**: daily limits (20/day), best times, connection char limit, wait times, what NOT to do
+- **Message history**: last 10 saved to `aldric_li_history` localStorage, click to reload any entry
+- API key status bar (green dot / red dot) with link to AI Agent System
+
+### TASK 5 — Aldric results simulator ✅
+`public/agency/results-simulator.html` — prospect-facing ROI calculator:
+- Inputs: business type (8 niches), current monthly leads, avg customer value (£), posting frequency, email list size
+- Formula: posts × reach multiplier → reach × 2% = leads → leads × niche close rate = conversions → conversions × £LTV = revenue
+- Email bonus: list × 22% open × 2% click × 15% close × LTV
+- **4 metric cards**: Extra Reach, Extra Leads, Extra Revenue, ROI % — animated on show
+- **Breakdown table**: shows every calculation step transparently
+- **ROI callout**: "For every £1 you invest… pays for itself in N months"
+- **Package recommendation**: auto-selects Growth / Scale / Dominance based on revenue + LTV + email list
+- **CTA**: WhatsApp +447599260032 pre-filled "I just used the results simulator"
+- Disclaimer: industry benchmarks, results vary
+- Nav links to all 5 Aldric tools
+
+---
+
 ## Session: 2026-05-28 — Part 2 (beta checks, history, diagnostic, gh-pages fix)
 
 ### Commits
