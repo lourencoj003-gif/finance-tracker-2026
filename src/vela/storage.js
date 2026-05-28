@@ -45,6 +45,8 @@ const K = {
   BANKING_ACCESS_TOKEN: 'vela_banking_access_token', // Plaid access token (persisted for sync)
   BANKING_LAST_SYNC:    'vela_banking_last_sync',    // ISO timestamp of last sync
   BANKING_INSTITUTION:  'vela_banking_institution',  // e.g. 'Monzo'
+  // Voice preference
+  VOICE_ON: 'noa_voice_on', // persisted voice toggle (default true)
 };
 
 export const getPin              = ()    => localStorage.getItem(K.PIN);
@@ -196,3 +198,7 @@ export const clearBanking           = ()    => {
   [K.BANKING_ACCESS_TOKEN, K.BANKING_LAST_SYNC, K.BANKING_INSTITUTION]
     .forEach(k => localStorage.removeItem(k));
 };
+
+// Voice preference — persisted so toggle survives reload
+export const getVoiceOn  = ()    => localStorage.getItem(K.VOICE_ON) !== 'false'; // default true
+export const saveVoiceOn = (on)  => localStorage.setItem(K.VOICE_ON, on ? 'true' : 'false');

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
-import { getData, saveData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin, getGoals, saveGoals, getLastOpen, setLastOpen, getLastCeremonyYM, setLastCeremonyYM, getDebts, saveDebts, getChallenge, saveChallenge, getExpenseLog, saveExpenseLog, getEveningDate, setEveningDate, appendEveningLog, getUserName, setUserName, getDailyInsight, saveDailyInsight, getNotifPrefs, saveNotifPrefs, getNotifLast, saveNotifLast, savePushSub, getPrivacyMode, setPrivacyMode as savePrivacyMode, appendConvoMemory, getConvoMemory, clearConvoMemory, getAccounts, saveAccounts, getFinancialPersonality, saveFinancialPersonality, getFirstWeekShown, markFirstWeekShown, getPlanType, getWaitlistEmail, saveWaitlistEmail, incrementPaywallViews, getMemoryStart, setMemoryStart, setAppStart, getBankingAccessToken, saveBankingAccessToken, getBankingInstitution, saveBankingInstitution, getBankingLastSync, setBankingLastSync, clearBanking } from '../storage';
+import { getData, saveData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin, getGoals, saveGoals, getLastOpen, setLastOpen, getLastCeremonyYM, setLastCeremonyYM, getDebts, saveDebts, getChallenge, saveChallenge, getExpenseLog, saveExpenseLog, getEveningDate, setEveningDate, appendEveningLog, getUserName, setUserName, getDailyInsight, saveDailyInsight, getNotifPrefs, saveNotifPrefs, getNotifLast, saveNotifLast, savePushSub, getPrivacyMode, setPrivacyMode as savePrivacyMode, appendConvoMemory, getConvoMemory, clearConvoMemory, getAccounts, saveAccounts, getFinancialPersonality, saveFinancialPersonality, getFirstWeekShown, markFirstWeekShown, getPlanType, getWaitlistEmail, saveWaitlistEmail, incrementPaywallViews, getMemoryStart, setMemoryStart, setAppStart, getBankingAccessToken, saveBankingAccessToken, getBankingInstitution, saveBankingInstitution, getBankingLastSync, setBankingLastSync, clearBanking, getVoiceOn, saveVoiceOn } from '../storage';
 import Orb from '../Orb';
 import { speak as voiceSpeak, stopSpeaking } from '../voice';
 
@@ -439,7 +439,7 @@ export default function VelaCore({ onReset }) {
   const [isListening, setIsListening]     = useState(false);
   const [transcript, setTranscript]       = useState('');
   const [showSettings, setShowSettings]   = useState(false);
-  const [voiceOn, setVoiceOn]             = useState(true);
+  const [voiceOn, setVoiceOn]             = useState(() => getVoiceOn());
   const [settingName, setSettingName]     = useState(() => getUserName() || '');
   const [settingPayday, setSettingPayday] = useState(() => (getData() || {}).payday || 25);
   const [streak, setStreak]               = useState(0);
@@ -617,6 +617,15 @@ export default function VelaCore({ onReset }) {
   useEffect(() => { privacyModeRef.current = privacyMode; }, [privacyMode]);
   // Keep chatOpenRef in sync so idle prompt timer can check it without stale closure
   useEffect(() => { chatOpenRef.current = chatOpen; }, [chatOpen]);
+
+  // Refresh settings form values every time the modal opens
+  useEffect(() => {
+    if (!showSettings) return;
+    setSettingName(getUserName() || '');
+    const d = getData() || {};
+    setSettingPayday(d.payday || 25);
+    setSettingSavings(String(d.savings || ''));
+  }, [showSettings]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // FEATURE 7 — Hide financial data from iOS app switcher screenshot
   useEffect(() => {
@@ -2688,7 +2697,7 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
         {/* Task 2 — My Payday Plan button (visible when ≤7 days to payday) */}
         {income > 0 && daysToNextPay <= 7 && (
           <button
-            onClick={() => { unlockAudio(); setShowPaydayPlan(true); fetchPaydayPlan(); }}
+            onClick={() => { unlockAudio(); setShowPaydayPlan(true); if (!paydayPlanText) fetchPaydayPlan(); }}
             style={{
               width: '100%', marginBottom: 8, padding: '13px 0',
               background: daysToNextPay <= 2 ? 'rgba(201,169,110,0.18)' : 'rgba(200,184,154,0.12)',
@@ -3339,7 +3348,7 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
                 <div style={{ fontSize: 14, color: '#E8DDD0', marginBottom: 2 }}>Voice responses</div>
                 <div style={{ fontSize: 12, color: 'rgba(232,221,208,0.38)' }}>Noa speaks aloud</div>
               </div>
-              <Toggle on={voiceOn} onToggle={() => setVoiceOn(v => !v)} />
+              <Toggle on={voiceOn} onToggle={() => { const next = !voiceOn; setVoiceOn(next); saveVoiceOn(next); voiceOnRef.current = next; }} />
             </div>
 
             {/* Task 1 — Privacy Mode toggle */}
@@ -3369,7 +3378,11 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
                       </div>
                       <Toggle
                         on={notifPrefs[key]}
-                        onToggle={() => setNotifPrefsState(p => ({ ...p, [key]: !p[key] }))}
+                        onToggle={() => {
+                          const next = { ...notifPrefs, [key]: !notifPrefs[key] };
+                          setNotifPrefsState(next);
+                          saveNotifPrefs(next);
+                        }}
                       />
                     </div>
                   ))}
