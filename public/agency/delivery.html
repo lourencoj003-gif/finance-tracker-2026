@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Service Delivery Playbook — Aldric Group</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:     #080808; --bg2: #0f0f0f; --bg3: #161616; --bg4: #1c1c1c;
+      --gold:   #C9A96E; --gold-lt: #e0c48a; --cream: #F0E8DA;
+      --muted:  #6b6b6b; --border: rgba(201,169,110,0.15); --text: #e8e0d4;
+      --green:  #4caf80; --amber: #f4a261; --red: #e76f51; --blue: #5c8de8;
+      --sidebar: 240px;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+
+    /* HEADER */
+    header {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 40px; border-bottom: 1px solid var(--border);
+      background: rgba(8,8,8,0.97); backdrop-filter: blur(20px);
+    }
+    .logo { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; color: var(--gold); text-decoration: none; }
+    .header-right { display: flex; gap: 10px; align-items: center; }
+    .nav-pill { padding: 7px 14px; background: transparent; border: 1px solid transparent; color: var(--muted); font-size: 12px; font-weight: 500; border-radius: 3px; cursor: pointer; transition: all 0.15s; font-family: 'Inter', sans-serif; text-decoration: none; }
+    .nav-pill:hover, .nav-pill.active { background: var(--bg3); border-color: var(--border); color: var(--cream); }
+
+    /* LAYOUT */
+    .layout { display: flex; min-height: calc(100vh - 60px); }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: var(--sidebar); flex-shrink: 0;
+      position: sticky; top: 60px; height: calc(100vh - 60px);
+      overflow-y: auto; padding: 32px 0;
+      border-right: 1px solid var(--border);
+      background: var(--bg2);
+      scrollbar-width: none;
+    }
+    .sidebar::-webkit-scrollbar { display: none; }
+    .sidebar-label { font-size: 9px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); padding: 0 24px; margin-bottom: 8px; margin-top: 20px; }
+    .sidebar-label:first-child { margin-top: 0; }
+    .sidebar-link {
+      display: block; padding: 8px 24px;
+      font-size: 12px; font-weight: 500; color: var(--muted);
+      text-decoration: none; transition: all 0.15s;
+      border-left: 2px solid transparent;
+    }
+    .sidebar-link:hover { color: var(--cream); background: rgba(201,169,110,0.05); }
+    .sidebar-link.active { color: var(--gold); border-left-color: var(--gold); background: rgba(201,169,110,0.06); }
+
+    /* MAIN */
+    .main { flex: 1; min-width: 0; padding: 48px 60px 80px; max-width: 820px; }
+
+    /* PAGE HERO */
+    .page-hero { margin-bottom: 52px; }
+    .page-label { font-size: 10px; font-weight: 700; letter-spacing: 0.28em; text-transform: uppercase; color: var(--gold); margin-bottom: 12px; }
+    .page-title { font-family: 'Playfair Display', serif; font-size: clamp(28px, 3.5vw, 44px); font-weight: 700; color: var(--cream); line-height: 1.15; margin-bottom: 12px; }
+    .page-sub { font-size: 14px; color: rgba(240,232,218,0.45); max-width: 560px; line-height: 1.75; }
+
+    /* SECTIONS */
+    .section { margin-bottom: 64px; scroll-margin-top: 80px; }
+    .section-num { font-size: 9px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
+    .section-title { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 700; color: var(--cream); margin-bottom: 6px; }
+    .section-subtitle { font-size: 13px; color: var(--muted); margin-bottom: 28px; line-height: 1.6; }
+
+    /* WEEK CARDS */
+    .weeks { display: flex; flex-direction: column; gap: 12px; }
+    .week-card {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+      padding: 20px 22px;
+    }
+    .week-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .week-badge {
+      width: 32px; height: 32px; border-radius: 6px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(201,169,110,0.12); border: 1px solid rgba(201,169,110,0.25);
+      font-size: 12px; font-weight: 800; color: var(--gold);
+    }
+    .week-name { font-size: 14px; font-weight: 700; color: var(--cream); }
+    .week-tasks { display: flex; flex-direction: column; gap: 7px; }
+    .task-item { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: rgba(240,232,218,0.65); line-height: 1.5; }
+    .task-item::before { content: '→'; color: var(--gold); opacity: 0.6; flex-shrink: 0; margin-top: 1px; font-size: 11px; }
+
+    /* PACKAGE CARDS */
+    .packages { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .pkg-card {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+      padding: 20px;
+    }
+    .pkg-card.highlight { border-color: rgba(201,169,110,0.4); background: rgba(201,169,110,0.04); }
+    .pkg-name { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); margin-bottom: 4px; }
+    .pkg-price { font-size: 24px; font-weight: 800; color: var(--cream); letter-spacing: -0.03em; margin-bottom: 14px; }
+    .pkg-price span { font-size: 13px; font-weight: 400; color: var(--muted); letter-spacing: 0; }
+    .pkg-features { display: flex; flex-direction: column; gap: 6px; }
+    .pkg-feature { font-size: 12px; color: rgba(240,232,218,0.55); display: flex; align-items: flex-start; gap: 6px; line-height: 1.4; }
+    .pkg-feature::before { content: '✓'; color: var(--green); flex-shrink: 0; font-size: 11px; }
+
+    /* TOOLS TABLE */
+    .tools-table { width: 100%; border-collapse: collapse; }
+    .tools-table th { font-size: 9px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); padding: 8px 14px; border-bottom: 1px solid var(--border); text-align: left; }
+    .tools-table td { font-size: 13px; padding: 12px 14px; border-bottom: 1px solid rgba(201,169,110,0.06); color: rgba(240,232,218,0.65); vertical-align: top; }
+    .tools-table tr:hover td { background: rgba(201,169,110,0.03); }
+    .tools-table td:first-child { color: var(--cream); font-weight: 600; }
+    .cost-highlight { color: var(--green); font-weight: 600; }
+    .margin-highlight { font-size: 20px; font-weight: 800; color: var(--gold); }
+
+    /* PROCESS STEPS */
+    .process-steps { display: flex; flex-direction: column; gap: 0; }
+    .process-step { display: flex; gap: 0; }
+    .step-left { display: flex; flex-direction: column; align-items: center; width: 48px; flex-shrink: 0; }
+    .step-num { width: 32px; height: 32px; border-radius: '50%'; border-radius: 50%; background: rgba(201,169,110,0.12); border: 1px solid rgba(201,169,110,0.3); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: var(--gold); flex-shrink: 0; }
+    .step-line { flex: 1; width: 1px; background: rgba(201,169,110,0.12); margin: 4px 0; min-height: 20px; }
+    .process-step:last-child .step-line { display: none; }
+    .step-content { flex: 1; padding: 2px 0 24px 14px; }
+    .step-title { font-size: 14px; font-weight: 700; color: var(--cream); margin-bottom: 4px; }
+    .step-desc { font-size: 13px; color: rgba(240,232,218,0.55); line-height: 1.6; }
+    .step-time { display: inline-block; margin-top: 6px; font-size: 10px; font-weight: 600; color: var(--gold); background: rgba(201,169,110,0.1); padding: 2px 8px; border-radius: 10px; }
+
+    /* SCRIPT */
+    .script-block { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 24px; margin-bottom: 16px; }
+    .script-role { font-size: 9px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
+    .script-label { font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.1em; }
+    .script-line { font-size: 14px; color: var(--cream); line-height: 1.7; font-style: italic; border-left: 2px solid rgba(201,169,110,0.3); padding-left: 14px; }
+    .script-note { font-size: 11px; color: var(--muted); margin-top: 8px; line-height: 1.5; }
+
+    /* OBJECTIONS */
+    .objections { display: flex; flex-direction: column; gap: 10px; }
+    .objection-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 18px 20px; }
+    .obj-q { font-size: 13px; color: rgba(240,232,218,0.5); font-style: italic; margin-bottom: 8px; }
+    .obj-a { font-size: 13px; color: var(--cream); line-height: 1.65; }
+
+    /* 48HR STEPS */
+    .checklist { display: flex; flex-direction: column; gap: 8px; }
+    .check-item { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; }
+    .check-n { width: 22px; height: 22px; border-radius: 4px; background: rgba(201,169,110,0.12); border: 1px solid rgba(201,169,110,0.25); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--gold); flex-shrink: 0; }
+    .check-text { font-size: 13px; color: rgba(240,232,218,0.7); line-height: 1.5; }
+    .check-text strong { color: var(--cream); }
+
+    /* DIVIDER */
+    .divider { height: 1px; background: var(--border); margin: 48px 0; }
+
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .main { padding: 32px 24px 60px; }
+      .packages { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <a href="index.html" class="logo">Aldric Group</a>
+    <div class="header-right">
+      <a href="index.html" class="nav-pill">← Main Site</a>
+      <a href="crm.html" class="nav-pill">CRM</a>
+      <a href="acquisition/agent-system.html" class="nav-pill">Agent System</a>
+      <a href="linkedin.html" class="nav-pill">LinkedIn</a>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <!-- SIDEBAR -->
+    <nav class="sidebar">
+      <div class="sidebar-label">Playbook</div>
+      <a href="#week-by-week" class="sidebar-link active">Week-by-week</a>
+      <a href="#packages" class="sidebar-link">Package Deliverables</a>
+      <a href="#tools" class="sidebar-link">Tools &amp; Cost</a>
+      <a href="#content-process" class="sidebar-link">Content Process</a>
+      <a href="#discovery-call" class="sidebar-link">Discovery Call Script</a>
+      <a href="#objections" class="sidebar-link">Objection Handling</a>
+      <a href="#first-48" class="sidebar-link">First 48 Hours</a>
+    </nav>
+
+    <!-- MAIN -->
+    <main class="main">
+
+      <div class="page-hero">
+        <div class="page-label">Internal Operations</div>
+        <h1 class="page-title">Service Delivery Playbook</h1>
+        <p class="page-sub">Everything you need before getting on a client call. Read it. Know it. This is how we run.</p>
+      </div>
+
+      <!-- ── SECTION 1: WEEK BY WEEK ── -->
+      <section class="section" id="week-by-week">
+        <div class="section-num">Section 01</div>
+        <h2 class="section-title">What we actually do week by week</h2>
+        <p class="section-subtitle">This is the exact delivery rhythm for every client. Month 1 is the hardest. Months 2+ are on autopilot.</p>
+
+        <div class="weeks">
+          <div class="week-card">
+            <div class="week-header">
+              <div class="week-badge">W1</div>
+              <div class="week-name">Onboarding &amp; Setup</div>
+            </div>
+            <div class="week-tasks">
+              <div class="task-item">Client onboarding call (30 min max). Use onboarding.html to collect brand brief — niche, tone, target customer, competitor brands to avoid, content topics.</div>
+              <div class="task-item">Set up content calendar for month 1 in a shared Google Sheet or Notion. Label 20 post slots with dates and platform.</div>
+              <div class="task-item">Run Content Batch agent (agent-system.html) with client niche → get 20 post ideas. Edit for brand voice. Present as a batch, not one at a time.</div>
+              <div class="task-item">Draft first 5 posts for approval. Send as a PDF or Google Doc. Give 48-hour turnaround.</div>
+              <div class="task-item">Set up Buffer free (buffer.com). Add client's social accounts. Do not start posting yet — wait for approval.</div>
+            </div>
+          </div>
+
+          <div class="week-card">
+            <div class="week-header">
+              <div class="week-badge">W2</div>
+              <div class="week-name">First Content Live</div>
+            </div>
+            <div class="week-tasks">
+              <div class="task-item">Chase approval on first 5 posts if not received within 48 hours. One chase only — if no reply after 2nd chase, schedule anyway with note "scheduled pending approval".</div>
+              <div class="task-item">Schedule first 2 weeks of approved content in Buffer. Optimal times: Tue–Thu 7am and 6pm for most niches.</div>
+              <div class="task-item">For Scale+ clients: set up Instantly.ai account. Load first email sequence from agent-system.html Component 5. Set send schedule: Day 0, 3, 7, 10, 14.</div>
+              <div class="task-item">First posts go live. Screenshot engagement daily for week 1 report.</div>
+            </div>
+          </div>
+
+          <div class="week-card">
+            <div class="week-header">
+              <div class="week-badge">W3</div>
+              <div class="week-name">Performance &amp; Next Batch</div>
+            </div>
+            <div class="week-tasks">
+              <div class="task-item">Monitor performance. Pull metrics from each platform: reach, likes, shares, profile visits, DMs generated.</div>
+              <div class="task-item">Draft next batch of 5 posts. Lean into whatever performed best — if a tip post got 3× the reach, do 3 more tips.</div>
+              <div class="task-item">Send first weekly report using agent-system.html Component 3. Personalise the KPI data. Keep it under 200 words. Send by Friday 5pm.</div>
+              <div class="task-item">Send one short check-in message (WhatsApp or email): "Week 1 live — 5 posts, [X] reach. Anything from your side to feed into next week?"</div>
+            </div>
+          </div>
+
+          <div class="week-card">
+            <div class="week-header">
+              <div class="week-badge">W4</div>
+              <div class="week-name">Month 1 Close &amp; Upsell</div>
+            </div>
+            <div class="week-tasks">
+              <div class="task-item">Compile Month 1 report: total posts, total reach, engagement rate, email stats (Scale+), leads attributed. Use Component 3 for the narrative.</div>
+              <div class="task-item">Send the report and book a brief renewal call (15 min). Don't wait for them to decide — book the slot first.</div>
+              <div class="task-item">If client is on Growth: assess upgrade to Scale. Trigger: any mention of email, lead gen, or "what else can we do". Use the upsell frame: "The next step that would compound what we've built is email."</div>
+              <div class="task-item">Confirm month 2 retainer. If they try to pause: "A 2-week content gap undoes 4 weeks of momentum. I'd rather reduce the scope than pause completely."</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ── SECTION 2: PACKAGES ── -->
+      <section class="section" id="packages">
+        <div class="section-num">Section 02</div>
+        <h2 class="section-title">What each package delivers</h2>
+        <p class="section-subtitle">Know exactly what you've promised. Under-promise slightly. Over-deliver always.</p>
+
+        <div class="packages">
+          <div class="pkg-card">
+            <div class="pkg-name">Growth</div>
+            <div class="pkg-price">£750 <span>/month</span></div>
+            <div class="pkg-features">
+              <div class="pkg-feature">20 posts/month (social content)</div>
+              <div class="pkg-feature">2 platforms (e.g. Instagram + Facebook)</div>
+              <div class="pkg-feature">Buffer scheduling (queued, not manual)</div>
+              <div class="pkg-feature">Monthly PDF performance report</div>
+              <div class="pkg-feature">1 strategy call per month (30 min)</div>
+              <div class="pkg-feature">Weekly brief check-in message</div>
+            </div>
+          </div>
+
+          <div class="pkg-card highlight">
+            <div class="pkg-name">Scale</div>
+            <div class="pkg-price">£1,250 <span>/month</span></div>
+            <div class="pkg-features">
+              <div class="pkg-feature">Everything in Growth</div>
+              <div class="pkg-feature">2 email sequences/month (5 emails each)</div>
+              <div class="pkg-feature">Lead magnet PDF creation (1/month)</div>
+              <div class="pkg-feature">Fortnightly call (not monthly)</div>
+              <div class="pkg-feature">Instantly.ai sequence setup &amp; management</div>
+              <div class="pkg-feature">A/B subject line testing</div>
+            </div>
+          </div>
+
+          <div class="pkg-card">
+            <div class="pkg-name">Dominance</div>
+            <div class="pkg-price">£1,500 <span>/month</span></div>
+            <div class="pkg-features">
+              <div class="pkg-feature">Everything in Scale</div>
+              <div class="pkg-feature">LinkedIn outreach (200 requests/month)</div>
+              <div class="pkg-feature">Personalised messages at each sequence stage</div>
+              <div class="pkg-feature">SMS follow-up sequences (via Instantly)</div>
+              <div class="pkg-feature">Weekly strategy call (not fortnightly)</div>
+              <div class="pkg-feature">Full funnel report — top to close</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ── SECTION 3: TOOLS ── -->
+      <section class="section" id="tools">
+        <div class="section-num">Section 03</div>
+        <h2 class="section-title">Tools used and cost</h2>
+        <p class="section-subtitle">Every tool here has a free tier or a cost worth the margin. Track your actual spend per client.</p>
+
+        <table class="tools-table">
+          <thead>
+            <tr>
+              <th>Tool</th>
+              <th>Purpose</th>
+              <th>Cost</th>
+              <th>When to use</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Buffer</td>
+              <td>Social media scheduling</td>
+              <td class="cost-highlight">Free</td>
+              <td>All clients from week 1</td>
+            </tr>
+            <tr>
+              <td>Instantly.ai</td>
+              <td>Email + SMS sequence automation</td>
+              <td class="cost-highlight">~£30/mo</td>
+              <td>Scale and Dominance clients only</td>
+            </tr>
+            <tr>
+              <td>Claude API</td>
+              <td>Content generation, reply handling, reports</td>
+              <td class="cost-highlight">~£10/mo</td>
+              <td>All clients (via agent-system.html)</td>
+            </tr>
+            <tr>
+              <td>PhantomBuster</td>
+              <td>LinkedIn outreach automation</td>
+              <td class="cost-highlight">~£50/mo</td>
+              <td>Dominance clients from month 2 onward</td>
+            </tr>
+            <tr>
+              <td>Google Sheets / Notion</td>
+              <td>Content calendar, client tracking</td>
+              <td class="cost-highlight">Free</td>
+              <td>All clients</td>
+            </tr>
+            <tr>
+              <td>Canva Free</td>
+              <td>Graphic posts, PDF reports, lead magnets</td>
+              <td class="cost-highlight">Free</td>
+              <td>When graphics are needed</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div style="display:flex;gap:28px;margin-top:28px;flex-wrap:wrap;">
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:20px 24px;flex:1;min-width:160px;">
+            <div style="font-size:10px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Cost per client</div>
+            <div class="margin-highlight">£15–20</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px;">per month (all tools included)</div>
+          </div>
+          <div style="background:var(--bg2);border:1px solid rgba(201,169,110,0.3);border-radius:8px;padding:20px 24px;flex:1;min-width:160px;background:rgba(201,169,110,0.04);">
+            <div style="font-size:10px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Gross margin</div>
+            <div class="margin-highlight">97%+</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px;">on a Growth retainer at scale</div>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ── SECTION 4: CONTENT PROCESS ── -->
+      <section class="section" id="content-process">
+        <div class="section-num">Section 04</div>
+        <h2 class="section-title">Content generation process</h2>
+        <p class="section-subtitle">This is the exact workflow. From blank page to 20 posts, ready to schedule.</p>
+
+        <div class="process-steps">
+          <div class="process-step">
+            <div class="step-left"><div class="step-num">1</div><div class="step-line"></div></div>
+            <div class="step-content">
+              <div class="step-title">Open agent-system.html</div>
+              <div class="step-desc">Go to <code style="font-size:11px;color:var(--gold);background:rgba(201,169,110,0.1);padding:2px 6px;border-radius:3px;">agency/acquisition/agent-system.html</code>. Enter your API key if not already set. Click Component 04 — Content Batch.</div>
+            </div>
+          </div>
+          <div class="process-step">
+            <div class="step-left"><div class="step-num">2</div><div class="step-line"></div></div>
+            <div class="step-content">
+              <div class="step-title">Enter client brief</div>
+              <div class="step-desc">Fill in the niche selector and paste the brand brief from the onboarding form. Include tone keywords (e.g. "professional but approachable"), any topics to avoid, and 2–3 example competitors for style reference.</div>
+            </div>
+          </div>
+          <div class="process-step">
+            <div class="step-left"><div class="step-num">3</div><div class="step-line"></div></div>
+            <div class="step-content">
+              <div class="step-title">Run Content Batch generator</div>
+              <div class="step-desc">Click Run Agent. Wait 15–30 seconds. Claude generates exactly 20 posts in the correct mix: 8 educational, 5 social proof, 4 promotional, 3 BTS. Output is formatted and ready to copy.</div>
+              <div class="step-time">⏱ 30 seconds</div>
+            </div>
+          </div>
+          <div class="process-step">
+            <div class="step-left"><div class="step-num">4</div><div class="step-line"></div></div>
+            <div class="step-content">
+              <div class="step-title">Review and edit</div>
+              <div class="step-desc">Read every post. Edit for accuracy (correct any wrong business facts), adjust tone if needed, replace any generic phrases with specific client details. Do not send AI output raw — always read it first.</div>
+              <div class="step-time">⏱ 10–15 minutes</div>
+            </div>
+          </div>
+          <div class="process-step">
+            <div class="step-left"><div class="step-num">5</div><div class="step-line"></div></div>
+            <div class="step-content">
+              <div class="step-title">Send for approval</div>
+              <div class="step-desc">Paste the 5 best posts into a Google Doc or PDF. Title it "Week [N] content — [Client Name]". Share the link via WhatsApp or email. Request approval within 48 hours.</div>
+              <div class="step-time">⏱ 5 minutes</div>
+            </div>
+          </div>
+          <div class="process-step">
+            <div class="step-left"><div class="step-num">6</div><div class="step-line"></div></div>
+            <div class="step-content">
+              <div class="step-title">Schedule in Buffer</div>
+              <div class="step-desc">Once approved, queue posts in Buffer. Best times: Tue–Thu at 7am and 6pm for most service businesses. Vary the format — don't post 3 text posts in a row.</div>
+              <div class="step-time">⏱ 10 minutes</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:24px;padding:16px 18px;background:rgba(201,169,110,0.06);border:1px solid rgba(201,169,110,0.2);border-radius:8px;font-size:13px;color:var(--gold);">
+          <strong>Total time per client per week: 45 minutes.</strong> <span style="color:var(--muted);">At £750/month that's £187.50/week for 45 minutes of work. Protect this efficiency.</span>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ── SECTION 5: DISCOVERY CALL SCRIPT ── -->
+      <section class="section" id="discovery-call">
+        <div class="section-num">Section 05</div>
+        <h2 class="section-title">Discovery call script</h2>
+        <p class="section-subtitle">Word for word. Don't improvise until you've done 20 calls with this exact script.</p>
+
+        <div class="script-block">
+          <div class="script-role">Opening</div>
+          <div class="script-label">Say this first:</div>
+          <div class="script-line">"Tell me about your current marketing — what are you doing and what's not working?"</div>
+          <div class="script-note">Then shut up. Let them talk. Take notes. Do not fill the silence. The more they talk here, the easier the close.</div>
+        </div>
+
+        <div class="script-block">
+          <div class="script-role">Diagnosis</div>
+          <div class="script-label">After they've explained their situation:</div>
+          <div class="script-line">"How many leads are you getting per month from social or online? And what does your follow-up process look like when a lead comes in?"</div>
+          <div class="script-note">You're looking for one of two things: low volume (their content isn't generating leads) or low follow-up (leads leak out). Both are problems we solve.</div>
+        </div>
+
+        <div class="script-block">
+          <div class="script-role">Position</div>
+          <div class="script-label">After you understand the gap:</div>
+          <div class="script-line">"Most [niche] businesses I speak to are great at what they do — but inconsistent on marketing. The problem isn't effort. It's systems. That's what we fix."</div>
+          <div class="script-note">Replace [niche] with their actual business type: "Most dental practices…", "Most estate agents…" etc. This line almost always lands.</div>
+        </div>
+
+        <div class="script-block">
+          <div class="script-role">The Offer</div>
+          <div class="script-label">Transition into the service:</div>
+          <div class="script-line">"We run your entire marketing stack for a fixed monthly fee. No account managers switching every 3 months. No contracts. Just consistent content, email, and outreach — and you see the results before you commit to a full retainer. Want me to walk you through what that looks like for [their business name]?"</div>
+          <div class="script-note">If they say yes, walk through the Growth package first. Start at £750. Only go up if they ask about more.</div>
+        </div>
+
+        <div class="script-block">
+          <div class="script-role">The Close</div>
+          <div class="script-label">At the end of the package explanation:</div>
+          <div class="script-line">"The way we usually start is with a pilot sprint — it's £500 for 14 days. You see exactly what we produce, how we communicate, and whether the content lands with your audience. After that you decide if you want to continue on a retainer. Want to do that?"</div>
+          <div class="script-note">The pilot framing removes the commitment anxiety. Most people who do the pilot convert. If they want to skip it and go straight to retainer — let them.</div>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ── SECTION 6: OBJECTIONS ── -->
+      <section class="section" id="objections">
+        <div class="section-num">Section 06</div>
+        <h2 class="section-title">Objection handling</h2>
+        <p class="section-subtitle">Every objection is a request for more information. Don't panic. Don't over-explain. Answer with a question where possible.</p>
+
+        <div class="objections">
+          <div class="objection-card">
+            <div class="obj-q">"We already have someone doing our social."</div>
+            <div class="obj-a">"Good — are you happy with the results? Most of our clients came to us after realising volume and consistency was the problem, not effort. What does your current post frequency look like?"</div>
+          </div>
+          <div class="objection-card">
+            <div class="obj-q">"We don't have the budget right now."</div>
+            <div class="obj-a">"I hear you. What does one new client per month mean to your business financially? Our Growth package is less than £25 per day. If it brings in one client, it's paid for itself five times over. Is the question really budget, or is it certainty of results?"</div>
+          </div>
+          <div class="objection-card">
+            <div class="obj-q">"We need to think about it."</div>
+            <div class="obj-a">"Totally fair. What would need to be true for this to be a yes? Is it the price, the results, or just timing? Because I'd rather solve the actual problem than leave you in the grey area."</div>
+          </div>
+          <div class="objection-card">
+            <div class="obj-q">"We tried agencies before and it didn't work."</div>
+            <div class="obj-a">"What went wrong? Usually it's one of two things — they disappeared after onboarding, or the content looked like it could be for any business. We fix both: weekly reports you can read in 2 minutes, and content that's actually specific to your business and customers."</div>
+          </div>
+          <div class="objection-card">
+            <div class="obj-q">"Can you do it for less?"</div>
+            <div class="obj-a">"The £750 is already the entry point — it's where we can deliver proper results without cutting corners. What I can do is start you on the 14-day pilot at £500, so you de-risk the commitment. That's the best version of 'doing it for less' without reducing what we actually deliver."</div>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ── SECTION 7: FIRST 48 HOURS ── -->
+      <section class="section" id="first-48">
+        <div class="section-num">Section 07</div>
+        <h2 class="section-title">First 48 hours after signing</h2>
+        <p class="section-subtitle">This is where you set the tone for the entire relationship. Move fast, be organised, show them they made the right call.</p>
+
+        <div class="checklist">
+          <div class="check-item">
+            <div class="check-n">1</div>
+            <div class="check-text"><strong>Send contract immediately.</strong> Use contract.html. Do not wait until the next day. Same-day contracts show professionalism and close the deal before buyer's remorse sets in. Target: signed within 24 hours of verbal yes.</div>
+          </div>
+          <div class="check-item">
+            <div class="check-n">2</div>
+            <div class="check-text"><strong>Send onboarding form link.</strong> Send the link to onboarding.html via WhatsApp within 1 hour of contract signature. Message: "Contract received — here's your onboarding form. Takes 10 minutes. The sooner I have it, the sooner we start. [link]"</div>
+          </div>
+          <div class="check-item">
+            <div class="check-n">3</div>
+            <div class="check-text"><strong>Book onboarding call.</strong> Aim for within 48 hours of signing. Send a Calendly or WhatsApp message to book the slot. Do not wait for them to suggest a time — pick one and confirm it.</div>
+          </div>
+          <div class="check-item">
+            <div class="check-n">4</div>
+            <div class="check-text"><strong>Request brand assets.</strong> Ask for: logo (PNG or SVG), brand colours, any existing content they like, top 3 competitors to study. Message: "Quick one — can you send your logo and any examples of content you like? Even from competitors is fine. It helps us nail the style faster."</div>
+          </div>
+          <div class="check-item">
+            <div class="check-n">5</div>
+            <div class="check-text"><strong>Start content draft before onboarding call.</strong> Run agent-system.html Component 4 with the niche from their onboarding form. Draft 5 posts. This means you have something to show on the first call. Clients who see work at the onboarding call never churn in month 1.</div>
+          </div>
+          <div class="check-item">
+            <div class="check-n">6</div>
+            <div class="check-text"><strong>Add to CRM.</strong> Open crm.html. Add client with their package, start date, and next action. Set a 7-day reminder for first weekly report.</div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    // Highlight active sidebar link on scroll
+    const sections = document.querySelectorAll('.section');
+    const links    = document.querySelectorAll('.sidebar-link');
+
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          links.forEach(l => l.classList.remove('active'));
+          const active = document.querySelector(`.sidebar-link[href="#${entry.target.id}"]`);
+          if (active) active.classList.add('active');
+        }
+      });
+    }, { rootMargin: '-20% 0px -70% 0px' });
+
+    sections.forEach(s => observer.observe(s));
+  </script>
+</body>
+</html>
