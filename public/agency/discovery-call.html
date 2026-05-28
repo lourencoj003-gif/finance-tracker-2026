@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Discovery Call — Aldric Group (Internal)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+:root {
+  --bg:#080808; --bg2:#0f0f0f; --bg3:#161616; --bg4:#1b1b1b;
+  --gold:#C9A96E; --gold-lt:#e0c48a; --cream:#F0E8DA;
+  --muted:#6b6b6b; --border:rgba(201,169,110,0.15); --text:#e8e0d4;
+  --green:#5aad7a; --red:#e05555; --amber:#c9883e; --blue:#5a8fad;
+}
+html { scroll-behavior:smooth; }
+body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); line-height:1.6; -webkit-font-smoothing:antialiased; }
+::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:rgba(201,169,110,0.2);border-radius:2px}
+
+/* NAV */
+nav { position:fixed; top:0; left:0; right:0; z-index:100; display:flex; align-items:center; justify-content:space-between; padding:14px 40px; border-bottom:1px solid rgba(201,169,110,0.08); background:rgba(8,8,8,0.96); backdrop-filter:blur(20px); }
+.nav-logo { font-family:'Playfair Display',serif; font-size:18px; font-weight:700; color:var(--gold); text-decoration:none; letter-spacing:0.05em; }
+.nav-links { display:flex; gap:20px; align-items:center; flex-wrap:wrap; }
+.nav-links a { font-size:12px; font-weight:500; color:var(--muted); text-decoration:none; letter-spacing:0.04em; transition:color 0.2s; }
+.nav-links a:hover { color:var(--cream); }
+.nav-links a.active { color:var(--gold); }
+.internal-badge { font-size:10px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--red); background:rgba(224,85,85,0.1); border:1px solid rgba(224,85,85,0.2); padding:3px 9px; border-radius:3px; }
+
+/* LAYOUT */
+.layout { display:grid; grid-template-columns:1fr 300px; gap:24px; max-width:1280px; margin:0 auto; padding:90px 32px 80px; }
+@media(max-width:1000px){ .layout{grid-template-columns:1fr;padding:80px 16px 60px;} }
+
+/* SECTION */
+.section { background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:20px; margin-bottom:18px; }
+.section-title { font-size:11px; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; color:var(--gold); margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+.section-title .dot { width:6px; height:6px; border-radius:50%; background:var(--gold); }
+
+/* PHASE HEADER */
+.phase-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+.phase-label { font-size:22px; font-weight:800; color:var(--cream); }
+.phase-sub { font-size:12px; color:var(--muted); margin-top:2px; }
+.phase-timer-badge { font-size:13px; font-weight:700; color:var(--gold); background:rgba(201,169,110,0.1); border:1px solid rgba(201,169,110,0.2); padding:6px 14px; border-radius:6px; }
+
+/* PHASE TABS */
+.phase-tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:24px; }
+.phase-tab { padding:7px 16px; border-radius:20px; font-size:12px; font-weight:600; cursor:pointer; border:1.5px solid rgba(201,169,110,0.12); color:var(--muted); transition:all 0.2s; }
+.phase-tab:hover { border-color:rgba(201,169,110,0.3); color:var(--text); }
+.phase-tab.active { background:rgba(201,169,110,0.12); border-color:var(--gold); color:var(--gold-lt); }
+.phase-tab.done { background:rgba(90,173,122,0.08); border-color:rgba(90,173,122,0.25); color:var(--green); }
+
+/* SCRIPT BLOCK */
+.script-block { background:var(--bg3); border-left:3px solid var(--gold); border-radius:0 8px 8px 0; padding:14px 16px; margin:10px 0; }
+.script-label { font-size:10px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; color:var(--gold); margin-bottom:5px; }
+.script-text { font-size:14px; color:var(--cream); line-height:1.75; font-style:italic; }
+.script-note { font-size:12px; color:var(--muted); margin-top:6px; font-style:normal; }
+
+/* QUESTION LIST */
+.q-list { list-style:none; display:flex; flex-direction:column; gap:8px; margin-top:10px; }
+.q-item { display:flex; align-items:flex-start; gap:10px; padding:10px 12px; background:var(--bg3); border:1px solid rgba(201,169,110,0.07); border-radius:8px; cursor:pointer; transition:all 0.2s; }
+.q-item:hover { border-color:rgba(201,169,110,0.2); background:var(--bg4); }
+.q-num { font-size:11px; font-weight:700; color:var(--gold); min-width:20px; margin-top:1px; }
+.q-text { font-size:13px; color:var(--text); flex:1; }
+.q-asked { opacity:0.4; text-decoration:line-through; }
+.q-copy { font-size:10px; color:var(--muted); margin-left:auto; padding:3px 8px; border:1px solid rgba(255,255,255,0.06); border-radius:4px; flex-shrink:0; }
+
+/* NOTES AREA */
+textarea { background:var(--bg3); border:1px solid rgba(201,169,110,0.12); border-radius:8px; color:var(--text); font-family:'Inter',sans-serif; font-size:13px; padding:10px 12px; outline:none; width:100%; resize:vertical; line-height:1.6; }
+textarea:focus { border-color:rgba(201,169,110,0.3); }
+input[type=text], input[type=number] { background:var(--bg3); border:1px solid rgba(201,169,110,0.12); border-radius:7px; color:var(--text); font-family:'Inter',sans-serif; font-size:13px; padding:8px 12px; outline:none; width:100%; }
+input:focus { border-color:rgba(201,169,110,0.3); }
+
+/* OBJECTION CARDS */
+.obj-grid { display:grid; gap:8px; margin-top:10px; }
+.obj-card { background:var(--bg3); border:1px solid rgba(201,169,110,0.08); border-radius:8px; overflow:hidden; }
+.obj-q { padding:10px 14px; font-size:13px; font-weight:600; color:var(--cream); cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
+.obj-q:hover { background:var(--bg4); }
+.obj-a { display:none; padding:10px 14px; font-size:13px; color:var(--text); border-top:1px solid rgba(201,169,110,0.06); line-height:1.7; font-style:italic; }
+.obj-a.open { display:block; }
+.obj-chevron { font-size:10px; color:var(--muted); transition:transform 0.2s; }
+.obj-chevron.open { transform:rotate(180deg); }
+
+/* ROI CALCULATOR */
+.roi-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
+@media(max-width:600px){ .roi-grid{grid-template-columns:1fr;} }
+.roi-field { display:flex; flex-direction:column; gap:4px; }
+.roi-field label { font-size:11px; color:var(--muted); font-weight:600; letter-spacing:0.05em; text-transform:uppercase; }
+.roi-result { background:rgba(201,169,110,0.06); border:1px solid rgba(201,169,110,0.15); border-radius:8px; padding:14px; margin-top:10px; }
+.roi-row { display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.04); font-size:13px; }
+.roi-row:last-child { border:none; font-weight:700; font-size:14px; }
+.roi-row span:first-child { color:var(--muted); }
+.roi-row span:last-child { color:var(--cream); }
+.roi-row.highlight span:last-child { color:var(--gold-lt); font-size:16px; }
+
+/* CLOSE OPTIONS */
+.close-options { display:grid; gap:10px; margin-top:10px; }
+.close-card { background:var(--bg3); border:1px solid rgba(201,169,110,0.1); border-radius:10px; padding:14px; }
+.close-card h4 { font-size:13px; font-weight:700; color:var(--gold); margin-bottom:6px; }
+.close-card p { font-size:12px; color:var(--muted); line-height:1.6; }
+.close-card .price { font-size:18px; font-weight:800; color:var(--cream); margin:6px 0; }
+
+/* SIDEBAR */
+.sidebar > * { margin-bottom:16px; }
+.timer-card { background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:18px; text-align:center; }
+.timer-display { font-size:42px; font-weight:800; color:var(--cream); letter-spacing:-0.02em; margin:8px 0; font-variant-numeric:tabular-nums; }
+.timer-sub { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; }
+.timer-phase { font-size:12px; color:var(--gold); margin-top:6px; font-weight:600; }
+.timer-btns { display:flex; gap:8px; margin-top:14px; justify-content:center; }
+.btn-gold { background:rgba(201,169,110,0.12); border:1px solid rgba(201,169,110,0.35); border-radius:7px; color:var(--gold-lt); font-family:'Inter',sans-serif; font-size:12px; font-weight:600; padding:8px 16px; cursor:pointer; transition:all 0.2s; }
+.btn-gold:hover { background:rgba(201,169,110,0.2); }
+.btn-sm { background:var(--bg3); border:1px solid rgba(201,169,110,0.1); border-radius:6px; color:var(--muted); font-family:'Inter',sans-serif; font-size:11px; font-weight:600; padding:6px 12px; cursor:pointer; transition:all 0.2s; }
+.btn-sm:hover { color:var(--text); border-color:rgba(201,169,110,0.25); }
+.btn-green { background:rgba(90,173,122,0.12); border:1px solid rgba(90,173,122,0.3); border-radius:7px; color:var(--green); font-family:'Inter',sans-serif; font-size:12px; font-weight:600; padding:8px 16px; cursor:pointer; transition:all 0.2s; }
+.btn-green:hover { background:rgba(90,173,122,0.2); }
+.btn-red { background:rgba(224,85,85,0.1); border:1px solid rgba(224,85,85,0.25); border-radius:7px; color:var(--red); font-family:'Inter',sans-serif; font-size:12px; font-weight:600; padding:8px 16px; cursor:pointer; }
+
+/* PHASE DOTS */
+.phase-dots { display:flex; gap:6px; justify-content:center; margin-bottom:8px; }
+.phase-dot { width:8px; height:8px; border-radius:50%; background:var(--muted); opacity:0.3; transition:all 0.3s; }
+.phase-dot.current { background:var(--gold); opacity:1; transform:scale(1.3); }
+.phase-dot.past { background:var(--green); opacity:0.7; }
+
+/* PROSPECT BAR */
+.prospect-bar { display:flex; gap:10px; align-items:center; background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:12px 16px; margin-bottom:20px; flex-wrap:wrap; }
+.prospect-bar label { font-size:11px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:0.05em; white-space:nowrap; }
+.prospect-bar input, .prospect-bar select { flex:1; min-width:120px; }
+
+/* SPINNER */
+.spinner { display:inline-block; width:14px; height:14px; border:2px solid rgba(201,169,110,0.2); border-top-color:var(--gold); border-radius:50%; animation:spin 0.7s linear infinite; vertical-align:middle; margin-right:5px; }
+@keyframes spin { to{transform:rotate(360deg)} }
+
+/* TOAST */
+.toast { position:fixed; bottom:28px; left:50%; transform:translateX(-50%); background:var(--bg3); border:1px solid rgba(201,169,110,0.3); border-radius:8px; padding:9px 20px; font-size:13px; color:var(--gold-lt); z-index:999; display:none; pointer-events:none; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">Aldric Group</a>
+  <div class="nav-links">
+    <a href="index.html">Home</a>
+    <a href="crm.html">CRM</a>
+    <a href="automation.html">Daily Automation</a>
+    <a href="client-setup.html">Client Setup</a>
+    <a href="discovery-call.html" class="active">Discovery Call</a>
+    <a href="email-outreach.html">Email Gen</a>
+    <span class="internal-badge">Internal</span>
+  </div>
+</nav>
+
+<div class="layout">
+
+  <!-- ═══════════════════ MAIN CONTENT ═══════════════════ -->
+  <div class="main-col">
+
+    <!-- PROSPECT BAR -->
+    <div class="prospect-bar">
+      <label>PROSPECT</label>
+      <input type="text" id="p-name" placeholder="Contact name" />
+      <input type="text" id="p-business" placeholder="Business name" />
+      <select id="p-niche">
+        <option value="">— Niche —</option>
+        <option>Med Spa / Aesthetics</option>
+        <option>Estate Agent</option>
+        <option>Mortgage Broker</option>
+        <option>Financial Advisor / IFA</option>
+        <option>Solicitor / Law Firm</option>
+        <option>Accountancy Practice</option>
+        <option>Dental Practice</option>
+        <option>Recruitment Agency</option>
+      </select>
+      <button class="btn-sm" onclick="loadFromCRM()">Load CRM</button>
+      <button class="btn-green" onclick="addToCRM()">+ Add to CRM</button>
+    </div>
+
+    <!-- PHASE TABS -->
+    <div class="phase-tabs" id="phaseTabs">
+      <div class="phase-tab active" data-phase="0" onclick="goPhase(0)">① Opening</div>
+      <div class="phase-tab" data-phase="1" onclick="goPhase(1)">② Diagnosis</div>
+      <div class="phase-tab" data-phase="2" onclick="goPhase(2)">③ Position</div>
+      <div class="phase-tab" data-phase="3" onclick="goPhase(3)">④ Present</div>
+      <div class="phase-tab" data-phase="4" onclick="goPhase(4)">⑤ Close</div>
+      <div class="phase-tab" data-phase="5" onclick="goPhase(5)">⑥ Post-Call</div>
+    </div>
+
+    <!-- ─── PHASE 0: OPENING ─── -->
+    <div class="phase-panel" id="phase-0">
+      <div class="section">
+        <div class="phase-header">
+          <div>
+            <div class="phase-label">Opening</div>
+            <div class="phase-sub">Build rapport and set the agenda — first 3–4 minutes</div>
+          </div>
+          <div class="phase-timer-badge">3–4 min</div>
+        </div>
+
+        <div class="script-block">
+          <div class="script-label">Opening Line</div>
+          <div class="script-text">"Thanks for jumping on — really appreciate it. I've had a look at [Business] before the call. Quick bit of housekeeping: we've got 30 minutes together. I'll ask you some questions about what's happening at the moment with your marketing, tell you a bit about what we do, and we'll see if there's a fit. Sound good?"</div>
+        </div>
+
+        <div class="script-block" style="border-color:var(--blue);">
+          <div class="script-label" style="color:var(--blue);">Transition to Diagnosis</div>
+          <div class="script-text">"Let me start with you — just to make sure anything I share later is actually relevant. Can you tell me a bit about where things are at the moment with [marketing / social / leads]?"</div>
+          <div class="script-note">👉 Let them talk. Don't interrupt. Just nod and take notes.</div>
+        </div>
+
+        <h3 style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-top:14px;">Pre-Call Notes</h3>
+        <textarea id="notes-0" rows="3" placeholder="What do you know about them before the call? LinkedIn research, mutual connections, recent posts..." oninput="saveNotes()"></textarea>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:4px;">
+        <button class="btn-gold" onclick="nextPhase(0)">Diagnosis →</button>
+      </div>
+    </div>
+
+    <!-- ─── PHASE 1: DIAGNOSIS ─── -->
+    <div class="phase-panel" id="phase-1" style="display:none;">
+      <div class="section">
+        <div class="phase-header">
+          <div>
+            <div class="phase-label">Diagnosis</div>
+            <div class="phase-sub">Understand their situation, pain, and goals — 8–10 minutes</div>
+          </div>
+          <div class="phase-timer-badge">8–10 min</div>
+        </div>
+
+        <ul class="q-list" id="diagnosisQs">
+          <li class="q-item" onclick="toggleAsked(this)"><span class="q-num">Q1</span><span class="q-text">What does your marketing look like right now — what are you doing, if anything?</span><span class="q-copy" onclick="copyQ(event, this)">Copy</span></li>
+          <li class="q-item" onclick="toggleAsked(this)"><span class="q-num">Q2</span><span class="q-text">Where are most of your new clients / enquiries coming from at the moment?</span><span class="q-copy" onclick="copyQ(event, this)">Copy</span></li>
+          <li class="q-item" onclick="toggleAsked(this)"><span class="q-num">Q3</span><span class="q-text">What would you say is the biggest challenge you're facing with getting more clients right now?</span><span class="q-copy" onclick="copyQ(event, this)">Copy</span></li>
+          <li class="q-item" onclick="toggleAsked(this)"><span class="q-num">Q4</span><span class="q-text">Have you tried social media or email marketing before? What happened?</span><span class="q-copy" onclick="copyQ(event, this)">Copy</span></li>
+          <li class="q-item" onclick="toggleAsked(this)"><span class="q-num">Q5</span><span class="q-text">What does a good month look like for you — what numbers would you be happy with?</span><span class="q-copy" onclick="copyQ(event, this)">Copy</span></li>
+          <li class="q-item" onclick="toggleAsked(this)"><span class="q-num">Q6</span><span class="q-text">What's the average value of a new client to your business?</span><span class="q-copy" onclick="copyQ(event, this)">Copy</span></li>
+          <li class="q-item" onclick="toggleAsked(this)"><span class="q-num">Q7</span><span class="q-text">Is growing the business a priority for you right now, or is it more about stabilising first?</span><span class="q-copy" onclick="copyQ(event, this)">Copy</span></li>
+        </ul>
+
+        <h3 style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-top:16px;">Diagnosis Notes</h3>
+        <textarea id="notes-1" rows="5" placeholder="Their current situation, pains, goals, current client value, what they've tried..." oninput="saveNotes()"></textarea>
+
+        <!-- ROI CALCULATOR -->
+        <div style="margin-top:16px;background:rgba(201,169,110,0.04);border:1px solid rgba(201,169,110,0.1);border-radius:10px;padding:16px;">
+          <div class="section-title" style="margin-bottom:12px;"><span class="dot"></span>ROI Calculator (Live)</div>
+          <div class="roi-grid">
+            <div class="roi-field">
+              <label>Avg Client Value (£)</label>
+              <input type="number" id="roi-ltv" placeholder="1500" oninput="calcROI()" />
+            </div>
+            <div class="roi-field">
+              <label>New Clients / Month Goal</label>
+              <input type="number" id="roi-clients" placeholder="5" oninput="calcROI()" />
+            </div>
+            <div class="roi-field">
+              <label>Current Monthly Leads</label>
+              <input type="number" id="roi-curr-leads" placeholder="8" oninput="calcROI()" />
+            </div>
+            <div class="roi-field">
+              <label>Close Rate (%)</label>
+              <input type="number" id="roi-close" placeholder="25" oninput="calcROI()" />
+            </div>
+          </div>
+          <div class="roi-result" id="roiResult" style="display:none;">
+            <div class="roi-row"><span>Current monthly revenue</span><span id="r-curr">—</span></div>
+            <div class="roi-row"><span>Projected extra leads/mo</span><span id="r-leads">—</span></div>
+            <div class="roi-row"><span>Projected extra revenue/mo</span><span id="r-rev">—</span></div>
+            <div class="roi-row"><span>Package cost</span><span id="r-cost">—</span></div>
+            <div class="roi-row highlight"><span>Monthly ROI</span><span id="r-roi">—</span></div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px;">
+        <button class="btn-sm" onclick="prevPhase(1)">← Back</button>
+        <button class="btn-gold" onclick="nextPhase(1)">Position →</button>
+      </div>
+    </div>
+
+    <!-- ─── PHASE 2: POSITION ─── -->
+    <div class="phase-panel" id="phase-2" style="display:none;">
+      <div class="section">
+        <div class="phase-header">
+          <div>
+            <div class="phase-label">Position</div>
+            <div class="phase-sub">Connect what you heard to what you do — 4–5 minutes</div>
+          </div>
+          <div class="phase-timer-badge">4–5 min</div>
+        </div>
+
+        <div class="script-block">
+          <div class="script-label">Positioning Bridge</div>
+          <div class="script-text">"OK, so what I'm hearing is [summarise their problem in their words]. That's exactly the situation most of our clients are in when they first come to us — before we start working together. What we do is..."</div>
+        </div>
+
+        <div class="script-block" style="border-color:var(--blue);">
+          <div class="script-label" style="color:var(--blue);">What We Do (one-liner)</div>
+          <div class="script-text">"We handle the marketing completely — content for social, email campaigns, and LinkedIn outreach — so that your business is consistently visible to the right people, every single month, without you having to think about it."</div>
+        </div>
+
+        <div class="script-block" style="border-color:var(--green);">
+          <div class="script-label" style="color:var(--green);">Proof Point</div>
+          <div class="script-text">"For example, we've got a [similar business type] in [city] who was in almost exactly the same position — [brief problem]. Within 60 days, [specific result]. We do that by [one key mechanism]."</div>
+          <div class="script-note">💡 Pick the most relevant case study — Med Spa → Luxe Aesthetics; Estate Agent → Caldwell & Moore</div>
+        </div>
+
+        <h3 style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-top:14px;">Their Key Problem (in their words)</h3>
+        <textarea id="notes-2" rows="3" placeholder="Write their main pain point in their exact words — use this when closing..." oninput="saveNotes()"></textarea>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px;">
+        <button class="btn-sm" onclick="prevPhase(2)">← Back</button>
+        <button class="btn-gold" onclick="nextPhase(2)">Present →</button>
+      </div>
+    </div>
+
+    <!-- ─── PHASE 3: PRESENT ─── -->
+    <div class="phase-panel" id="phase-3" style="display:none;">
+      <div class="section">
+        <div class="phase-header">
+          <div>
+            <div class="phase-label">Present</div>
+            <div class="phase-sub">Walk through the offer — 5–7 minutes</div>
+          </div>
+          <div class="phase-timer-badge">5–7 min</div>
+        </div>
+
+        <div class="close-options">
+          <div class="close-card">
+            <h4>Growth Package</h4>
+            <div class="price">£750/month</div>
+            <p>Social media content: 20 posts/month + scheduling. Designed for businesses that need consistent presence without the hassle. Great starting point.</p>
+          </div>
+          <div class="close-card" style="border-color:rgba(201,169,110,0.25);background:rgba(201,169,110,0.04);">
+            <h4>Scale Package <span style="font-size:11px;color:var(--gold);background:rgba(201,169,110,0.12);padding:2px 8px;border-radius:3px;margin-left:6px;">Most Popular</span></h4>
+            <div class="price">£1,250/month</div>
+            <p>Everything in Growth + email marketing: monthly newsletter + lead nurture sequence. Two channels working together. This is where most clients see the fastest results.</p>
+          </div>
+          <div class="close-card">
+            <h4>Dominance Package</h4>
+            <div class="price">£1,500/month</div>
+            <p>Everything in Scale + LinkedIn outreach: 20 targeted messages/week to your ideal clients. Full marketing stack on autopilot. For businesses serious about growth.</p>
+          </div>
+        </div>
+
+        <div class="script-block" style="margin-top:14px;">
+          <div class="script-label">Presenting the Options</div>
+          <div class="script-text">"Based on what you've told me — [their goal] — I'd actually recommend the [X] package. Here's why: [reason tied to their specific goal]. But I'll show you all three so you can see exactly what's included at each level."</div>
+        </div>
+
+        <div class="script-block" style="border-color:var(--blue);">
+          <div class="script-label" style="color:var(--blue);">On Pricing Questions</div>
+          <div class="script-text">"Our packages start at £750/month. The reason I'd rather talk about that now than dance around it — if it's not the right investment for where you are, there's no point in either of us spending more time. Does the investment range make sense for you?"</div>
+        </div>
+
+        <h3 style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-top:14px;">Recommended Package</h3>
+        <select id="p-package" onchange="saveNotes()">
+          <option value="">— Select recommended package —</option>
+          <option>Growth (£750/mo)</option>
+          <option>Scale (£1,250/mo)</option>
+          <option>Dominance (£1,500/mo)</option>
+        </select>
+        <textarea id="notes-3" rows="3" placeholder="Their reaction, what interests them, any hesitations noted..." style="margin-top:10px;" oninput="saveNotes()"></textarea>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px;">
+        <button class="btn-sm" onclick="prevPhase(3)">← Back</button>
+        <button class="btn-gold" onclick="nextPhase(3)">Close →</button>
+      </div>
+    </div>
+
+    <!-- ─── PHASE 4: CLOSE ─── -->
+    <div class="phase-panel" id="phase-4" style="display:none;">
+      <div class="section">
+        <div class="phase-header">
+          <div>
+            <div class="phase-label">Close</div>
+            <div class="phase-sub">Handle objections and commit to next step — 5–8 minutes</div>
+          </div>
+          <div class="phase-timer-badge">5–8 min</div>
+        </div>
+
+        <div class="script-block">
+          <div class="script-label">Closing Question</div>
+          <div class="script-text">"How does that all sound? I want to make sure everything I've shared actually makes sense for where [Business] is right now."</div>
+        </div>
+
+        <h3 style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin:14px 0 10px;">Common Objections</h3>
+        <div class="obj-grid">
+          <div class="obj-card">
+            <div class="obj-q" onclick="toggleObj(this)">"I need to think about it." <span class="obj-chevron">▼</span></div>
+            <div class="obj-a">"Of course — and I'd never push you into anything. What specifically do you want to think through? Is it the investment side, or is it more whether now's the right time?"</div>
+          </div>
+          <div class="obj-card">
+            <div class="obj-q" onclick="toggleObj(this)">"It's too expensive." <span class="obj-chevron">▼</span></div>
+            <div class="obj-a">"I get that. If I take the Scale package — £1,250/month. If you bring in just one new client from that activity, you've paid for it. Based on the client value you mentioned, that's actually [X]× ROI on month one. Does that change the picture at all?"</div>
+          </div>
+          <div class="obj-card">
+            <div class="obj-q" onclick="toggleObj(this)">"I tried social media before and it didn't work." <span class="obj-chevron">▼</span></div>
+            <div class="obj-a">"That's really common, and I'd want to understand what that looked like. Most of the time it's because it was inconsistent, or the content wasn't specific enough to drive enquiries. What we do differently is [specific mechanism]. Can I show you an example from someone in your sector?"</div>
+          </div>
+          <div class="obj-card">
+            <div class="obj-q" onclick="toggleObj(this)">"I'll do it myself / we have someone in-house." <span class="obj-chevron">▼</span></div>
+            <div class="obj-a">"That's totally valid. The difference is usually consistency and specialisation — our team does this for 15+ clients across the same sectors, so we know what converts. But I'd ask: is that person generating enquiries right now? If yes, brilliant. If not, it might be worth a conversation."</div>
+          </div>
+          <div class="obj-card">
+            <div class="obj-q" onclick="toggleObj(this)">"Can you guarantee results?" <span class="obj-chevron">▼</span></div>
+            <div class="obj-a">"I can guarantee the work gets done — content published, emails sent, LinkedIn messages going out every week. Results depend on your market and your offers, but the infrastructure we build gives those results their best possible chance. That's the honest answer."</div>
+          </div>
+          <div class="obj-card">
+            <div class="obj-q" onclick="toggleObj(this)">"We're not ready yet." <span class="obj-chevron">▼</span></div>
+            <div class="obj-a">"When you say not ready — is that around budget, or is it more timing? I ask because the businesses that feel 'not ready' are usually the ones that benefit most from getting consistent marketing running, even at a smaller scale. What would 'ready' look like for you?"</div>
+          </div>
+        </div>
+
+        <div class="script-block" style="margin-top:14px;border-color:var(--green);">
+          <div class="script-label" style="color:var(--green);">Next Step (always book something)</div>
+          <div class="script-text">"Here's what I'd suggest: let's not leave it vague. Either we move forward, or we agree it's not right and both save time. If you want to go ahead, I can send the contract over today and we can start Week 1 next Monday. If you need a day, that's fine — but can we agree on a specific time I'll follow up?"</div>
+        </div>
+
+        <textarea id="notes-4" rows="3" placeholder="Objections raised, their response, agreed next step + date/time..." oninput="saveNotes()" style="margin-top:12px;"></textarea>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px;">
+        <button class="btn-sm" onclick="prevPhase(4)">← Back</button>
+        <button class="btn-gold" onclick="nextPhase(4)">Post-Call →</button>
+      </div>
+    </div>
+
+    <!-- ─── PHASE 5: POST-CALL ─── -->
+    <div class="phase-panel" id="phase-5" style="display:none;">
+      <div class="section">
+        <div class="phase-header">
+          <div>
+            <div class="phase-label">Post-Call</div>
+            <div class="phase-sub">Save notes and log to CRM — do this within 10 minutes</div>
+          </div>
+          <div class="phase-timer-badge">10 min</div>
+        </div>
+
+        <div class="form-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+          <div>
+            <label style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:4px;">Outcome</label>
+            <select id="call-outcome">
+              <option value="">— Select outcome —</option>
+              <option value="Contract sent">Contract sent</option>
+              <option value="Follow-up scheduled">Follow-up scheduled</option>
+              <option value="Thinking it over">Thinking it over</option>
+              <option value="Not interested">Not interested</option>
+              <option value="Wrong fit">Wrong fit</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:4px;">Follow-Up Date</label>
+            <input type="text" id="call-followup" placeholder="e.g. Thursday 5 June, 2pm" />
+          </div>
+        </div>
+
+        <h3 style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">Call Summary</h3>
+        <textarea id="notes-5" rows="5" placeholder="Full call summary: what they told you, their goals, concerns, what you agreed, any personal details to remember..." oninput="saveNotes()"></textarea>
+
+        <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
+          <button class="btn-green" onclick="saveToProspectCRM()">✓ Save to CRM</button>
+          <button class="btn-gold" onclick="copySummary()">Copy Summary</button>
+          <button class="btn-sm" onclick="exportCallNotes()">Export Notes</button>
+          <button class="btn-red" onclick="clearCall()">Clear Call</button>
+        </div>
+        <div id="crmSaved" style="display:none;font-size:12px;color:var(--green);margin-top:8px;">✓ Saved to CRM</div>
+
+        <!-- POST-CALL ACTIONS -->
+        <div style="margin-top:18px;background:var(--bg3);border-radius:8px;padding:14px;border:1px solid rgba(201,169,110,0.08);">
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;">Post-Call Actions</div>
+          <ul style="list-style:none;display:flex;flex-direction:column;gap:6px;">
+            <li style="font-size:13px;color:var(--text);">📧 Send follow-up email within 2 hours</li>
+            <li style="font-size:13px;color:var(--text);">📋 Update CRM status + add contact log entry</li>
+            <li style="font-size:13px;color:var(--text);">📅 Book follow-up in calendar if not closed</li>
+            <li style="font-size:13px;color:var(--text);">📄 Send contract if they said yes</li>
+            <li style="font-size:13px;color:var(--text);">🗒 Record call outcome in KPI tracker</li>
+          </ul>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px;">
+        <button class="btn-sm" onclick="prevPhase(5)">← Back</button>
+        <a href="contract.html" class="btn-gold" style="text-decoration:none;">Generate Contract →</a>
+      </div>
+    </div>
+
+  </div><!-- /main-col -->
+
+  <!-- ═══════════════════ SIDEBAR ═══════════════════ -->
+  <div class="sidebar">
+
+    <!-- TIMER -->
+    <div class="timer-card">
+      <div class="timer-sub">Call Timer</div>
+      <div class="timer-display" id="timerDisplay">00:00</div>
+      <div class="phase-dots" id="phaseDots">
+        <div class="phase-dot current"></div>
+        <div class="phase-dot"></div>
+        <div class="phase-dot"></div>
+        <div class="phase-dot"></div>
+        <div class="phase-dot"></div>
+        <div class="phase-dot"></div>
+      </div>
+      <div class="timer-phase" id="timerPhase">Ready to start</div>
+      <div class="timer-btns">
+        <button class="btn-gold" id="timerBtn" onclick="toggleTimer()">▶ Start</button>
+        <button class="btn-sm" onclick="resetTimer()">Reset</button>
+      </div>
+    </div>
+
+    <!-- PHASE GUIDE -->
+    <div class="section">
+      <div class="section-title"><span class="dot"></span>Phase Guide</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:5px 8px;background:var(--bg3);border-radius:5px;">
+          <span style="color:var(--text);">① Opening</span><span style="color:var(--muted);">0–4 min</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:5px 8px;background:var(--bg3);border-radius:5px;">
+          <span style="color:var(--text);">② Diagnosis</span><span style="color:var(--muted);">4–14 min</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:5px 8px;background:var(--bg3);border-radius:5px;">
+          <span style="color:var(--text);">③ Position</span><span style="color:var(--muted);">14–19 min</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:5px 8px;background:var(--bg3);border-radius:5px;">
+          <span style="color:var(--text);">④ Present</span><span style="color:var(--muted);">19–26 min</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:5px 8px;background:var(--bg3);border-radius:5px;">
+          <span style="color:var(--text);">⑤ Close</span><span style="color:var(--muted);">26–34 min</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:5px 8px;background:var(--bg3);border-radius:5px;">
+          <span style="color:var(--text);">⑥ Post-Call</span><span style="color:var(--muted);">After</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CALL RULES -->
+    <div class="section">
+      <div class="section-title"><span class="dot"></span>Rules of the Call</div>
+      <ul style="list-style:none;display:flex;flex-direction:column;gap:6px;">
+        <li style="font-size:12px;color:var(--text);">👂 <strong>Listen 70%, talk 30%</strong></li>
+        <li style="font-size:12px;color:var(--text);">🎯 Diagnose before you prescribe</li>
+        <li style="font-size:12px;color:var(--text);">💬 Use their exact words when closing</li>
+        <li style="font-size:12px;color:var(--text);">⏱ Don't pitch before minute 10</li>
+        <li style="font-size:12px;color:var(--text);">🚫 Never discount on the first call</li>
+        <li style="font-size:12px;color:var(--text);">📅 Always leave with a concrete next step</li>
+        <li style="font-size:12px;color:var(--text);">🤐 Silence after asking for the close — wait</li>
+      </ul>
+    </div>
+
+    <!-- QUICK LINKS -->
+    <div class="section">
+      <div class="section-title"><span class="dot"></span>Quick Links</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <a href="contract.html" style="font-size:12px;color:var(--muted);text-decoration:none;padding:7px 10px;background:var(--bg3);border-radius:6px;border:1px solid rgba(201,169,110,0.07);transition:all 0.15s" onmouseover="this.style.borderColor='rgba(201,169,110,0.2)'" onmouseout="this.style.borderColor='rgba(201,169,110,0.07)'">📄 Contract Generator</a>
+        <a href="case-studies.html" style="font-size:12px;color:var(--muted);text-decoration:none;padding:7px 10px;background:var(--bg3);border-radius:6px;border:1px solid rgba(201,169,110,0.07);transition:all 0.15s" onmouseover="this.style.borderColor='rgba(201,169,110,0.2)'" onmouseout="this.style.borderColor='rgba(201,169,110,0.07)'">📊 Case Studies</a>
+        <a href="results-simulator.html" style="font-size:12px;color:var(--muted);text-decoration:none;padding:7px 10px;background:var(--bg3);border-radius:6px;border:1px solid rgba(201,169,110,0.07);transition:all 0.15s" onmouseover="this.style.borderColor='rgba(201,169,110,0.2)'" onmouseout="this.style.borderColor='rgba(201,169,110,0.07)'">💰 ROI Simulator</a>
+        <a href="crm.html" style="font-size:12px;color:var(--muted);text-decoration:none;padding:7px 10px;background:var(--bg3);border-radius:6px;border:1px solid rgba(201,169,110,0.07);transition:all 0.15s" onmouseover="this.style.borderColor='rgba(201,169,110,0.2)'" onmouseout="this.style.borderColor='rgba(201,169,110,0.07)'">📋 CRM</a>
+      </div>
+    </div>
+
+  </div><!-- /sidebar -->
+
+</div><!-- /layout -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let currentPhase = 0;
+let timerInterval = null;
+let timerSeconds = 0;
+let timerRunning = false;
+
+const PHASE_NAMES = ['Opening','Diagnosis','Position','Present','Close','Post-Call'];
+const PHASE_THRESHOLDS = [0, 240, 840, 1140, 1560, 2040]; // seconds
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  loadNotes();
+  const savedPhase = parseInt(localStorage.getItem('aldric_call_phase') || '0');
+  if (savedPhase > 0) goPhase(savedPhase);
+});
+
+// ─── PHASES ──────────────────────────────────────────────────────────────────
+function goPhase(n) {
+  document.querySelectorAll('.phase-panel').forEach((el,i) => el.style.display = i === n ? 'block' : 'none');
+  document.querySelectorAll('.phase-tab').forEach((el,i) => {
+    el.classList.remove('active','done');
+    if (i === n) el.classList.add('active');
+    else if (i < n) el.classList.add('done');
+  });
+  // Update phase dots
+  document.querySelectorAll('.phase-dot').forEach((dot, i) => {
+    dot.classList.remove('current','past');
+    if (i === n) dot.classList.add('current');
+    else if (i < n) dot.classList.add('past');
+  });
+  document.getElementById('timerPhase').textContent = PHASE_NAMES[n];
+  currentPhase = n;
+  localStorage.setItem('aldric_call_phase', n);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function nextPhase(n) { goPhase(Math.min(n + 1, 5)); }
+function prevPhase(n) { goPhase(Math.max(n - 1, 0)); }
+
+// ─── TIMER ────────────────────────────────────────────────────────────────────
+function toggleTimer() {
+  if (timerRunning) {
+    clearInterval(timerInterval);
+    timerRunning = false;
+    document.getElementById('timerBtn').textContent = '▶ Resume';
+  } else {
+    timerInterval = setInterval(() => {
+      timerSeconds++;
+      updateTimerDisplay();
+      // Auto-advance phase suggestion
+      for (let i = PHASE_THRESHOLDS.length - 1; i >= 0; i--) {
+        if (timerSeconds >= PHASE_THRESHOLDS[i] && currentPhase < i) {
+          document.getElementById('timerPhase').textContent = '→ Move to: ' + PHASE_NAMES[i];
+          break;
+        }
+      }
+    }, 1000);
+    timerRunning = true;
+    document.getElementById('timerBtn').textContent = '⏸ Pause';
+  }
+}
+function resetTimer() {
+  clearInterval(timerInterval);
+  timerRunning = false;
+  timerSeconds = 0;
+  updateTimerDisplay();
+  document.getElementById('timerBtn').textContent = '▶ Start';
+  document.getElementById('timerPhase').textContent = 'Ready to start';
+}
+function updateTimerDisplay() {
+  const m = Math.floor(timerSeconds / 60).toString().padStart(2,'0');
+  const s = (timerSeconds % 60).toString().padStart(2,'0');
+  document.getElementById('timerDisplay').textContent = m + ':' + s;
+  // Colour the timer
+  const el = document.getElementById('timerDisplay');
+  if (timerSeconds > 2100) el.style.color = 'var(--red)';       // >35 min
+  else if (timerSeconds > 1800) el.style.color = 'var(--amber)'; // >30 min
+  else el.style.color = 'var(--cream)';
+}
+
+// ─── NOTES ────────────────────────────────────────────────────────────────────
+function saveNotes() {
+  const notes = {};
+  for (let i = 0; i <= 5; i++) {
+    const el = document.getElementById('notes-' + i);
+    if (el) notes['phase_' + i] = el.value;
+  }
+  notes.package = document.getElementById('p-package')?.value || '';
+  notes.outcome = document.getElementById('call-outcome')?.value || '';
+  notes.followup = document.getElementById('call-followup')?.value || '';
+  localStorage.setItem('aldric_call_notes', JSON.stringify(notes));
+}
+function loadNotes() {
+  const saved = JSON.parse(localStorage.getItem('aldric_call_notes') || 'null');
+  if (!saved) return;
+  for (let i = 0; i <= 5; i++) {
+    const el = document.getElementById('notes-' + i);
+    if (el && saved['phase_' + i]) el.value = saved['phase_' + i];
+  }
+  if (saved.package && document.getElementById('p-package')) document.getElementById('p-package').value = saved.package;
+  if (saved.outcome && document.getElementById('call-outcome')) document.getElementById('call-outcome').value = saved.outcome;
+  if (saved.followup && document.getElementById('call-followup')) document.getElementById('call-followup').value = saved.followup;
+}
+
+// ─── ROI CALC ─────────────────────────────────────────────────────────────────
+function calcROI() {
+  const ltv = parseFloat(document.getElementById('roi-ltv').value) || 0;
+  const clients = parseFloat(document.getElementById('roi-clients').value) || 0;
+  const currLeads = parseFloat(document.getElementById('roi-curr-leads').value) || 0;
+  const close = (parseFloat(document.getElementById('roi-close').value) || 25) / 100;
+  if (!ltv || !clients) return;
+  const currClients = Math.round(currLeads * close);
+  const currRev = currClients * ltv;
+  const extraLeads = Math.round(clients / close) - currLeads;
+  const extraClients = clients;
+  const extraRev = extraClients * ltv;
+  const pkgCost = 1250; // Scale as default
+  const roi = ((extraRev - pkgCost) / pkgCost * 100).toFixed(0);
+  const res = document.getElementById('roiResult');
+  res.style.display = 'block';
+  document.getElementById('r-curr').textContent = '£' + currRev.toLocaleString() + '/mo';
+  document.getElementById('r-leads').textContent = '+' + Math.max(extraLeads,0) + ' leads/mo';
+  document.getElementById('r-rev').textContent = '+£' + extraRev.toLocaleString() + '/mo';
+  document.getElementById('r-cost').textContent = '£' + pkgCost + '/mo (Scale)';
+  document.getElementById('r-roi').textContent = roi + '% ROI';
+}
+
+// ─── CRM INTEGRATION ─────────────────────────────────────────────────────────
+function loadFromCRM() {
+  const name = document.getElementById('p-name').value.trim().toLowerCase() ||
+               document.getElementById('p-business').value.trim().toLowerCase();
+  if (!name) { showToast('Enter a name or business first'); return; }
+  const crm = JSON.parse(localStorage.getItem('aldric_crm_v2') || '[]');
+  const match = crm.find(p => p.name?.toLowerCase().includes(name) || p.business?.toLowerCase().includes(name));
+  if (!match) { showToast('Not found in CRM'); return; }
+  document.getElementById('p-name').value = match.name || '';
+  document.getElementById('p-business').value = match.business || '';
+  if (match.sector) {
+    const sel = document.getElementById('p-niche');
+    for (let i = 0; i < sel.options.length; i++) {
+      if (sel.options[i].value.toLowerCase().includes(match.sector.toLowerCase())) { sel.selectedIndex = i; break; }
+    }
+  }
+  showToast('Loaded from CRM ✓');
+}
+
+function addToCRM() {
+  const name = document.getElementById('p-name').value.trim();
+  const business = document.getElementById('p-business').value.trim();
+  const niche = document.getElementById('p-niche').value;
+  const outcome = document.getElementById('call-outcome')?.value || '';
+  const notes5 = document.getElementById('notes-5')?.value || '';
+  if (!name && !business) { showToast('Enter name or business first'); return; }
+
+  const crm = JSON.parse(localStorage.getItem('aldric_crm_v2') || '[]');
+  // Check if already exists
+  const existing = crm.find(p => (name && p.name === name) || (business && p.business === business));
+  if (existing) {
+    // Update with call outcome
+    existing.stage = outcomeToStage(outcome) || existing.stage || 'Call Booked';
+    existing.lastContacted = new Date().toISOString();
+    if (notes5) existing.notes = (existing.notes || '') + '\n\n[Call ' + new Date().toLocaleDateString('en-GB') + ']: ' + notes5;
+    localStorage.setItem('aldric_crm_v2', JSON.stringify(crm));
+    showToast('CRM updated ✓');
+  } else {
+    const newProspect = {
+      id: Date.now().toString(),
+      name, business, sector: niche.split('/')[0].trim(),
+      package: document.getElementById('p-package')?.value || '',
+      stage: outcomeToStage(outcome) || 'Call Booked',
+      lastContacted: new Date().toISOString(),
+      notes: notes5,
+      createdAt: new Date().toISOString(),
+    };
+    crm.push(newProspect);
+    localStorage.setItem('aldric_crm_v2', JSON.stringify(crm));
+    showToast('Added to CRM ✓');
+  }
+  document.getElementById('crmSaved').style.display = 'block';
+  setTimeout(() => document.getElementById('crmSaved').style.display = 'none', 2500);
+}
+
+function saveToProspectCRM() { addToCRM(); }
+
+function outcomeToStage(outcome) {
+  if (!outcome) return 'Call Booked';
+  if (outcome.includes('Contract')) return 'Proposal Sent';
+  if (outcome.includes('Follow')) return 'Call Booked';
+  if (outcome.includes('Thinking')) return 'Call Booked';
+  if (outcome.includes('Not interested') || outcome.includes('Wrong')) return 'Not a Fit';
+  return 'Call Booked';
+}
+
+// ─── QUESTION HELPERS ─────────────────────────────────────────────────────────
+function toggleAsked(li) {
+  const txt = li.querySelector('.q-text');
+  txt.classList.toggle('q-asked');
+}
+function copyQ(event, btn) {
+  event.stopPropagation();
+  const txt = btn.previousElementSibling.textContent;
+  navigator.clipboard.writeText(txt).then(() => showToast('Copied'));
+}
+
+// ─── OBJECTIONS ───────────────────────────────────────────────────────────────
+function toggleObj(qEl) {
+  const a = qEl.nextElementSibling;
+  const chevron = qEl.querySelector('.obj-chevron');
+  a.classList.toggle('open');
+  chevron.classList.toggle('open');
+}
+
+// ─── EXPORT / COPY ────────────────────────────────────────────────────────────
+function copySummary() {
+  const name = document.getElementById('p-name').value || 'Prospect';
+  const biz = document.getElementById('p-business').value || 'Business';
+  const outcome = document.getElementById('call-outcome')?.value || '—';
+  const followup = document.getElementById('call-followup')?.value || '—';
+  const notes = [0,1,2,3,4,5].map(i => {
+    const el = document.getElementById('notes-' + i);
+    return el?.value ? `[${['Pre-call','Diagnosis','Pain','Reaction','Close','Summary'][i]}]\n${el.value}` : '';
+  }).filter(Boolean).join('\n\n');
+  const txt = `DISCOVERY CALL — ${name} / ${biz}\n${'─'.repeat(50)}\nOutcome: ${outcome}\nFollow-up: ${followup}\n\n${notes}`;
+  navigator.clipboard.writeText(txt).then(() => showToast('Summary copied'));
+}
+function exportCallNotes() {
+  const name = document.getElementById('p-name').value || 'Prospect';
+  const biz = document.getElementById('p-business').value || 'Business';
+  copySummary(); // also copies
+  const txt = `DISCOVERY CALL — ${name} / ${biz}\n${new Date().toLocaleDateString('en-GB')}\n\n` +
+    [0,1,2,3,4,5].map(i => {
+      const el = document.getElementById('notes-' + i);
+      return el?.value ? `${['PRE-CALL','DIAGNOSIS','PAIN','REACTION','CLOSE','SUMMARY'][i]}:\n${el.value}` : '';
+    }).filter(Boolean).join('\n\n─────\n\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([txt], { type:'text/plain' }));
+  a.download = `call-${biz.replace(/\s+/g,'-').toLowerCase()}-${new Date().toISOString().slice(0,10)}.txt`;
+  a.click();
+}
+function clearCall() {
+  if (!confirm('Clear all call notes? This cannot be undone.')) return;
+  localStorage.removeItem('aldric_call_notes');
+  localStorage.removeItem('aldric_call_phase');
+  for (let i = 0; i <= 5; i++) {
+    const el = document.getElementById('notes-' + i);
+    if (el) el.value = '';
+  }
+  document.getElementById('p-name').value = '';
+  document.getElementById('p-business').value = '';
+  goPhase(0);
+  resetTimer();
+  showToast('Call cleared');
+}
+
+// ─── UTILS ────────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 2200);
+}
+</script>
+
+</body>
+</html>
