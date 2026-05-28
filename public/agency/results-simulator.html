@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Results Simulator — Aldric Group</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080808;
+    --surface: #111111;
+    --surface2: #1a1a1a;
+    --border: #2a2a2a;
+    --gold: #C9A96E;
+    --gold-dim: #a07840;
+    --gold-bg: rgba(201,169,110,.08);
+    --text: #f0ede8;
+    --muted: #888;
+    --green: #5cb85c;
+    --green-bg: rgba(92,184,92,.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; }
+
+  /* HEADER */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    height: 60px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header-brand { display: flex; align-items: center; gap: 12px; }
+  .header-logo { width: 28px; height: 28px; }
+  .header-name { font-family: 'Playfair Display', serif; font-size: 18px; color: var(--gold); }
+  .header-nav { display: flex; gap: 24px; }
+  .header-nav a { color: var(--muted); text-decoration: none; font-size: 13px; font-weight: 500; transition: color .2s; }
+  .header-nav a:hover, .header-nav a.active { color: var(--gold); }
+
+  /* LAYOUT */
+  .page-wrap { max-width: 960px; margin: 0 auto; padding: 40px 32px 80px; }
+  @media (max-width: 600px) { .page-wrap { padding: 24px 20px 60px; } }
+
+  /* HERO */
+  .hero { text-align: center; margin-bottom: 48px; }
+  .hero-eyebrow { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: var(--gold); margin-bottom: 14px; }
+  .hero h1 { font-family: 'Playfair Display', serif; font-size: clamp(28px, 5vw, 42px); color: var(--text); line-height: 1.2; margin-bottom: 14px; }
+  .hero p { font-size: 16px; color: var(--muted); max-width: 560px; margin: 0 auto; line-height: 1.6; }
+
+  /* CARD */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px 32px;
+    margin-bottom: 24px;
+  }
+  .card-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--gold); margin-bottom: 22px; }
+
+  /* INPUTS */
+  label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .06em; }
+  .input-hint { font-size: 11px; color: #555; font-weight: 400; text-transform: none; letter-spacing: 0; margin-left: 6px; }
+  select, input[type="number"] {
+    width: 100%; padding: 11px 14px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 9px; color: var(--text); font-family: 'Inter', sans-serif;
+    font-size: 15px; outline: none; transition: border-color .2s;
+    -webkit-appearance: none; appearance: none;
+  }
+  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 40px; cursor: pointer; }
+  select:focus, input[type="number"]:focus { border-color: var(--gold); }
+  input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
+
+  .input-prefix-wrap { position: relative; }
+  .input-prefix {
+    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    color: var(--muted); font-size: 15px; font-weight: 600; pointer-events: none;
+  }
+  .input-prefix + input { padding-left: 28px; }
+
+  .input-suffix-wrap { position: relative; }
+  .input-suffix {
+    position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+    color: var(--muted); font-size: 13px; font-weight: 500; pointer-events: none;
+  }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+  @media (max-width: 640px) { .form-grid { grid-template-columns: 1fr; } .form-grid-3 { grid-template-columns: 1fr; } }
+  .form-row { margin-bottom: 0; }
+
+  /* CALCULATE BUTTON */
+  .btn-calculate {
+    width: 100%; padding: 16px; background: var(--gold); color: #080808;
+    border: none; border-radius: 11px; font-family: 'Inter', sans-serif;
+    font-size: 16px; font-weight: 800; cursor: pointer; transition: all .2s;
+    letter-spacing: .02em; margin-top: 6px;
+  }
+  .btn-calculate:hover { background: #d4b27a; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(201,169,110,.3); }
+  .btn-calculate:active { transform: translateY(0); }
+
+  /* RESULTS SECTION */
+  .results-section { display: none; }
+  .results-section.visible { display: block; }
+
+  /* METRIC CARDS */
+  .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+  @media (max-width: 700px) { .metrics-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 400px) { .metrics-grid { grid-template-columns: 1fr; } }
+
+  .metric-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 18px;
+    text-align: center;
+    transition: border-color .3s;
+  }
+  .metric-card.gold { border-color: var(--gold-dim); background: var(--gold-bg); }
+  .metric-card.green { border-color: rgba(92,184,92,.3); background: var(--green-bg); }
+  .metric-icon { font-size: 22px; margin-bottom: 8px; }
+  .metric-val {
+    font-size: 28px; font-weight: 800; color: var(--text);
+    font-variant-numeric: tabular-nums; line-height: 1; margin-bottom: 6px;
+  }
+  .metric-card.gold .metric-val { color: var(--gold); }
+  .metric-card.green .metric-val { color: var(--green); }
+  .metric-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; font-weight: 600; }
+
+  /* BREAKDOWN */
+  .breakdown-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px 32px;
+    margin-bottom: 24px;
+  }
+  .breakdown-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--gold); margin-bottom: 20px; }
+  .breakdown-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 0; border-bottom: 1px solid var(--border);
+  }
+  .breakdown-row:last-child { border-bottom: none; }
+  .breakdown-label { font-size: 14px; color: #ccc; display: flex; align-items: center; gap: 8px; }
+  .breakdown-label .bd-icon { font-size: 16px; }
+  .breakdown-val { font-size: 15px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+  .breakdown-val.gold { color: var(--gold); }
+  .breakdown-val.green { color: var(--green); }
+
+  /* PACKAGE RECOMMENDATION */
+  .package-rec {
+    border-radius: 14px; padding: 28px 32px; margin-bottom: 24px;
+    border: 1px solid var(--gold-dim);
+    background: linear-gradient(135deg, rgba(201,169,110,.06) 0%, rgba(201,169,110,.02) 100%);
+  }
+  .pkg-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+  .pkg-eyebrow { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--gold); margin-bottom: 6px; }
+  .pkg-name { font-family: 'Playfair Display', serif; font-size: 24px; color: var(--text); }
+  .pkg-price { font-size: 28px; font-weight: 800; color: var(--gold); white-space: nowrap; }
+  .pkg-price span { font-size: 14px; font-weight: 400; color: var(--muted); }
+  .pkg-desc { font-size: 14px; color: #aaa; line-height: 1.6; margin-bottom: 18px; }
+  .pkg-includes { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .pkg-includes li { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: #ccc; line-height: 1.5; }
+  .pkg-includes li::before { content: '✓'; color: var(--gold); font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+
+  /* ROI CALLOUT */
+  .roi-callout {
+    background: var(--surface);
+    border: 1px solid rgba(92,184,92,.25);
+    border-radius: 12px; padding: 20px 24px;
+    display: flex; align-items: center; gap: 16px; margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .roi-callout-icon { font-size: 32px; flex-shrink: 0; }
+  .roi-callout-text h3 { font-size: 16px; font-weight: 700; color: var(--green); margin-bottom: 4px; }
+  .roi-callout-text p { font-size: 13px; color: #aaa; line-height: 1.5; }
+
+  /* CTA */
+  .cta-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 36px 32px;
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .cta-card h2 { font-family: 'Playfair Display', serif; font-size: 26px; color: var(--text); margin-bottom: 10px; }
+  .cta-card p { font-size: 14px; color: var(--muted); margin-bottom: 24px; max-width: 480px; margin-left: auto; margin-right: auto; line-height: 1.6; }
+  .btn-cta {
+    display: inline-block; padding: 15px 36px;
+    background: var(--gold); color: #080808;
+    border-radius: 10px; text-decoration: none;
+    font-weight: 800; font-size: 15px; letter-spacing: .02em;
+    transition: all .2s;
+  }
+  .btn-cta:hover { background: #d4b27a; transform: translateY(-2px); box-shadow: 0 8px 28px rgba(201,169,110,.35); }
+  .cta-secondary { margin-top: 12px; font-size: 12px; color: #555; }
+
+  /* DISCLAIMER */
+  .disclaimer { font-size: 11px; color: #444; text-align: center; line-height: 1.6; padding: 0 16px; margin-top: 8px; }
+
+  /* ANIMATION */
+  @keyframes countUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .results-section.visible .metric-card { animation: countUp .4s ease forwards; }
+  .results-section.visible .metric-card:nth-child(2) { animation-delay: .08s; }
+  .results-section.visible .metric-card:nth-child(3) { animation-delay: .16s; }
+  .results-section.visible .metric-card:nth-child(4) { animation-delay: .24s; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-brand">
+    <svg class="header-logo" viewBox="0 0 28 28" fill="none">
+      <rect width="28" height="28" rx="6" fill="#C9A96E" fill-opacity=".15"/>
+      <path d="M8 20L14 8l6 12M10.5 16h7" stroke="#C9A96E" stroke-width="1.8" stroke-linecap="round"/>
+    </svg>
+    <span class="header-name">Aldric Group</span>
+  </div>
+  <nav class="header-nav">
+    <a href="index.html">Dashboard</a>
+    <a href="crm.html">CRM</a>
+    <a href="acquisition/agent-system.html">AI Agent</a>
+    <a href="delivery.html">Delivery</a>
+    <a href="linkedin.html">LinkedIn</a>
+    <a href="results-simulator.html" class="active">Simulator</a>
+  </nav>
+</div>
+
+<div class="page-wrap">
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-eyebrow">Prospect-Facing Tool</div>
+    <h1>See What Social Media Could Do For Your Business</h1>
+    <p>Enter your numbers below and we'll calculate your estimated additional reach, leads, and monthly revenue — based on real industry benchmarks.</p>
+  </div>
+
+  <!-- INPUT CARD -->
+  <div class="card">
+    <div class="card-title">Your Business</div>
+    <div class="form-grid" style="margin-bottom:18px;">
+      <div class="form-row">
+        <label for="bizType">Business Type</label>
+        <select id="bizType">
+          <option value="med_spa">Med Spa / Aesthetics Clinic</option>
+          <option value="estate_agent">Estate Agent</option>
+          <option value="mortgage_broker">Mortgage Broker</option>
+          <option value="financial_advisor">Financial Advisor / IFA</option>
+          <option value="restaurant">Restaurant / Hospitality</option>
+          <option value="law_firm">Law Firm / Solicitor</option>
+          <option value="gym">Gym / Personal Trainer</option>
+          <option value="cosmetic_dentist">Cosmetic Dentist</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label for="currentLeads">Current Monthly Leads <span class="input-hint">(approx.)</span></label>
+        <div class="input-suffix-wrap">
+          <input type="number" id="currentLeads" placeholder="e.g. 10" min="0" max="10000">
+          <span class="input-suffix">leads/mo</span>
+        </div>
+      </div>
+    </div>
+    <div class="form-grid-3" style="margin-bottom:18px;">
+      <div class="form-row">
+        <label for="custValue">Avg. Customer Value <span class="input-hint">(lifetime)</span></label>
+        <div class="input-prefix-wrap">
+          <span class="input-prefix">£</span>
+          <input type="number" id="custValue" placeholder="e.g. 800" min="0" max="500000" style="padding-left:28px;">
+        </div>
+      </div>
+      <div class="form-row">
+        <label for="postFreq">Current Posting <span class="input-hint">(per week)</span></label>
+        <div class="input-suffix-wrap">
+          <input type="number" id="postFreq" placeholder="e.g. 2" min="0" max="30">
+          <span class="input-suffix">×/week</span>
+        </div>
+      </div>
+      <div class="form-row">
+        <label for="emailList">Email List Size <span class="input-hint">(optional)</span></label>
+        <div class="input-suffix-wrap">
+          <input type="number" id="emailList" placeholder="e.g. 500" min="0" max="10000000">
+          <span class="input-suffix">contacts</span>
+        </div>
+      </div>
+    </div>
+    <button class="btn-calculate" onclick="calculate()">Calculate My Results →</button>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="results-section" id="resultsSection">
+
+    <!-- METRIC STRIP -->
+    <div class="metrics-grid" id="metricsGrid">
+      <div class="metric-card">
+        <div class="metric-icon">👁️</div>
+        <div class="metric-val" id="mReach">—</div>
+        <div class="metric-label">Extra Eyes / Month</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon">🎯</div>
+        <div class="metric-val" id="mLeads">—</div>
+        <div class="metric-label">Extra Leads / Month</div>
+      </div>
+      <div class="metric-card gold">
+        <div class="metric-icon">💰</div>
+        <div class="metric-val" id="mRevenue">—</div>
+        <div class="metric-label">Extra Revenue / Month</div>
+      </div>
+      <div class="metric-card green">
+        <div class="metric-icon">📈</div>
+        <div class="metric-val" id="mROI">—</div>
+        <div class="metric-label">Estimated ROI</div>
+      </div>
+    </div>
+
+    <!-- BREAKDOWN -->
+    <div class="breakdown-card">
+      <div class="breakdown-title">How We Calculate This</div>
+      <div class="breakdown-row">
+        <span class="breakdown-label"><span class="bd-icon">📊</span> Estimated monthly content reach</span>
+        <span class="breakdown-val" id="bReach">—</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="breakdown-label"><span class="bd-icon">🔗</span> Profile visits from content (est. 4%)</span>
+        <span class="breakdown-val" id="bVisits">—</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="breakdown-label"><span class="bd-icon">🎯</span> Leads generated (est. 2% of reach)</span>
+        <span class="breakdown-val" id="bLeads">—</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="breakdown-label"><span class="bd-icon">🤝</span> Conversions (est. 20% close rate)</span>
+        <span class="breakdown-val" id="bConversions">—</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="breakdown-label"><span class="bd-icon">💷</span> Revenue at your avg. customer value</span>
+        <span class="breakdown-val gold" id="bRevenue">—</span>
+      </div>
+      <div id="emailRow" class="breakdown-row" style="display:none;">
+        <span class="breakdown-label"><span class="bd-icon">📧</span> Email campaign add-on (est. +15%)</span>
+        <span class="breakdown-val gold" id="bEmail">—</span>
+      </div>
+      <div class="breakdown-row" style="border-bottom:none;padding-top:16px;">
+        <span class="breakdown-label" style="font-weight:700;color:var(--text);font-size:15px;">Total estimated monthly uplift</span>
+        <span class="breakdown-val green" id="bTotal" style="font-size:18px;">—</span>
+      </div>
+    </div>
+
+    <!-- ROI CALLOUT -->
+    <div class="roi-callout" id="roiCallout">
+      <div class="roi-callout-icon">🚀</div>
+      <div class="roi-callout-text">
+        <h3 id="roiHeading">—</h3>
+        <p id="roiBody">—</p>
+      </div>
+    </div>
+
+    <!-- PACKAGE RECOMMENDATION -->
+    <div class="package-rec" id="packageRec">
+      <div class="pkg-header">
+        <div>
+          <div class="pkg-eyebrow">Recommended Package</div>
+          <div class="pkg-name" id="pkgName">—</div>
+        </div>
+        <div class="pkg-price" id="pkgPrice">—</div>
+      </div>
+      <div class="pkg-desc" id="pkgDesc">—</div>
+      <ul class="pkg-includes" id="pkgIncludes"></ul>
+    </div>
+
+    <!-- CTA -->
+    <div class="cta-card">
+      <h2>Ready to See This In Your Business?</h2>
+      <p>These numbers are based on real benchmarks from businesses in your industry. Let's have a 15-minute call and show you exactly how we'd deliver this for you.</p>
+      <a href="https://wa.me/447599260032?text=Hi%2C%20I%20just%20used%20the%20results%20simulator%20and%20wanted%20to%20discuss%20working%20with%20Aldric%20Group." class="btn-cta" target="_blank">
+        Book a Free 15-Min Call →
+      </a>
+      <div class="cta-secondary">WhatsApp us at +44 7599 260032</div>
+    </div>
+
+    <div class="disclaimer">
+      Results are estimates based on industry benchmarks and typical performance data. Individual results vary depending on niche, existing audience, content quality, and market conditions. Aldric Group does not guarantee specific revenue outcomes.
+    </div>
+
+  </div><!-- /results-section -->
+</div>
+
+<script>
+const PACKAGES = {
+  growth: {
+    name: 'Growth',
+    price: '£750',
+    per: '/mo',
+    desc: 'Everything you need to establish a consistent, professional social media presence and start generating inbound leads.',
+    includes: [
+      '20 posts per month (Instagram, Facebook, LinkedIn)',
+      'AI-powered content tailored to your niche',
+      'Monthly performance report',
+      'Dedicated account manager',
+      'Content calendar & approval workflow',
+    ],
+  },
+  scale: {
+    name: 'Scale',
+    price: '£1,250',
+    per: '/mo',
+    desc: 'Amplified output with LinkedIn outreach, email sequences, and advanced content strategy for serious lead generation.',
+    includes: [
+      'Everything in Growth',
+      '35 posts per month across all platforms',
+      'LinkedIn outreach campaign (100 prospects/mo)',
+      'Monthly email newsletter to your list',
+      'Competitor analysis & trend reporting',
+      'Priority support & weekly check-ins',
+    ],
+  },
+  dominance: {
+    name: 'Dominance',
+    price: '£1,500',
+    per: '/mo',
+    desc: 'Full-stack digital presence domination — maximum content output, full automation, and complete lead pipeline management.',
+    includes: [
+      'Everything in Scale',
+      '50+ posts per month',
+      'LinkedIn outreach (250 prospects/mo)',
+      'Full email automation sequences',
+      'Paid social ad strategy & creative',
+      'Monthly strategy call with founder',
+      'White-glove onboarding',
+    ],
+  },
+};
+
+const BIZ_MULTIPLIERS = {
+  med_spa:           { reach: 1.4, close: 0.22, label: 'Med Spa / Aesthetics' },
+  estate_agent:      { reach: 1.2, close: 0.18, label: 'Estate Agent' },
+  mortgage_broker:   { reach: 1.1, close: 0.20, label: 'Mortgage Broker' },
+  financial_advisor: { reach: 1.0, close: 0.16, label: 'Financial Advisor' },
+  restaurant:        { reach: 1.6, close: 0.25, label: 'Restaurant' },
+  law_firm:          { reach: 0.9, close: 0.15, label: 'Law Firm' },
+  gym:               { reach: 1.5, close: 0.24, label: 'Gym / PT' },
+  cosmetic_dentist:  { reach: 1.3, close: 0.22, label: 'Cosmetic Dentist' },
+};
+
+function calculate() {
+  const bizType = document.getElementById('bizType').value;
+  const currentLeads = parseFloat(document.getElementById('currentLeads').value) || 0;
+  const custValue = parseFloat(document.getElementById('custValue').value) || 0;
+  const postFreq = parseFloat(document.getElementById('postFreq').value) || 0;
+  const emailList = parseFloat(document.getElementById('emailList').value) || 0;
+
+  if (custValue <= 0) {
+    alert('Please enter your average customer value to calculate results.');
+    document.getElementById('custValue').focus();
+    return;
+  }
+
+  const biz = BIZ_MULTIPLIERS[bizType];
+
+  // BASE REACH: posts per month × avg reach per post (scaled by niche)
+  // Assume Aldric brings the client to 5×/week posting with quality content
+  const postsPerMonth = 5 * 4.33; // ~21 posts
+  const baseReachPerPost = 600; // conservative LinkedIn/Instagram organic
+  const reach = Math.round(postsPerMonth * baseReachPerPost * biz.reach);
+
+  // LEADS: 2% of reach
+  const leads = Math.round(reach * 0.02);
+
+  // CONVERSIONS: niche-specific close rate
+  const conversions = Math.max(1, Math.round(leads * biz.close));
+
+  // REVENUE from social
+  const socialRevenue = conversions * custValue;
+
+  // EMAIL bonus
+  let emailBonus = 0;
+  let emailLeads = 0;
+  if (emailList > 0) {
+    // Assume 1 email campaign/month, 22% open rate, 2% click-to-lead, 15% close
+    emailLeads = Math.round(emailList * 0.22 * 0.02);
+    emailBonus = Math.round(emailLeads * 0.15 * custValue);
+  }
+
+  const totalRevenue = socialRevenue + emailBonus;
+
+  // PACKAGE RECOMMENDATION
+  let pkg;
+  const annualRevenue = totalRevenue * 12;
+  if (annualRevenue > 40000 || custValue > 2000 || emailList > 1000) {
+    pkg = 'dominance';
+  } else if (annualRevenue > 18000 || custValue > 800 || currentLeads > 15) {
+    pkg = 'scale';
+  } else {
+    pkg = 'growth';
+  }
+
+  const pkgData = PACKAGES[pkg];
+  const pkgCost = parseInt(pkgData.price.replace('£', '').replace(',', ''));
+  const roi = totalRevenue > 0 ? Math.round((totalRevenue / pkgCost) * 100) : 0;
+
+  // ─── RENDER ──────────────────────────────────────────────────────────────
+  document.getElementById('mReach').textContent = formatNum(reach);
+  document.getElementById('mLeads').textContent = '+' + formatNum(leads);
+  document.getElementById('mRevenue').textContent = '£' + formatNum(totalRevenue);
+  document.getElementById('mROI').textContent = roi + '%';
+
+  document.getElementById('bReach').textContent = formatNum(reach) + ' views';
+  document.getElementById('bVisits').textContent = formatNum(Math.round(reach * 0.04));
+  document.getElementById('bLeads').textContent = '+' + formatNum(leads) + ' leads';
+  document.getElementById('bConversions').textContent = formatNum(conversions) + ' clients';
+  document.getElementById('bRevenue').textContent = '£' + formatNum(socialRevenue) + '/mo';
+
+  if (emailBonus > 0) {
+    document.getElementById('emailRow').style.display = 'flex';
+    document.getElementById('bEmail').textContent = '+£' + formatNum(emailBonus) + '/mo';
+  } else {
+    document.getElementById('emailRow').style.display = 'none';
+  }
+
+  document.getElementById('bTotal').textContent = '£' + formatNum(totalRevenue) + '/mo';
+
+  // ROI callout
+  const months = pkgCost > 0 ? Math.ceil(pkgCost / (totalRevenue || 1)) : 0;
+  document.getElementById('roiHeading').textContent = roi + '% Return on Investment';
+  document.getElementById('roiBody').textContent =
+    `For every £1 you invest in ${pkgData.name}, you get back an estimated £${(totalRevenue / pkgCost).toFixed(1)} — paying for itself in ${months <= 1 ? 'the first month' : months + ' months'}.`;
+
+  // Package
+  document.getElementById('pkgName').textContent = pkgData.name;
+  document.getElementById('pkgPrice').innerHTML = pkgData.price + '<span>' + pkgData.per + '</span>';
+  document.getElementById('pkgDesc').textContent = pkgData.desc;
+  document.getElementById('pkgIncludes').innerHTML = pkgData.includes.map(i => `<li>${i}</li>`).join('');
+
+  // Show results
+  const sec = document.getElementById('resultsSection');
+  sec.classList.add('visible');
+  setTimeout(() => sec.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+}
+
+function formatNum(n) {
+  if (n >= 1000000) return (n / 1000000).toFixed(1).replace('.0', '') + 'M';
+  if (n >= 10000) return Math.round(n / 1000) + 'k';
+  if (n >= 1000) return (n / 1000).toFixed(1).replace('.0', '') + 'k';
+  return n.toLocaleString('en-GB');
+}
+
+// Allow enter key on inputs
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') calculate();
+});
+</script>
+</body>
+</html>
