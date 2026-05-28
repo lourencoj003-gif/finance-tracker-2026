@@ -2243,7 +2243,7 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
           className="chat-scroll"
           style={{
             flex: 1, overflowY: 'auto',
-            paddingBottom: 76, /* room for pinned Ask Noa bar */
+            paddingBottom: 'calc(76px + max(env(safe-area-inset-bottom), 0px))',
             overscrollBehavior: 'contain',
             WebkitOverflowScrolling: 'touch',
           }}
@@ -3084,6 +3084,7 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
             flex: 1, overflowY: 'auto', padding: '14px 14px 8px',
             display: 'flex', flexDirection: 'column', gap: 10,
             WebkitOverflowScrolling: 'touch',
+            overscrollBehavior: 'contain',
             scrollbarWidth: 'none', msOverflowStyle: 'none',
           }}
         >
