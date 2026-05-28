@@ -495,6 +495,15 @@ export default function VelaCore({ onReset }) {
   const insightSpokenRef                       = useRef(false);
   const [insightTapPending, setInsightTapPending] = useState(false);
 
+  // Task 5 — Financial insights engine
+  const [financialInsights, setFinancialInsights] = useState(() => {
+    const saved = localStorage.getItem('noa_financial_insights');
+    if (!saved) return null;
+    try { const p = JSON.parse(saved); if (p.date === new Date().toISOString().slice(0,10)) return p.insights; } catch {}
+    return null;
+  });
+  const [insightsLoading, setInsightsLoading] = useState(false);
+
   // Task 4 — Weekly Review card expand state
   const [weeklyExpanded, setWeeklyExpanded]   = useState(false);
 
@@ -1404,6 +1413,42 @@ export default function VelaCore({ onReset }) {
       ? `Spending velocity this week: £${txTotal.toFixed(0)} spent of £${weeklyBudget} weekly budget (${velocityPct}% used)`
       : '';
 
+    // ── Month-over-month spending trend ────────────────────────────
+    const thisMonthStr = now.toISOString().slice(0, 7);
+    const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonthStr  = lastMonthDate.toISOString().slice(0, 7);
+    const thisMonthSpend = allLog.filter(e => e.date?.startsWith(thisMonthStr)).reduce((s,e)=>s+e.amount,0);
+    const lastMonthSpend = allLog.filter(e => e.date?.startsWith(lastMonthStr)).reduce((s,e)=>s+e.amount,0);
+    const spendingTrendLine = (thisMonthSpend > 0 && lastMonthSpend > 0)
+      ? (() => {
+          const delta = thisMonthSpend - lastMonthSpend;
+          const pct   = Math.abs(Math.round((delta / lastMonthSpend) * 100));
+          return `Spending trend: £${thisMonthSpend.toFixed(0)} this month vs £${lastMonthSpend.toFixed(0)} last month (${delta > 0 ? '+' : ''}${delta.toFixed(0)}, ${delta > 0 ? '↑' : '↓'}${pct}%)`;
+        })()
+      : '';
+
+    // ── Savings velocity ─────────────────────────────────────────────
+    const savingsGoalsList = getGoals();
+    const savingsVelocityLines = savingsGoalsList
+      .filter(g => g.target > 0 && g.saved > 0)
+      .map(g => {
+        const rem = Math.max(0, g.target - (g.saved || 0));
+        const pct = Math.round(((g.saved || 0) / g.target) * 100);
+        const monthsLeft = surplus > 0 && rem > 0 ? Math.ceil(rem / surplus) : null;
+        return `${g.name}: £${(g.saved||0).toLocaleString('en-GB')} saved of £${g.target.toLocaleString('en-GB')} (${pct}%)${monthsLeft ? ` — ~${monthsLeft} month${monthsLeft===1?'':'s'} to target at current surplus` : ''}`;
+      });
+
+    // ── Debt payoff velocity ──────────────────────────────────────────
+    const debtPayoffLine = (debt > 0 && surplus > 0)
+      ? (() => {
+          const months = Math.ceil(debt / surplus);
+          const yrs = Math.floor(months / 12);
+          const mos = months % 12;
+          const timeStr = yrs > 0 ? `${yrs}y ${mos}m` : `${mos} months`;
+          return `Debt payoff: £${debt.toLocaleString('en-GB')} cleared in ~${timeStr} at £${surplus.toFixed(0)}/month surplus`;
+        })()
+      : '';
+
     // ── Last transaction within 24 hours ───────────────────────────
     const oneDayAgo  = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
     const last24hTx  = allLog
@@ -1505,8 +1550,11 @@ ${insights.length > 0 ? `• Prior insights:  ${insights.slice(0, 3).join(' | ')
 • Savings rate:      ${savingsRate}% of income — ${srLabel}
 • Current Baby Step: ${babyStepLabel}${paydayAlert}
 • Payday Health Score: ${bpScore}/100 (${bpLabel}) — budget vs time comparison; 85+ = on track, <65 = needs attention
-${velocityLine ? `• ${velocityLine}` : ''}
-${lastTxLine   ? `• ${lastTxLine}`   : ''}
+${velocityLine        ? `• ${velocityLine}`        : ''}
+${spendingTrendLine  ? `• ${spendingTrendLine}`  : ''}
+${debtPayoffLine     ? `• ${debtPayoffLine}`     : ''}
+${lastTxLine         ? `• ${lastTxLine}`         : ''}
+${savingsVelocityLines.length > 0 ? `• Savings pots:\n${savingsVelocityLines.map(l=>'  - '+l).join('\n')}` : ''}
 • Time of day:       ${timeOfDay} (${currentHour}:xx) — use this for natural greetings if opening the conversation
 
 ══ PAYDAY ROUTINE — use when user mentions payday ══
@@ -1654,6 +1702,57 @@ Noa voice — dry, warm, no filler, short sentences, real numbers only.`;
     } finally {
       setFirstWeekLoading(false);
     }
+  }
+
+  // Task 5 — Financial insights engine
+  async function fetchFinancialInsights() {
+    if (insightsLoading) return;
+    const d = getData() || {};
+    const { income: inc = 0, expenses: exp = 0, debt: dbt = 0, payday: pd = 25 } = d;
+    if (!inc) return;
+    const surp = inc - exp;
+    const allLog = getExpenseLog();
+    const now = new Date();
+    const thisMonthStr = now.toISOString().slice(0,7);
+    const lastMonthStr = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().slice(0,7);
+    const thisMonthSpend = allLog.filter(e => e.date?.startsWith(thisMonthStr)).reduce((s,e)=>s+e.amount,0);
+    const lastMonthSpend = allLog.filter(e => e.date?.startsWith(lastMonthStr)).reduce((s,e)=>s+e.amount,0);
+    const sk = parseInt(localStorage.getItem('vela_streak_count')||'0',10);
+    const goalsData = getGoals();
+    const fp = getFinancialPersonality();
+    const dtpay = daysUntilPayday(pd);
+    const savRate = inc > 0 ? Math.round(((inc - exp) / inc) * 100) : 0;
+
+    const prompt = `You are Noa — sharp, dry, warm financial navigator. Generate EXACTLY 3 financial insights for this user. Each insight: one sentence, under 20 words, specific to their numbers. Different angles — don't repeat the same theme. Noa voice: direct, no corporate language, British.
+
+User data: income=£${inc}/month, expenses=£${exp}/month, surplus=£${surp.toFixed(0)}/month, debt=£${dbt}, savings streak=${sk} days, payday in ${dtpay} days, this month spend=£${thisMonthSpend.toFixed(0)}, last month spend=£${lastMonthSpend.toFixed(0)}, savings rate=${savRate}%, ${goalsData.length>0?`goals: ${goalsData.map(g=>`${g.name} £${g.target.toLocaleString('en-GB')}`).join(', ')}`:'no goals set'}${fp?`, personality: ${fp}`:''}.
+
+Output JSON array ONLY — no extra text:
+["insight 1","insight 2","insight 3"]`;
+
+    setInsightsLoading(true);
+    try {
+      const ctrl = new AbortController();
+      const to = setTimeout(() => ctrl.abort(), 12000);
+      const res = await fetch('/api/chat', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ financialContext: prompt, messages: [{ role: 'user', content: 'Generate 3 financial insights.' }] }),
+        signal: ctrl.signal,
+      });
+      clearTimeout(to);
+      const json = await res.json();
+      const text = (json.text || '').trim();
+      const match = text.match(/\[[\s\S]*?\]/);
+      if (match) {
+        const arr = JSON.parse(match[0]);
+        if (Array.isArray(arr) && arr.length >= 1) {
+          const insights3 = arr.slice(0,3).filter(s => typeof s === 'string' && s.length > 0);
+          setFinancialInsights(insights3);
+          localStorage.setItem('noa_financial_insights', JSON.stringify({ date: new Date().toISOString().slice(0,10), insights: insights3 }));
+        }
+      }
+    } catch { /* silent fail */ }
+    finally { setInsightsLoading(false); }
   }
 
   // Task 4 — Generate shareable Noa quote
@@ -2776,6 +2875,42 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
               </div>
           }
         </div>
+
+        {/* Task 5 — Financial Insights Engine */}
+        {income > 0 && (
+          <div style={{
+            background: 'rgba(232,221,208,0.03)', border: '1px solid rgba(232,221,208,0.06)',
+            borderRadius: 14, padding: '14px 14px 10px', marginBottom: 6,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(200,184,154,0.45)' }}>
+                ✦ Financial Insights
+              </div>
+              <button
+                onClick={fetchFinancialInsights}
+                disabled={insightsLoading}
+                style={{ background: 'none', border: '1px solid rgba(200,184,154,0.18)', borderRadius: 6, color: 'rgba(200,184,154,0.5)', fontSize: 10, padding: '3px 9px', cursor: insightsLoading ? 'default' : 'pointer', fontFamily: 'inherit', letterSpacing: '0.3px' }}
+              >{insightsLoading ? '…' : 'Refresh'}</button>
+            </div>
+            {insightsLoading ? (
+              <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.22)', lineHeight: 1.5, animation: 'blink 1.6s ease-in-out infinite' }}>Noa is analysing your finances…</div>
+            ) : financialInsights && financialInsights.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                {financialInsights.map((insight, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 7 }}>
+                    <span style={{ fontSize: 10, color: 'rgba(200,184,154,0.4)', flexShrink: 0, marginTop: 2 }}>{'→'}</span>
+                    <span style={{ fontSize: 12, color: 'rgba(232,221,208,0.55)', lineHeight: 1.55 }}>{insight}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <button
+                onClick={fetchFinancialInsights}
+                style={{ fontSize: 11, color: 'rgba(200,184,154,0.45)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit', textAlign: 'left', lineHeight: 1.5 }}
+              >Tap to generate insights from your data →</button>
+            )}
+          </div>
+        )}
 
         </div>{/* end scrollable cards area */}
 
