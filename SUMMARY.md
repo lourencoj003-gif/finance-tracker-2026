@@ -2,6 +2,57 @@
 
 ---
 
+## Session: 2026-05-28 (Noa intelligence pass, Aldric brand prompts, DEPLOYMENT.md)
+
+### Commits
+- `7b222df` — feat: Noa intelligence final pass — velocity, last transaction, time awareness, response length cap
+- `b285cce` — feat: Aldric agent system — all 5 components verified with brand prompts
+- `e9ce500` — docs: DEPLOYMENT.md — complete deployment guide for all three businesses
+
+### TASK 1 — Noa buildPrompt() intelligence final pass ✅
+`src/vela/screens/VelaCore.js` — `buildPrompt()` function:
+
+**Time awareness:**
+- `currentHour = now.getHours()` + `timeOfDay = morning/afternoon/evening`
+- Injected into COMPUTED FACTS: `Time of day: [morning] ([h]:xx) — use for natural greetings`
+
+**Weekly spending velocity:**
+- `weeklyBudget = (income × 0.8) / 4` (spendable income / 4 weeks)
+- `velocityLine`: `Spending velocity this week: £X spent of £Y weekly budget (Z% used)`
+- Injected into COMPUTED FACTS if income > 0
+
+**Last 24h transaction:**
+- Filters `allLog` for transactions with `date >= oneDayAgo`, sorts desc, takes first
+- `lastTxLine`: `Last transaction logged: £X.XX on [category] ([note/merchant])`
+- Injected into COMPUTED FACTS if transaction exists
+
+**Response length cap:**
+- Upgraded soft guidance → `CRITICAL: Maximum 2–3 sentences per response. Never exceed this. If you need to say more, ask a follow-up question instead.`
+
+### TASK 2 — Aldric agent system brand prompts ✅
+`public/agency/acquisition/agent-system.html` — SYSTEM_PROMPTS object:
+
+| Component | Old role | New role | Key change |
+|---|---|---|---|
+| C1 | LinkedIn outreach specialist | Expert B2B copywriter | Added Aldric brand voice block: "peer-to-peer, not a sales rep with a quota" |
+| C2 | SDR manager | Sales consultant | Updated labels: PRICING_QUESTION, CALL_REQUEST; added voice rules for responses |
+| C3 | Account manager | Client success manager | Added CLIENT ASK label format; banned "happy to report" filler |
+| C4 | Content strategist | Social media strategist at Aldric Group | Hook-first format, banned corporate language |
+| C5 | Email marketing specialist | Email marketing specialist at Aldric Group | Banned spam trigger words, genuine vs manufactured urgency |
+
+API verified: all 5 components → `callClaude()` → `fetch('https://api.anthropic.com/v1/messages')` → `aldric_claude_key` from localStorage. Key never leaves api.anthropic.com.
+
+### TASK 3 — DEPLOYMENT.md ✅
+`DEPLOYMENT.md` created at repo root. Sections:
+1. **Noa** — Vercel deploy, all 6 env vars documented, security rules, Node 20.x + npmrc notes
+2. **Aldric Group** — Netlify Drop steps, DNS A+CNAME records, key files, agent-system key handling
+3. **Axontra** — Netlify Drop steps, DNS config, enquiry storage limitation + production path
+4. **GitHub Pages** — Workflow route map (4 routes auto-deployed from `main`)
+5. **Cost table** — £0 launch cost; ~£20/mo when Noa on custom domain
+6. **Priority order** — Noa → Aldric → Axontra → domains → App Store
+
+---
+
 ## Session: 2026-05-27 (OG images, WA fix, smart categories, CRM messages)
 
 ### Commits
