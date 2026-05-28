@@ -1784,13 +1784,169 @@ Output the quote only — no quotes around it, no emoji.`;
     }
   }
 
-  // Task 4 — Web Share API / clipboard fallback
+  // Task 6 — Referral code generation
+  function getOrCreateReferralCode() {
+    let code = localStorage.getItem('vela_referral_code');
+    if (!code) {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      code = 'NOA-' + Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+      localStorage.setItem('vela_referral_code', code);
+    }
+    return code;
+  }
+
+  // Task 6 — Generate Instagram story card via HTML Canvas (1080×1920)
+  async function generateShareCanvas() {
+    const vScore = calcVelaScore({ income, expenses, debt, streak });
+    const mood   = calcMood({ income, expenses, surplus: income - expenses, savingsGoal: goals.length > 0 ? goals[0].target : 0, savingsBalance: savings });
+    const moodLabel = MOOD_CFG[mood]?.label || 'STEADY';
+    const moodColor = MOOD_CFG[mood]?.labelColor || '#888';
+    const fp     = getFinancialPersonality();
+    const refCode = getOrCreateReferralCode();
+
+    return new Promise(resolve => {
+      const W = 1080, H = 1920;
+      const canvas = document.createElement('canvas');
+      canvas.width = W; canvas.height = H;
+      const ctx = canvas.getContext('2d');
+
+      // Background gradient
+      const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+      bgGrad.addColorStop(0,   '#111318');
+      bgGrad.addColorStop(0.5, '#0f1015');
+      bgGrad.addColorStop(1,   '#0a0b0e');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, W, H);
+
+      // Subtle radial glow top-centre
+      const glowGrad = ctx.createRadialGradient(W/2, H*0.38, 0, W/2, H*0.38, 420);
+      glowGrad.addColorStop(0,   'rgba(200,184,154,0.12)');
+      glowGrad.addColorStop(1,   'transparent');
+      ctx.fillStyle = glowGrad;
+      ctx.fillRect(0, 0, W, H);
+
+      // Orb
+      const orbR = 120;
+      const orbX = W/2, orbY = H*0.32;
+      const orbGrad = ctx.createRadialGradient(orbX - orbR*0.25, orbY - orbR*0.25, 0, orbX, orbY, orbR);
+      orbGrad.addColorStop(0,   '#d8cebe');
+      orbGrad.addColorStop(0.55,'#C8B89A');
+      orbGrad.addColorStop(1,   '#7a6a52');
+      ctx.shadowColor = 'rgba(200,184,154,0.6)';
+      ctx.shadowBlur  = 80;
+      ctx.fillStyle   = orbGrad;
+      ctx.beginPath();
+      ctx.arc(orbX, orbY, orbR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // "noa" wordmark
+      ctx.font         = '180 260px serif';
+      ctx.fillStyle    = 'rgba(232,221,208,0.85)';
+      ctx.textAlign    = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.letterSpacing = '60px';
+      ctx.fillText('noa', W/2, H*0.52);
+
+      // Tagline
+      ctx.font      = '500 44px sans-serif';
+      ctx.fillStyle = 'rgba(200,184,154,0.45)';
+      ctx.letterSpacing = '8px';
+      ctx.fillText('YOUR FINANCIAL NAVIGATOR', W/2, H*0.60);
+
+      // Divider
+      ctx.strokeStyle = 'rgba(232,221,208,0.1)';
+      ctx.lineWidth   = 1;
+      ctx.beginPath();
+      ctx.moveTo(W*0.2, H*0.64); ctx.lineTo(W*0.8, H*0.64);
+      ctx.stroke();
+
+      // VELA Score
+      ctx.font      = '800 120px sans-serif';
+      ctx.fillStyle = 'rgba(232,221,208,0.9)';
+      ctx.letterSpacing = '0';
+      ctx.fillText(String(vScore), W/2 - (fp ? 140 : 0), H*0.70);
+      ctx.font      = '600 38px sans-serif';
+      ctx.fillStyle = 'rgba(232,221,208,0.35)';
+      ctx.letterSpacing = '6px';
+      ctx.fillText('VELA SCORE', W/2 - (fp ? 140 : 0), H*0.74);
+
+      // Personality (if available)
+      if (fp) {
+        ctx.font      = '700 72px sans-serif';
+        ctx.fillStyle = '#C8B89A';
+        ctx.letterSpacing = '0';
+        ctx.fillText(fp.toUpperCase(), W/2 + 160, H*0.70);
+        ctx.font      = '600 38px sans-serif';
+        ctx.fillStyle = 'rgba(200,184,154,0.35)';
+        ctx.letterSpacing = '6px';
+        ctx.fillText('PERSONALITY', W/2 + 160, H*0.74);
+      }
+
+      // Mood
+      ctx.font      = '700 52px sans-serif';
+      ctx.fillStyle = moodColor;
+      ctx.letterSpacing = '8px';
+      ctx.fillText(moodLabel, W/2, H*0.79);
+
+      // Quote
+      if (shareQuote) {
+        ctx.font       = '300 italic 46px serif';
+        ctx.fillStyle  = 'rgba(232,221,208,0.55)';
+        ctx.letterSpacing = '0';
+        const words = shareQuote.split(' ');
+        let line1 = '', line2 = '';
+        let lineW = 0;
+        words.forEach(w => {
+          lineW += w.length;
+          if (lineW <= 32) line1 += (line1 ? ' ' : '') + w;
+          else line2 += (line2 ? ' ' : '') + w;
+        });
+        ctx.fillText(`"${line1}`, W/2, H*0.845);
+        if (line2) ctx.fillText(`${line2}"`, W/2, H*0.875);
+        else ctx.fillText('"', W/2 + ctx.measureText(`"${line1}`).width/2, H*0.845);
+      }
+
+      // Referral code
+      ctx.font      = '600 42px sans-serif';
+      ctx.fillStyle = 'rgba(200,184,154,0.5)';
+      ctx.letterSpacing = '3px';
+      ctx.fillText(`Use my code: ${refCode}`, W/2, H*0.934);
+
+      // URL
+      ctx.font      = '400 34px sans-serif';
+      ctx.fillStyle = 'rgba(232,221,208,0.2)';
+      ctx.letterSpacing = '1px';
+      ctx.fillText('finance-tracker-2026-navy.vercel.app', W/2, H*0.963);
+
+      canvas.toBlob(blob => resolve(blob), 'image/png', 0.9);
+    });
+  }
+
+  // Task 4 — Web Share API / clipboard fallback (Task 6: now with canvas image + referral code)
   async function doShare() {
     const vScore = calcVelaScore({ income, expenses, debt, streak });
     const mood   = calcMood({ income, expenses, surplus: income - expenses, savingsGoal: goals.length > 0 ? goals[0].target : 0, savingsBalance: savings });
     const moodLabel = MOOD_CFG[mood]?.label || 'STEADY';
-    const url    = 'https://finance-tracker-2026-navy.vercel.app/noa-landing/';
+    const refCode = getOrCreateReferralCode();
+    const url    = `https://finance-tracker-2026-navy.vercel.app/noa-landing/?ref=${refCode}`;
     const text   = `${shareQuote}\n\nMy Noa score: ${vScore}/100 · ${moodLabel}\nManage your money with Noa →`;
+
+    // Try to share with canvas image first
+    try {
+      if (navigator.share && navigator.canShare) {
+        const blob = await generateShareCanvas().catch(() => null);
+        if (blob) {
+          const file = new File([blob], 'noa-score.png', { type: 'image/png' });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({ title: 'Noa — Financial Navigator', text, url, files: [file] });
+            return;
+          }
+        }
+      }
+    } catch (e) { if (e?.name === 'AbortError') return; }
+
+    // Fallback: text share or clipboard
     try {
       if (navigator.share) {
         await navigator.share({ title: 'Meet Noa — my financial navigator', text, url });
@@ -1808,6 +1964,17 @@ Output the quote only — no quotes around it, no emoji.`;
         } catch { /* silent */ }
       }
     }
+  }
+
+  // Task 6 — Download canvas card as PNG
+  async function downloadShareCard() {
+    const blob = await generateShareCanvas().catch(() => null);
+    if (!blob) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'noa-score-card.png';
+    a.click();
+    URL.revokeObjectURL(a.href);
   }
 
   // Feature 7 — Check client-side scheduled notifications on app open
@@ -4372,6 +4539,12 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
                   "{shareQuote || 'Managing money is mostly about knowing where it went.'}"
                 </div>
               )}
+              {/* Referral code */}
+              {(() => { const rc = getOrCreateReferralCode(); return (
+                <div style={{ fontSize: 9, color: 'rgba(200,184,154,0.4)', letterSpacing: '0.12em', marginBottom: 4 }}>
+                  Referral code: <strong style={{ color: 'rgba(200,184,154,0.65)' }}>{rc}</strong>
+                </div>
+              ); })()}
               {/* URL badge */}
               <div style={{ fontSize: 9, color: 'rgba(232,221,208,0.18)', letterSpacing: '0.06em' }}>finance-tracker-2026-navy.vercel.app</div>
             </div>
@@ -4387,12 +4560,24 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
                 color: PURPLE, fontSize: 15, fontWeight: 600,
                 cursor: shareQuoteLoading ? 'default' : 'pointer',
                 opacity: shareQuoteLoading ? 0.5 : 1,
-                marginBottom: 10,
+                marginBottom: 8,
                 transition: 'opacity 0.15s',
               }}
             >
               {shareCopied ? '✓ Copied to clipboard' : '↗ Share Noa'}
             </button>
+
+            <button
+              onClick={downloadShareCard}
+              style={{
+                width: '100%', maxWidth: 300,
+                padding: '11px 0', background: 'rgba(232,221,208,0.05)',
+                border: '1px solid rgba(232,221,208,0.12)', borderRadius: 14,
+                color: 'rgba(232,221,208,0.45)', fontSize: 13, fontWeight: 500,
+                cursor: 'pointer',
+                marginBottom: 10,
+              }}
+            >⬇ Download Story Card (PNG)</button>
 
             <button
               onClick={() => setShowShare(false)}
