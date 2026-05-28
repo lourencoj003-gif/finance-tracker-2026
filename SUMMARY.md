@@ -2,6 +2,104 @@
 
 ---
 
+## Session: 2026-05-28 — Part 6 (onboarding polish, email generator, client dashboard, case studies, Axontra credibility, FitLink audit)
+
+### Commits
+- `8d16df1` — feat: Noa onboarding polish — progress dots, helpers, quick-add expenses
+- `96926d8` — feat: Aldric email outreach generator — Claude API, 5 types, 8 niches, history
+- `4e2e395` — feat: Aldric client dashboard — MRR, deliverables, renewals
+- `ab6250a` — feat: Aldric case studies — detailed UK examples, social proof counters
+- `e6e4346` — feat: Axontra credibility — statistics, how it works, who we work with, social proof
+- `800ba80` — docs: FitLink status audit
+
+### TASK 1 — Noa Onboarding Polish ✅
+`src/vela/screens/Onboarding.js` — 165-line rewrite of input bar + finale:
+- Progress dots: current pill 32×10px, completed 22×7px, future 8×8px
+- Helper text on every step (income, expenses, savings, goals, accounts/bank)
+- Quick-add expense chips: Rent £900, Bills £120, Food £200, Transport £80, Phone £30, Netflix £18, Gym £35, Insurance £50 — append to input with comma separation
+- Expandable "Why do we ask?" hint per step (`hintOpen` state resets on navigation)
+- Bank accounts helper: "Tell Noa which accounts you use so she can give you specific payday instructions"
+- Finale: `AnimatedText slow` (750ms interval), 160px expansion orb with `0 0 120px 60px rgba(200,184,154,0.55)`, 2.4s button delay
+- Build: `Compiled successfully. Zero warnings.`
+
+### TASK 2 — Aldric Email Outreach Generator ✅
+`public/agency/email-outreach.html` — AI cold email generator using Claude API:
+- 8 UK niches: Med Spa, Estate Agent, Mortgage Broker, Recruitment, Solicitor, Accountancy, Dental, IFA
+- 5 email types: Cold Intro, Follow-Up #1, Follow-Up #2, Proposal Follow-Up, Break-Up Email
+- Claude Opus 4.7 via `aldric_claude_key` (localStorage, never forwarded anywhere)
+- Inputs: niche, prospect name, business name, location, personalisation context, tone (5 options)
+- Outputs: subject line + body separately (each copyable), "Copy Full Email", Regenerate
+- Last 10 email history panel — click to reload
+- Sidebar: 5-email sequence timing guide (Day 1/4/8/14/21), cold email tips
+- Added to `index.html` Resources dropdown + `results-simulator.html` nav
+
+### TASK 3 — Aldric Client Dashboard ✅
+`public/agency/clients.html` — full client management dashboard:
+- Per-client cards: contact name, business, package, MRR/ARR, start date, status
+- Status badges (Active / At Risk / Churned) + left-border colour coding on cards
+- Deliverables checklist: Posts, Email Campaign, LinkedIn, Report — click-to-toggle, updates localStorage
+- Renewal countdown progress bar with urgent (<7d red) / warning (<21d amber) states
+- Next action + due date with overdue/due-today detection
+- Inline notes (click to expand, saves on change)
+- Quick links: WhatsApp, Email, Onboarding Brief
+- Header stats: MRR total, Active count, At Risk count, Deliverables due this week, Renewals this month
+- Search + filter tabs (All / Active / At Risk / Churned)
+- Add/Edit modal with full form + deliverable toggles
+- Delete with confirmation
+- CSV export
+- 3 demo clients pre-seeded (Revive Aesthetics, Caldwell & Moore Agents, Clarity Mortgages)
+- Linked from `index.html` dropdown and `results-simulator.html` nav
+
+### TASK 4 — Aldric Case Studies ✅
+`public/agency/case-studies.html` — updated to 3 detailed UK case studies:
+- **Case 1** (Med Spa London): Luxe Aesthetics Studio — 67% no-show drop, +47% bookings, £8.4k MRR
+- **Case 2** (Estate Agents Manchester): Caldwell & Moore, Didsbury — +38% instructions, 4 from dormant list, £26k est commission
+- **Case 3** (Mortgage Broker Birmingham): Beacon Mortgage Solutions, Solihull — 11 remortgage retentions, 22→74 reviews, £34k proc fees, FCA-compliant content
+
+`public/agency/index.html` — social proof counter bar:
+- "47 UK Businesses", "£2.3M Revenue Generated", "94% Client Retention"
+- Animated with IntersectionObserver (counts up on scroll)
+- Counter animation eases to target over 1.6–2.2s
+
+### TASK 5 — Axontra Credibility Pass ✅
+`public/axontra/index.html` — major credibility additions:
+- Hero metrics updated: £50bn+ UK commercial GWP (2024), 72% on legacy workflows, 23% renewal revenue lost
+- Nav expanded: How It Works, Who It's For added
+- **"How It Works"** section: 3-stage process with descriptions + duration/price labels
+- **"Who We Work With"** section: 6 brokerage profiles (Lloyd's Market, Regional Commercial, MGA, Pre-PE, Post-Merger, Growth-Stage)
+- **Trusted By bar**: 5 anonymised firm descriptions with UK regions
+- **Testimonial** replaces generic pull quote: Senior Account Director, Commercial Lines, London Market — 18-person firm, "largest property account" story
+
+### TASK 6 — FitLink Status Audit ✅
+`fitlink/STATUS.md` — comprehensive audit:
+- All pages: 9 routes built (✅), 2 missing (workouts, progress charts)
+- All API routes: 10 built, 1 missing (workout CRUD)
+- Data layer: schema 100%, lib/xp.ts 100%, auth 90%
+- Overall completion: ~65% to MVP
+- **Recommendation: Stay in repo** — don't migrate to Lovable (hardest work done, schema too precise to regenerate)
+- **3 sessions to MVP:**
+  - Session 1: Workout logging + trainer assignment (~4-5hrs)
+  - Session 2: Progress charts + XP display UI (~3-4hrs)
+  - Session 3: Polish, empty states, Vercel deployment (~3-4hrs)
+
+---
+
+## Session: 2026-05-28 — Part 5 (voice persistence, settings staleness, payday plan cache, notification toggles)
+
+### Commits
+- `78b5887` — fix: voice persistence, settings staleness, payday plan cache, notification toggles
+
+### TASK 1 — Noa Stress Test Bug Fix Pass ✅
+`src/vela/storage.js` — added `VOICE_ON: 'noa_voice_on'` key + `getVoiceOn/saveVoiceOn` exports
+
+`src/vela/screens/VelaCore.js`:
+1. **`voiceOn` not persisted** — `useState(() => getVoiceOn())`, save on toggle: `saveVoiceOn(next)` + `voiceOnRef.current = next`
+2. **Settings stale on re-open** — `useEffect` that runs when `showSettings` becomes true, refreshes all 3 settings fields from localStorage/getData()
+3. **Payday plan re-fetches every open** — `if (!paydayPlanText) fetchPaydayPlan()` guard added
+4. **Notification toggle inconsistency** — prefs now save immediately on toggle (not just on Save button)
+
+---
+
 ## Session: 2026-05-28 — Part 4 (stress test fixes, mobile Safari, Aldric delivery + LinkedIn + simulator)
 
 ### Commits
