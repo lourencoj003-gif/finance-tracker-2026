@@ -29,6 +29,8 @@ jobs:
           cp    pages-index.html _site/index.html
           # Prevent GitHub Pages from running Jekyll processing
           touch _site/.nojekyll
+          # Prevent Vercel from treating gh-pages branch as a deployable project
+          echo '{"github":{"silent":true}}' > _site/vercel.json
 
       - name: Deploy to gh-pages
         uses: JamesIves/github-pages-deploy-action@v4
