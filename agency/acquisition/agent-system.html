@@ -54,10 +54,32 @@
       transition: border-color 0.15s; letter-spacing: 0.04em;
     }
     .api-input:focus { border-color: rgba(201,169,110,0.4); }
-    .api-status { font-size: 11px; font-weight: 600; }
+    .api-input-wrap { position: relative; flex: 1; max-width: 420px; display: flex; align-items: center; }
+    .api-input-wrap .api-input { flex: 1; max-width: none; padding-right: 36px; }
+    .api-eye {
+      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: var(--muted); cursor: pointer;
+      font-size: 14px; padding: 2px 4px; line-height: 1;
+      transition: color 0.15s;
+    }
+    .api-eye:hover { color: var(--gold); }
+    .api-status { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; }
+    .api-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
     .api-status.set { color: var(--green); }
+    .api-status.set .api-dot { background: var(--green); box-shadow: 0 0 6px rgba(76,175,80,0.5); }
     .api-status.unset { color: var(--muted); }
+    .api-status.unset .api-dot { background: var(--red); box-shadow: 0 0 6px rgba(239,83,80,0.4); }
     .api-note { font-size: 11px; color: var(--muted); }
+    .btn-test {
+      padding: 7px 14px; background: transparent;
+      border: 1px solid rgba(201,169,110,0.25); border-radius: 3px;
+      color: var(--gold); font-size: 11px; font-weight: 600;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      cursor: pointer; transition: all 0.15s; white-space: nowrap;
+      font-family: 'Inter', sans-serif;
+    }
+    .btn-test:hover { background: rgba(201,169,110,0.08); border-color: rgba(201,169,110,0.5); }
+    .btn-test:disabled { opacity: 0.45; cursor: default; }
 
     /* PAGE HERO */
     .page-hero { padding: 48px 0 52px; }
@@ -241,9 +263,13 @@
   <!-- API KEY BANNER -->
   <div class="api-banner">
     <div class="api-label">API Key</div>
-    <input class="api-input" type="password" id="apiKeyInput" placeholder="sk-ant-api03-…" oninput="saveKey()" autocomplete="off" />
-    <div class="api-status unset" id="apiStatus">Not set</div>
-    <div class="api-note">Saved to localStorage. Never sent anywhere except api.anthropic.com.</div>
+    <div class="api-input-wrap">
+      <input class="api-input" type="password" id="apiKeyInput" placeholder="sk-ant-api03-…" oninput="saveKey()" autocomplete="off" />
+      <button class="api-eye" onclick="toggleKeyVisibility()" id="apiEye" title="Show / hide key">👁</button>
+    </div>
+    <div class="api-status unset" id="apiStatus"><span class="api-dot"></span><span id="apiStatusText">Not set</span></div>
+    <button class="btn-test" id="testBtn" onclick="testConnection()">Test connection</button>
+    <div class="api-note">Saved to localStorage · Never sent anywhere except api.anthropic.com.</div>
   </div>
 
   <div class="page">
@@ -1052,17 +1078,21 @@ Rules:
     });
 
     // ── API KEY ───────────────────────────────────────────────────────
+    function setApiStatusUI(isSet, label) {
+      const status = document.getElementById('apiStatus');
+      const txt    = document.getElementById('apiStatusText');
+      status.className = 'api-status ' + (isSet ? 'set' : 'unset');
+      txt.textContent  = label || (isSet ? 'Key set ✓' : 'Not set');
+    }
+
     function saveKey() {
       const val = document.getElementById('apiKeyInput').value.trim();
-      const status = document.getElementById('apiStatus');
       if (val) {
         localStorage.setItem('aldric_claude_key', val);
-        status.textContent = 'Key set ✓';
-        status.className = 'api-status set';
+        setApiStatusUI(true);
       } else {
         localStorage.removeItem('aldric_claude_key');
-        status.textContent = 'Not set';
-        status.className = 'api-status unset';
+        setApiStatusUI(false);
       }
     }
 
@@ -1070,8 +1100,56 @@ Rules:
       const saved = localStorage.getItem('aldric_claude_key');
       if (saved) {
         document.getElementById('apiKeyInput').value = saved;
-        document.getElementById('apiStatus').textContent = 'Key set ✓';
-        document.getElementById('apiStatus').className = 'api-status set';
+        setApiStatusUI(true);
+      }
+    }
+
+    function toggleKeyVisibility() {
+      const inp = document.getElementById('apiKeyInput');
+      const eye = document.getElementById('apiEye');
+      if (inp.type === 'password') {
+        inp.type = 'text';
+        eye.textContent = '🙈';
+      } else {
+        inp.type = 'password';
+        eye.textContent = '👁';
+      }
+    }
+
+    async function testConnection() {
+      const key = document.getElementById('apiKeyInput').value.trim();
+      if (!key) { showToast('Enter your API key first'); return; }
+      const btn = document.getElementById('testBtn');
+      btn.disabled = true; btn.textContent = 'Testing…';
+      setApiStatusUI(true, 'Testing…');
+      try {
+        const resp = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'x-api-key': key,
+            'anthropic-version': '2023-06-01',
+            'content-type': 'application/json',
+            'anthropic-dangerous-direct-browser-access': 'true',
+          },
+          body: JSON.stringify({
+            model: MODEL,
+            max_tokens: 10,
+            messages: [{ role: 'user', content: 'Reply with: ok' }],
+          }),
+        });
+        const data = await resp.json();
+        if (resp.ok) {
+          setApiStatusUI(true, 'Connected ✓');
+          showToast('Connection successful');
+        } else {
+          setApiStatusUI(false, data.error?.type === 'authentication_error' ? 'Invalid key' : 'API error');
+          showToast(data.error?.message || 'Connection failed');
+        }
+      } catch (e) {
+        setApiStatusUI(false, 'Network error');
+        showToast('Network error — check your connection');
+      } finally {
+        btn.disabled = false; btn.textContent = 'Test connection';
       }
     }
 
