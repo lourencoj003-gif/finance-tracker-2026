@@ -1,5 +1,8 @@
 name: Deploy Static Sites to GitHub Pages
 
+# Deploys static HTML sites only — NO build step, NO npm install.
+# The React app (Noa) is deployed separately via Vercel.
+
 on:
   push:
     branches: [main]
@@ -17,13 +20,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Assemble deploy folder
+      - name: Assemble static site folder
         run: |
           mkdir -p _site
           cp -r public/agency   _site/agency
           cp -r public/axontra  _site/axontra
           cp -r noa-landing     _site/noa-landing
-          cp pages-index.html   _site/index.html
+          cp    pages-index.html _site/index.html
+          # Prevent GitHub Pages from running Jekyll processing
+          touch _site/.nojekyll
 
       - name: Deploy to gh-pages
         uses: JamesIves/github-pages-deploy-action@v4
