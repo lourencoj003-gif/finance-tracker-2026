@@ -540,6 +540,12 @@ export default function VelaCore({ onReset }) {
   // What's New — one-time v1.0 tooltip
   const [showWhatsNew, setShowWhatsNew]       = useState(false);
 
+  // Transaction History view
+  const [showHistory, setShowHistory]         = useState(false);
+  const [historyCat, setHistoryCat]           = useState('all');
+  const [historyRange, setHistoryRange]       = useState('month');
+  const [historyDeleteId, setHistoryDeleteId] = useState(null);
+
   // Task 1 — Privacy Mode
   const [privacyMode, setPrivacyModeState]     = useState(() => getPrivacyMode());
   const privacyModeRef                         = useRef(getPrivacyMode());
@@ -2719,19 +2725,33 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
 
         </div>{/* end scrollable cards area */}
 
-        {/* ── Pinned "Ask Noa" bar — always visible, one tap away ── */}
+        {/* ── Pinned bottom nav — Ask Noa bar + History ── */}
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0,
           paddingBottom: 'max(env(safe-area-inset-bottom), 12px)',
-          paddingLeft: 20, paddingRight: 20, paddingTop: 10,
+          paddingLeft: 16, paddingRight: 16, paddingTop: 10,
           background: `linear-gradient(to bottom, transparent, ${BG} 45%)`,
           pointerEvents: 'none', zIndex: 8,
+          display: 'flex', alignItems: 'flex-end', gap: 8,
         }}>
+          <button
+            onClick={() => setShowHistory(true)}
+            style={{
+              pointerEvents: 'all', flexShrink: 0,
+              width: 52, height: 52,
+              background: 'rgba(232,221,208,0.06)',
+              border: '1px solid rgba(232,221,208,0.16)',
+              borderRadius: 16,
+              color: 'rgba(232,221,208,0.5)', fontSize: 18, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+            aria-label="Transaction history"
+          >≡</button>
           <button
             onClick={() => { unlockAudio(); setChatOpen(true); }}
             style={{
-              pointerEvents: 'all',
-              width: '100%', height: 52,
+              pointerEvents: 'all', flex: 1,
+              height: 52,
               background: 'rgba(232,221,208,0.08)',
               border: '1px solid rgba(232,221,208,0.24)',
               borderRadius: 18,
@@ -2744,6 +2764,209 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
           </button>
         </div>
       </div>
+
+      {/* ══════════════════════════════════════════
+          TRANSACTION HISTORY VIEW
+      ══════════════════════════════════════════ */}
+      {showHistory && (() => {
+        const allTx     = getExpenseLog();
+        const now2      = new Date();
+        const thisMonth = now2.toISOString().slice(0, 7);
+        const lastMonth = new Date(now2.getFullYear(), now2.getMonth() - 1, 1).toISOString().slice(0, 7);
+        const weekStart = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+
+        const inRange = tx => {
+          if (historyRange === 'week')  return tx.date && tx.date >= weekStart;
+          if (historyRange === 'month') return tx.date && tx.date.startsWith(thisMonth);
+          if (historyRange === 'last')  return tx.date && tx.date.startsWith(lastMonth);
+          return true;
+        };
+        const filtered = allTx
+          .filter(tx => inRange(tx))
+          .filter(tx => historyCat === 'all' || (tx.category || 'essentials') === historyCat)
+          .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+        const totalThisMonth = allTx
+          .filter(tx => tx.date && tx.date.startsWith(thisMonth))
+          .reduce((s, e) => s + e.amount, 0);
+
+        // Monthly chart data
+        const chartData = ['essentials', 'lifestyle', 'savings'].map(cat => {
+          const spent  = allTx.filter(tx => tx.date && tx.date.startsWith(thisMonth) && (tx.category || 'essentials') === cat).reduce((s, e) => s + e.amount, 0);
+          const budget = cat === 'essentials' ? Math.round(income * 0.50) : cat === 'lifestyle' ? Math.round(income * 0.25) : Math.round(income * 0.20);
+          const pct    = budget > 0 ? Math.min(100, Math.round((spent / budget) * 100)) : 0;
+          const color  = cat === 'essentials' ? PURPLE : cat === 'lifestyle' ? AMBER : GREEN;
+          const label  = cat === 'essentials' ? 'Essentials' : cat === 'lifestyle' ? 'Lifestyle' : 'Savings';
+          return { label, spent, budget, pct, color };
+        });
+
+        const catColors = { essentials: PURPLE, lifestyle: AMBER, savings: GREEN };
+        const catLabel  = c => c === 'essentials' ? 'Essentials' : c === 'lifestyle' ? 'Lifestyle' : c === 'savings' ? 'Savings' : c;
+
+        function confirmDelete(id) {
+          if (historyDeleteId === id) {
+            // confirmed — delete it
+            const updated = getExpenseLog().filter(tx => tx.id !== id);
+            saveExpenseLog(updated);
+            setExpenseLog(updated);
+            setHistoryDeleteId(null);
+          } else {
+            setHistoryDeleteId(id);
+          }
+        }
+
+        const rangeLabels = { week: 'This week', month: 'This month', last: 'Last month', all: 'All time' };
+
+        return (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0,
+            height: vpH ? `${vpH}px` : '100dvh',
+            zIndex: 20, background: BG,
+            display: 'flex', flexDirection: 'column',
+            animation: 'cardIn 0.3s ease-out',
+          }}>
+            {/* Header */}
+            <div style={{
+              display: 'flex', alignItems: 'center',
+              padding: 'max(env(safe-area-inset-top), 16px) 20px 14px',
+              borderBottom: '1px solid rgba(232,221,208,0.07)', flexShrink: 0,
+            }}>
+              <button onClick={() => { setShowHistory(false); setHistoryDeleteId(null); }} style={{ background: 'none', border: 'none', color: 'rgba(232,221,208,0.5)', fontSize: 22, cursor: 'pointer', padding: '2px 8px 2px 0', lineHeight: 1 }}>←</button>
+              <div style={{ flex: 1, fontSize: 17, fontWeight: 700, color: '#E8DDD0', letterSpacing: '-0.01em' }}>Transaction History</div>
+            </div>
+
+            {/* Total this month pill */}
+            <div style={{ padding: '14px 20px 0', flexShrink: 0 }}>
+              <div style={{
+                background: 'rgba(200,184,154,0.08)', border: '1px solid rgba(200,184,154,0.18)',
+                borderRadius: 14, padding: '10px 14px',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              }}>
+                <div>
+                  <div style={{ fontSize: 10, color: 'rgba(232,221,208,0.35)', letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: 2 }}>Total this month</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: '#E8DDD0', letterSpacing: '-0.02em' }}>£{totalThisMonth.toFixed(0)}</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 10, color: 'rgba(232,221,208,0.35)', letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: 4 }}>vs. budget</div>
+                  {income > 0 && (
+                    <div style={{ fontSize: 13, fontWeight: 600, color: totalThisMonth > income * 0.8 ? RED : totalThisMonth > income * 0.6 ? AMBER : GREEN }}>
+                      {Math.round((totalThisMonth / (income * 0.8)) * 100)}%
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Monthly CSS chart */}
+              {income > 0 && (
+                <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {chartData.map(({ label, spent, budget, pct, color }) => (
+                    <div key={label}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                        <div style={{ fontSize: 10, color: 'rgba(232,221,208,0.5)', letterSpacing: '0.3px' }}>{label}</div>
+                        <div style={{ fontSize: 10, color: pct > 100 ? RED : pct > 80 ? AMBER : 'rgba(232,221,208,0.4)' }}>
+                          £{spent.toFixed(0)} / £{budget}
+                        </div>
+                      </div>
+                      <div style={{ height: 5, borderRadius: 3, background: 'rgba(232,221,208,0.06)', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${pct}%`, background: pct > 100 ? RED : color, borderRadius: 3, transition: 'width 0.4s ease' }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Filters */}
+            <div style={{ padding: '12px 20px 0', flexShrink: 0 }}>
+              <div style={{ display: 'flex', gap: 5, marginBottom: 8, overflowX: 'auto' }}>
+                {['all', 'essentials', 'lifestyle', 'savings'].map(c => (
+                  <button key={c} onClick={() => setHistoryCat(c)} style={{
+                    padding: '5px 12px', borderRadius: 20, border: '1px solid',
+                    fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0,
+                    fontFamily: 'inherit', letterSpacing: '0.05em',
+                    background: historyCat === c ? (c === 'all' ? 'rgba(200,184,154,0.18)' : `${catColors[c] || PURPLE}22`) : 'transparent',
+                    borderColor: historyCat === c ? (c === 'all' ? 'rgba(200,184,154,0.5)' : catColors[c] || PURPLE) : 'rgba(232,221,208,0.1)',
+                    color: historyCat === c ? (c === 'all' ? PURPLE : catColors[c]) : 'rgba(232,221,208,0.35)',
+                  }}>
+                    {c === 'all' ? 'All' : catLabel(c)}
+                  </button>
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: 5, overflowX: 'auto' }}>
+                {Object.entries(rangeLabels).map(([k, v]) => (
+                  <button key={k} onClick={() => setHistoryRange(k)} style={{
+                    padding: '4px 10px', borderRadius: 20, border: '1px solid',
+                    fontSize: 10, fontWeight: 500, cursor: 'pointer', flexShrink: 0,
+                    fontFamily: 'inherit',
+                    background: historyRange === k ? 'rgba(200,184,154,0.12)' : 'transparent',
+                    borderColor: historyRange === k ? 'rgba(200,184,154,0.4)' : 'rgba(232,221,208,0.08)',
+                    color: historyRange === k ? PURPLE : 'rgba(232,221,208,0.3)',
+                  }}>{v}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* Transaction list */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '12px 20px', paddingBottom: 'max(env(safe-area-inset-bottom), 20px)' }}>
+              {filtered.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                  <div style={{ fontSize: 28, marginBottom: 14 }}>📋</div>
+                  <div style={{ fontSize: 15, color: 'rgba(232,221,208,0.55)', lineHeight: 1.6 }}>
+                    No transactions logged yet.<br />
+                    <span style={{ fontSize: 13, color: 'rgba(232,221,208,0.3)' }}>Tap + to log your first one.</span>
+                  </div>
+                </div>
+              ) : (
+                filtered.map(tx => {
+                  const cat   = (tx.category || 'essentials');
+                  const color = catColors[cat] || PURPLE;
+                  const isDel = historyDeleteId === tx.id;
+                  return (
+                    <div
+                      key={tx.id || tx.date + tx.amount}
+                      onClick={() => confirmDelete(tx.id || (tx.date + tx.amount))}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 12,
+                        padding: '10px 12px', marginBottom: 5,
+                        background: isDel ? 'rgba(226,75,74,0.1)' : 'rgba(232,221,208,0.03)',
+                        border: `1px solid ${isDel ? 'rgba(226,75,74,0.35)' : 'rgba(232,221,208,0.06)'}`,
+                        borderRadius: 12, cursor: 'pointer',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      <div style={{
+                        width: 6, height: 6, borderRadius: '50%',
+                        background: color, flexShrink: 0,
+                      }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, color: isDel ? RED : '#E8DDD0', fontWeight: 500, letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {tx.note || tx.merchant || catLabel(cat)}
+                        </div>
+                        <div style={{ fontSize: 10, color: 'rgba(232,221,208,0.3)', marginTop: 1 }}>
+                          {catLabel(cat)} · {tx.date || ''}
+                        </div>
+                      </div>
+                      {isDel ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                          <span style={{ fontSize: 10, color: RED, fontWeight: 600 }}>Delete?</span>
+                          <button
+                            onClick={e => { e.stopPropagation(); setHistoryDeleteId(null); }}
+                            style={{ background: 'none', border: '1px solid rgba(232,221,208,0.18)', borderRadius: 6, color: 'rgba(232,221,208,0.4)', fontSize: 11, padding: '2px 8px', cursor: 'pointer', fontFamily: 'inherit' }}
+                          >Cancel</button>
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: 14, fontWeight: 600, color: '#E8DDD0', flexShrink: 0 }}>
+                          £{tx.amount.toFixed(2)}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ══════════════════════════════════════════
           DETAIL VIEW — lazy-loaded, slides up, swipe down to dismiss
