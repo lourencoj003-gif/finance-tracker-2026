@@ -42,49 +42,61 @@ const Q = [
   {
     id: 'name',
     ask: () => "Hey, I'm Noa. Before we get started, what's your first name?",
-    ph:  'e.g. Alex',
+    ph:     'e.g. Alex',
+    helper: 'Just your first name — Noa will use it throughout.',
   },
   {
     id: 'income',
     type: 'income',
     ask: ({ name }) => `Nice to meet you, ${name}. Where does your monthly income come from — and how much do you take home after tax?`,
-    ph:  '',
+    ph:     '',
+    helper: 'Your monthly take-home after tax. Include all sources.',
+    hint:   'Noa uses this to calculate your monthly surplus, set a realistic budget, and measure your savings rate. It\'s never shared or stored outside this device.',
   },
   {
     id: 'payday',
     ask: () => "What day of the month does your main salary land?",
-    ph:  'e.g. 25th, or "last day of month"',
+    ph:     'e.g. 25th, or "last day of month"',
+    helper: 'The date your salary hits your account each month.',
   },
   {
     id: 'expenses',
-    ask: () => "Do you have any fixed monthly costs — things like rent, subscriptions, bills? Tell me what they are and roughly how much each costs.",
-    ph:  'e.g. £900 rent, £60 Netflix, £40 gym',
+    ask: () => "What are your fixed monthly outgoings — rent, bills, subscriptions, everything that goes out regularly?",
+    ph:     'e.g. £900 rent, £60 bills, £15 Netflix',
+    helper: 'Rent, bills, food, transport — everything that goes out monthly.',
+    hint:   'Fixed costs are the baseline Noa works around. The more accurate this is, the better Noa\'s payday plan and spending advice will be.',
+    quickAdd: true,
   },
   {
     id: 'accounts',
     type: 'accounts',
-    ask: () => "Which bank accounts do you use? Add up to 4 — I'll use them in your payday plan.",
-    ph:  '',
+    ask: () => "Which bank accounts do you use day-to-day?",
+    ph:     '',
+    helper: 'Tell Noa which accounts you use so she can give you specific payday instructions — e.g. "move £X to your savings account on payday".',
   },
   {
     id: 'lifestyle',
     ask: ({ name }) => `Outside of fixed costs, where does most of your money tend to go each month${name ? `, ${name}` : ''}?`,
-    ph:  'e.g. Eating out, clothes, weekends away',
+    ph:     'e.g. Eating out, clothes, weekends away',
+    helper: 'Just a rough sense — Noa uses this to spot patterns in your spending.',
   },
   {
     id: 'debt',
-    ask: () => "Do you have any debts right now — credit cards, loans, overdrafts, buy now pay later? If yes, what's the total and do you know the interest rate?",
-    ph:  'e.g. £3,000 credit card at 24% or "none"',
+    ask: () => "Do you have any debts right now — credit cards, loans, overdrafts, buy now pay later?",
+    ph:     'e.g. £3,000 credit card at 24% or "none"',
+    helper: 'Total amount and interest rate if you know it. Type "none" if you\'re debt-free.',
   },
   {
     id: 'goal',
     ask: ({ name }) => `What's your biggest financial goal right now${name ? `, ${name}` : ''}?`,
-    ph:  'e.g. Save a £5,000 emergency fund',
+    ph:     'e.g. Save a £5,000 emergency fund',
+    helper: 'One clear goal. Noa will track your progress and remind you of it.',
   },
   {
     id: 'savings',
     ask: () => "Do you have any savings currently — and if so, roughly how much?",
-    ph:  'e.g. £2,000 or "none"',
+    ph:     'e.g. £2,000 or "none"',
+    helper: 'A rough figure is fine. Noa uses this to calculate how many months you could survive without income.',
   },
 ];
 
@@ -142,10 +154,11 @@ export default function Onboarding({ onDone }) {
   const [currentQ, setCurrentQ] = useState('');
   const [cardKey, setCardKey]   = useState(0);
   const [expanding, setExpanding] = useState(false);
-  const [finaleMsg, setFinaleMsg] = useState('');    // Feature 4 — personalised 3-sentence portrait
+  const [finaleMsg, setFinaleMsg] = useState('');    // personalised 3-sentence portrait
   const [showFinale, setShowFinale] = useState(false);
-  const [savedData, setSavedData] = useState(null);  // Task 3 — stored for confirmation screen
+  const [savedData, setSavedData] = useState(null);  // stored for confirmation screen
   const [savedAccounts, setSavedAccounts] = useState([]);
+  const [hintOpen, setHintOpen] = useState(false);  // expandable "Why do we ask?" hint
   const finaleSpokenRef = useRef(false);
   const [vpH, setVpH]           = useState(
     window.visualViewport ? Math.round(window.visualViewport.height) : null
@@ -205,6 +218,7 @@ export default function Onboarding({ onDone }) {
   function goBack() {
     if (step === 0 || history.length === 0) return;
     stopSpeaking();
+    setHintOpen(false);
     const prev = history[history.length - 1];
     setHistory(h => h.slice(0, -1));
     setStep(prev.step);
@@ -256,6 +270,7 @@ export default function Onboarding({ onDone }) {
       return;
     }
     if (building || step >= Q.length) return;
+    setHintOpen(false);
     // Save state to history before advancing
     setHistory(h => [...h, { step, data: { ...data }, prevInput: input }]);
     setInput('');
@@ -413,30 +428,30 @@ export default function Onboarding({ onDone }) {
       {/* ── Progress indicator ── */}
       {!building && !showFinale && (
         <div style={{
-          position: 'absolute', top: 'max(env(safe-area-inset-top), 20px)',
+          position: 'absolute', top: 'max(env(safe-area-inset-top), 18px)',
           left: 0, right: 0, zIndex: 5,
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
           paddingLeft: 52, paddingRight: 52,
         }}>
-          {/* Dot row */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {/* Dot row — larger for iPhone readability */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
             {Q.map((_, i) => (
               <div key={i} style={{
-                width:  i === step ? 28 : i < step ? 20 : 7,
-                height: i === step ? 8  : i < step ? 6  : 7,
-                borderRadius: 4,
+                width:  i === step ? 32 : i < step ? 22 : 8,
+                height: i === step ? 10 : i < step ? 7  : 8,
+                borderRadius: 5,
                 background: i === step
                   ? PURPLE
                   : i < step
-                    ? 'rgba(200,184,154,0.55)'
-                    : 'rgba(232,221,208,0.13)',
+                    ? 'rgba(200,184,154,0.60)'
+                    : 'rgba(232,221,208,0.15)',
                 transition: 'all 0.35s ease',
-                boxShadow: i === step ? '0 0 8px 2px rgba(200,184,154,0.35)' : 'none',
+                boxShadow: i === step ? '0 0 10px 3px rgba(200,184,154,0.4)' : 'none',
               }} />
             ))}
           </div>
-          {/* Step counter text */}
-          <div style={{ fontSize: 10, color: 'rgba(232,221,208,0.28)', letterSpacing: '0.05em' }}>
+          {/* Step counter */}
+          <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.38)', letterSpacing: '0.06em', fontWeight: 500 }}>
             Step {step + 1} of {totalDots}
           </div>
         </div>
@@ -544,46 +559,114 @@ export default function Onboarding({ onDone }) {
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0,
           display: 'flex', flexDirection: 'column', gap: 0,
-          paddingTop: 8, paddingBottom: 'max(14px, calc(env(safe-area-inset-bottom) + 8px))',
+          paddingTop: 10, paddingBottom: 'max(14px, calc(env(safe-area-inset-bottom) + 8px))',
           paddingLeft: 16, paddingRight: 16,
           background: BG,
           borderTop: '1px solid rgba(232,221,208,0.06)',
           boxSizing: 'border-box',
+          maxHeight: '55%', overflowY: 'auto',
         }}>
+
+          {/* Quick-add expense chips — only on expenses step */}
+          {Q[step]?.quickAdd && (
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 10, color: 'rgba(232,221,208,0.28)', letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: 7 }}>Quick add</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {[
+                  { label: 'Rent',       amount: 900 },
+                  { label: 'Bills',      amount: 120 },
+                  { label: 'Food',       amount: 200 },
+                  { label: 'Transport',  amount: 80  },
+                  { label: 'Phone',      amount: 30  },
+                  { label: 'Netflix',    amount: 18  },
+                  { label: 'Gym',        amount: 35  },
+                  { label: 'Insurance',  amount: 50  },
+                ].map(({ label, amount }) => (
+                  <button
+                    key={label}
+                    onClick={() => {
+                      const entry = `£${amount} ${label.toLowerCase()}`;
+                      setInput(prev => prev ? `${prev}, ${entry}` : entry);
+                      if (inputError) setInputError('');
+                    }}
+                    style={{
+                      padding: '5px 11px', borderRadius: 16, fontSize: 11, fontWeight: 500,
+                      background: 'rgba(200,184,154,0.08)',
+                      border: '1px solid rgba(200,184,154,0.2)',
+                      color: 'rgba(232,221,208,0.7)', cursor: 'pointer',
+                      fontFamily: 'inherit', whiteSpace: 'nowrap',
+                      transition: 'all 0.15s',
+                    }}
+                  >+ {label}</button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Helper text */}
+          {Q[step]?.helper && (
+            <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.38)', marginBottom: 7, letterSpacing: '0.1px', lineHeight: 1.5 }}>
+              {Q[step].helper}
+            </div>
+          )}
+
+          {/* Why do we ask? expandable hint */}
+          {Q[step]?.hint && (
+            <div style={{ marginBottom: 8 }}>
+              <button
+                onClick={() => setHintOpen(h => !h)}
+                style={{ background: 'none', border: 'none', padding: 0, color: 'rgba(200,184,154,0.5)', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit', letterSpacing: '0.1px' }}
+              >
+                {hintOpen ? '↑ Hide' : '? Why do we ask this?'}
+              </button>
+              {hintOpen && (
+                <div style={{
+                  marginTop: 6, padding: '9px 12px',
+                  background: 'rgba(200,184,154,0.06)',
+                  border: '1px solid rgba(200,184,154,0.14)',
+                  borderRadius: 10, fontSize: 11, color: 'rgba(232,221,208,0.5)',
+                  lineHeight: 1.6, animation: 'cardIn 0.2s ease-out',
+                }}>
+                  {Q[step].hint}
+                </div>
+              )}
+            </div>
+          )}
+
           {inputError && (
             <div style={{ fontSize: 11, color: '#E24B4A', textAlign: 'center', marginBottom: 6, letterSpacing: '0.1px' }}>
               {inputError}
             </div>
           )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <input
-            value={input}
-            onChange={e => { setInput(e.target.value); if (inputError) setInputError(''); }}
-            onKeyDown={onKey}
-            placeholder={Q[step]?.ph || 'Type your answer…'}
-            style={{
-              flex: 1,
-              background: 'rgba(255,255,255,0.05)',
-              border: inputError ? '0.5px solid rgba(226,75,74,0.5)' : '0.5px solid rgba(232,221,208,0.2)',
-              borderRadius: 24,
-              padding: '14px 20px',
-              color: '#E8DDD0',
-              WebkitTextFillColor: '#E8DDD0',
-              fontSize: 16,
-              fontWeight: 300,
-              outline: 'none',
-              fontFamily: 'inherit',
-              WebkitAppearance: 'none',
-            }}
-          />
-          <button onClick={send} style={{
-            width: 44, height: 44, borderRadius: '50%', border: 'none', flexShrink: 0,
-            background: input.trim() ? 'rgba(200,184,154,0.22)' : 'rgba(232,221,208,0.05)',
-            color: input.trim() ? PURPLE : 'rgba(232,221,208,0.18)',
-            fontSize: 22, cursor: 'pointer',
-            transition: 'all 0.15s',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>›</button>
+            <input
+              value={input}
+              onChange={e => { setInput(e.target.value); if (inputError) setInputError(''); }}
+              onKeyDown={onKey}
+              placeholder={Q[step]?.ph || 'Type your answer…'}
+              style={{
+                flex: 1,
+                background: 'rgba(255,255,255,0.05)',
+                border: inputError ? '0.5px solid rgba(226,75,74,0.5)' : '0.5px solid rgba(232,221,208,0.2)',
+                borderRadius: 24,
+                padding: '14px 20px',
+                color: '#E8DDD0',
+                WebkitTextFillColor: '#E8DDD0',
+                fontSize: 16,
+                fontWeight: 300,
+                outline: 'none',
+                fontFamily: 'inherit',
+                WebkitAppearance: 'none',
+              }}
+            />
+            <button onClick={send} style={{
+              width: 44, height: 44, borderRadius: '50%', border: 'none', flexShrink: 0,
+              background: input.trim() ? 'rgba(200,184,154,0.22)' : 'rgba(232,221,208,0.05)',
+              color: input.trim() ? PURPLE : 'rgba(232,221,208,0.18)',
+              fontSize: 22, cursor: 'pointer',
+              transition: 'all 0.15s',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>›</button>
           </div>
         </div>
       )}
@@ -604,16 +687,16 @@ export default function Onboarding({ onDone }) {
             {orbState === 'speaking' ? <WaveBars /> : <div style={{ fontSize: 10, color: 'rgba(232,221,208,0.28)', letterSpacing: '0.4px' }}>Noa</div>}
           </div>
 
-          {/* Portrait text */}
+          {/* Portrait text — slow dramatic reveal */}
           {finaleMsg && (
             <div style={{
-              marginTop: 20,
-              fontSize: 16, color: '#E8DDD0', lineHeight: 1.72, fontWeight: 300,
-              textAlign: 'center', letterSpacing: '0.01em',
-              animation: 'sentenceIn 0.8s ease-out',
-              maxWidth: 320,
+              marginTop: 24,
+              fontSize: 17, color: '#E8DDD0', lineHeight: 1.8, fontWeight: 300,
+              textAlign: 'center', letterSpacing: '0.015em',
+              animation: 'sentenceIn 1.2s ease-out',
+              maxWidth: 340,
             }}>
-              <AnimatedText key="finale" text={finaleMsg} />
+              <AnimatedText key="finale" text={finaleMsg} slow />
             </div>
           )}
 
@@ -648,7 +731,7 @@ export default function Onboarding({ onDone }) {
 
           {/* CTA buttons */}
           <button
-            onClick={() => { setExpanding(true); setTimeout(onDone, 1600); }}
+            onClick={() => { setExpanding(true); setTimeout(onDone, 2400); }}
             style={{
               marginTop: 24, width: '100%', maxWidth: 360, padding: '15px 32px',
               background: 'rgba(200,184,154,0.18)',
@@ -679,10 +762,10 @@ export default function Onboarding({ onDone }) {
           animation: 'expandFadeIn 0.4s ease-out',
         }}>
           <div style={{
-            width: 140, height: 140, borderRadius: '50%',
-            background: `radial-gradient(circle at 35% 35%, #d8cebe, ${PURPLE} 55%, #7a6a52)`,
-            boxShadow: `0 0 80px 40px rgba(200,184,154,0.5)`,
-            animation: 'orbExpand 1.6s ease-in-out forwards',
+            width: 160, height: 160, borderRadius: '50%',
+            background: `radial-gradient(circle at 35% 35%, #e8ddd0, ${PURPLE} 45%, #7a6a52)`,
+            boxShadow: `0 0 120px 60px rgba(200,184,154,0.55)`,
+            animation: 'orbExpand 2.4s ease-in-out forwards',
           }} />
         </div>
       )}
@@ -720,8 +803,9 @@ function WaveBars() {
   );
 }
 
-function AnimatedText({ text }) {
+function AnimatedText({ text, slow = false }) {
   const [visibleCount, setVisibleCount] = useState(1);
+  const delay = slow ? 750 : 400;
   useEffect(() => {
     const sentences = splitSentences(text);
     setVisibleCount(1);
@@ -731,13 +815,13 @@ function AnimatedText({ text }) {
       count++;
       setVisibleCount(count);
       if (count >= sentences.length) clearInterval(id);
-    }, 400);
+    }, delay);
     return () => clearInterval(id);
   }, [text]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <>
       {splitSentences(text).slice(0, visibleCount).map((s, i) => (
-        <span key={i} style={{ animation: 'sentenceIn 0.6s ease-out', display: 'inline' }}>{s} </span>
+        <span key={i} style={{ animation: `sentenceIn ${slow ? '1s' : '0.6s'} ease-out`, display: 'inline' }}>{s} </span>
       ))}
     </>
   );
@@ -768,10 +852,14 @@ function IncomeStep({ sources, onChange, onContinue }) {
     <div style={{
       position: 'absolute', bottom: 0, left: 0, right: 0,
       background: '#111318', borderTop: '1px solid rgba(232,221,208,0.07)',
-      padding: '14px 16px 0', boxSizing: 'border-box',
+      padding: '12px 16px 0', boxSizing: 'border-box',
       paddingBottom: 'max(14px, calc(env(safe-area-inset-bottom) + 8px))',
-      maxHeight: '54%', overflowY: 'auto',
+      maxHeight: '56%', overflowY: 'auto',
     }}>
+      {/* Helper */}
+      <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.36)', marginBottom: 10, lineHeight: 1.5 }}>
+        Your monthly take-home after tax. Add each income source separately.
+      </div>
       {/* Running total */}
       {total > 0 && (
         <div style={{ textAlign: 'center', marginBottom: 10 }}>
@@ -993,6 +1081,11 @@ function AccountsStep({ accounts, onChange, onContinue, onSkip }) {
       paddingBottom: 'max(14px, calc(env(safe-area-inset-bottom) + 8px))',
       overflowY: 'auto', maxHeight: '72vh',
     }}>
+
+      {/* Helper text */}
+      <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.36)', marginBottom: 12, lineHeight: 1.55 }}>
+        Tell Noa which accounts you use so she can give you specific payday instructions — e.g. "move £400 to your savings account on payday".
+      </div>
 
       {/* ── Plaid Open Banking section ───────────────────────────────── */}
       {bankConnected ? (
