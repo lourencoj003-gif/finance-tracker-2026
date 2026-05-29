@@ -52,9 +52,11 @@ async function getClientData(trainerId: string, clientId: string): Promise<Profi
 
   if (!client) return null
 
-  // Serialise dates — server components can't pass Date objects to client components
-  const serialise = <T extends Record<string, unknown>>(obj: T) =>
-    JSON.parse(JSON.stringify(obj)) as T
+  // Serialise dates — server components can't pass Date objects to client components.
+  // JSON round-trip converts Date → ISO string; cast to unknown first to satisfy TS
+  // (the runtime shape is correct — all dates become strings).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const serialise = (obj: Record<string, unknown>) => JSON.parse(JSON.stringify(obj))
 
   let todayCheckin: ProfileProps['todayCheckin'] = null
   if (todaySummary?.notes) {
@@ -62,11 +64,11 @@ async function getClientData(trainerId: string, clientId: string): Promise<Profi
   }
 
   return {
-    client:        serialise(client),
-    healthLogs:    healthLogs.map(serialise),
-    nutritionLogs: nutritionLogs.map(serialise),
-    tasks:         tasks.map(serialise),
-    workouts:      workouts.map(serialise),
+    client:        serialise(client)        as ProfileProps['client'],
+    healthLogs:    healthLogs.map(serialise) as ProfileProps['healthLogs'],
+    nutritionLogs: nutritionLogs.map(serialise) as ProfileProps['nutritionLogs'],
+    tasks:         tasks.map(serialise)      as ProfileProps['tasks'],
+    workouts:      workouts.map(serialise)   as ProfileProps['workouts'],
     todayCheckin,
     trainerNotes:  link.notes ?? '',
   }

@@ -7,7 +7,7 @@ const STEPS = [
   {
     id: 'photo',
     title: 'Add a profile photo',
-    subtitle: 'Put a face to the name. Skip if you'd like.',
+    subtitle: "Put a face to the name. Skip if you'd like.",
   },
   {
     id: 'bio',

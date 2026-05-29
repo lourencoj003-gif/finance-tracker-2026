@@ -160,7 +160,7 @@ export default function HealthPage() {
                     contentStyle={{ background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, fontSize: 12 }}
                     labelStyle={{ color: '#888' }}
                     itemStyle={{ color: '#a3f510' }}
-                    formatter={(v: number) => [`${v.toLocaleString()} steps`, '']}
+                    formatter={(v) => [`${Number(v ?? 0).toLocaleString()} steps`, '']}
                   />
                   <Area
                     type="monotone"
