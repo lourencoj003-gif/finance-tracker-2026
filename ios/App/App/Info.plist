@@ -51,5 +51,7 @@
 	<string>Noa uses your microphone to hear your voice commands</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Noa uses Face ID to protect your financial data</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Noa does not use your camera</string>
 </dict>
 </plist>

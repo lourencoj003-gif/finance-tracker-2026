@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Screenshot 6 — Share Card</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1290px; height: 2796px; overflow: hidden;
+    background: #0d0f13; font-family: 'Inter', system-ui, sans-serif;
+    color: #E8DDD0; position: relative;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .bg-glow {
+    position: absolute; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(ellipse 700px 700px at 50% 42%, rgba(200,184,154,0.10) 0%, transparent 65%),
+      radial-gradient(ellipse 500px 400px at 50% 80%, rgba(124,174,158,0.08) 0%, transparent 60%);
+  }
+  .status-bar {
+    position: absolute; top: 60px; left: 0; right: 0;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 80px; font-size: 30px; font-weight: 600;
+    color: rgba(232,221,208,0.35); z-index: 2;
+  }
+  /* Caption */
+  .caption { position: absolute; top: 160px; left: 0; right: 0; text-align: center; z-index: 2; }
+  .caption-tag { font-size: 26px; font-weight: 600; letter-spacing: 0.15em; color: #C8B89A; text-transform: uppercase; margin-bottom: 18px; }
+  .caption-title { font-size: 72px; font-weight: 800; color: #E8DDD0; line-height: 1.1; margin-bottom: 22px; }
+  .caption-sub { font-size: 34px; color: rgba(232,221,208,0.45); font-weight: 300; line-height: 1.5; }
+  /* Story card */
+  .story-card {
+    position: relative; z-index: 1;
+    width: 700px;
+    aspect-ratio: 9/16;
+    background: linear-gradient(170deg, #111318 0%, #0d0f13 60%, #080b0e 100%);
+    border: 1px solid rgba(200,184,154,0.22);
+    border-radius: 52px;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: space-between;
+    padding: 72px 60px 56px;
+    text-align: center;
+    box-shadow: 0 0 80px 16px rgba(200,184,154,0.07), 0 0 30px 6px rgba(124,174,158,0.1);
+    margin-top: 360px;
+  }
+  /* Top accent */
+  .top-line { width: 80%; height: 2px; background: linear-gradient(90deg, transparent, rgba(200,184,154,0.55), transparent); margin-bottom: 0; }
+  /* Noa wordmark */
+  .wm-section { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .orb {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #e0d8cc, #C8B89A 50%, #7a6a52);
+    box-shadow: 0 0 30px 10px rgba(200,184,154,0.3);
+  }
+  .wm { font-size: 58px; font-weight: 300; letter-spacing: 0.22em; color: #E8DDD0; font-family: Georgia, serif; }
+  .wm-sub { font-size: 18px; letter-spacing: 0.12em; color: rgba(200,184,154,0.38); text-transform: uppercase; }
+  /* Score ring */
+  .ring-section { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .ring-label-below { font-size: 18px; color: rgba(232,221,208,0.28); letter-spacing: 0.1em; text-transform: uppercase; }
+  /* Mood */
+  .mood { font-size: 26px; font-weight: 700; color: #7CAE9E; letter-spacing: 0.12em; text-transform: uppercase; }
+  /* Metrics */
+  .metrics { display: flex; gap: 40px; align-items: center; }
+  .metric { text-align: center; }
+  .metric-val { font-size: 36px; font-weight: 800; }
+  .metric-label { font-size: 14px; color: rgba(232,221,208,0.28); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 4px; }
+  .divider { width: 1px; height: 60px; background: rgba(232,221,208,0.1); }
+  /* Quote */
+  .quote-section { border-top: 1px solid rgba(232,221,208,0.07); padding-top: 28px; width: 100%; }
+  .quote { font-size: 22px; color: rgba(232,221,208,0.58); font-style: italic; line-height: 1.55; }
+  /* Footer */
+  .footer { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .ref-code { font-size: 18px; color: rgba(200,184,154,0.4); letter-spacing: 0.08em; }
+  .ref-code strong { color: rgba(200,184,154,0.6); }
+  .url { font-size: 14px; color: rgba(232,221,208,0.15); letter-spacing: 0.05em; }
+  .bottom-line { width: 80%; height: 1px; background: linear-gradient(90deg, transparent, rgba(200,184,154,0.3), transparent); }
+  /* Buttons below card */
+  .actions { position: absolute; bottom: 250px; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; gap: 20px; z-index: 2; }
+  .btn-share {
+    width: 700px; padding: 44px 0;
+    background: rgba(200,184,154,0.14); border: 1px solid rgba(200,184,154,0.3); border-radius: 26px;
+    color: #C8B89A; font-size: 32px; font-weight: 600; font-family: 'Inter', sans-serif;
+  }
+  .btn-download {
+    width: 700px; padding: 36px 0;
+    background: rgba(232,221,208,0.04); border: 1px solid rgba(232,221,208,0.1); border-radius: 26px;
+    color: rgba(232,221,208,0.42); font-size: 28px; font-weight: 500; font-family: 'Inter', sans-serif;
+  }
+  .home-indicator {
+    position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+    width: 240px; height: 8px; border-radius: 100px;
+    background: rgba(232,221,208,0.22);
+  }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Georgia&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="bg-glow"></div>
+  <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+
+  <div class="caption">
+    <div class="caption-tag">Share Your Score</div>
+    <div class="caption-title">Show the world<br>your progress.</div>
+    <div class="caption-sub">Instagram story card. One tap to share.</div>
+  </div>
+
+  <div class="story-card">
+    <div class="top-line"></div>
+
+    <div class="wm-section">
+      <div class="orb"></div>
+      <div class="wm">NOA</div>
+      <div class="wm-sub">Your Financial Navigator</div>
+    </div>
+
+    <div class="ring-section">
+      <svg width="200" height="200" viewBox="0 0 200 200">
+        <circle cx="100" cy="100" r="82" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="12"/>
+        <circle cx="100" cy="100" r="82" fill="none" stroke="#7CAE9E" stroke-width="12"
+          stroke-linecap="round" stroke-dasharray="370 516" transform="rotate(-90 100 100)"/>
+        <text x="100" y="95" text-anchor="middle" fill="#7CAE9E" font-size="60" font-weight="800" font-family="Inter">72</text>
+        <text x="100" y="134" text-anchor="middle" fill="rgba(232,221,208,0.28)" font-size="20" font-family="Inter" letter-spacing="4">SCORE</text>
+      </svg>
+      <div class="mood">Steady</div>
+    </div>
+
+    <div class="metrics">
+      <div class="metric"><div class="metric-val" style="color:#7CAE9E">12d</div><div class="metric-label">Streak</div></div>
+      <div class="divider"></div>
+      <div class="metric"><div class="metric-val" style="color:#C9A96E">14%</div><div class="metric-label">Savings</div></div>
+      <div class="divider"></div>
+      <div class="metric"><div class="metric-val" style="color:#C8B89A">Saver</div><div class="metric-label">Type</div></div>
+    </div>
+
+    <div class="quote-section">
+      <div class="quote">"Apparently 'I'll sort it later'<br>is not a savings strategy."</div>
+    </div>
+
+    <div class="footer">
+      <div class="ref-code">code: <strong>NOA-7K3MX2</strong></div>
+      <div class="url">finance-tracker-2026-navy.vercel.app</div>
+    </div>
+    <div class="bottom-line"></div>
+  </div>
+
+  <div class="actions">
+    <button class="btn-share">↗ Share</button>
+    <button class="btn-download">⬇ Save Story Card (1080×1920 PNG)</button>
+  </div>
+
+  <div class="home-indicator"></div>
+</body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Screenshot 3 — Chat</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1290px; height: 2796px; overflow: hidden;
+    background: #111318; font-family: 'Inter', system-ui, sans-serif;
+    color: #E8DDD0; display: flex; flex-direction: column;
+  }
+  .bg-glow {
+    position: fixed; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse 600px 500px at 50% 25%, rgba(200,184,154,0.08) 0%, transparent 65%);
+  }
+  .status-bar {
+    position: relative; z-index: 1;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 60px 80px 0; font-size: 30px; font-weight: 600;
+    color: rgba(232,221,208,0.45);
+  }
+  .chat-header {
+    position: relative; z-index: 1;
+    display: flex; flex-direction: column; align-items: center; padding: 50px 0 40px; gap: 20px;
+  }
+  .orb {
+    width: 90px; height: 90px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #e0d8cc, #C8B89A 50%, #7a6a52);
+    box-shadow: 0 0 40px 14px rgba(200,184,154,0.32);
+  }
+  .orb-name { font-size: 28px; font-weight: 600; color: rgba(200,184,154,0.7); letter-spacing: 0.08em; }
+  /* Messages */
+  .messages { flex: 1; padding: 0 70px; display: flex; flex-direction: column; gap: 40px; overflow: hidden; position: relative; z-index: 1; }
+  .msg { max-width: 85%; }
+  .msg-noa { align-self: flex-start; }
+  .msg-user { align-self: flex-end; }
+  .bubble {
+    padding: 38px 44px; border-radius: 32px; font-size: 34px; line-height: 1.55; font-weight: 400;
+  }
+  .bubble-noa {
+    background: rgba(232,221,208,0.07); border: 1px solid rgba(232,221,208,0.1);
+    color: #E8DDD0; border-bottom-left-radius: 8px;
+  }
+  .bubble-user {
+    background: rgba(200,184,154,0.14); border: 1px solid rgba(200,184,154,0.25);
+    color: #C8B89A; border-bottom-right-radius: 8px;
+  }
+  .msg-time { font-size: 22px; color: rgba(232,221,208,0.22); margin-top: 12px; padding: 0 8px; }
+  .msg-noa .msg-time { text-align: left; }
+  .msg-user .msg-time { text-align: right; }
+  /* Input bar */
+  .input-bar {
+    position: relative; z-index: 1;
+    padding: 30px 70px 80px;
+    display: flex; align-items: center; gap: 24px;
+    background: linear-gradient(0deg, rgba(17,19,24,1) 70%, transparent);
+  }
+  .input-field {
+    flex: 1; background: rgba(232,221,208,0.07); border: 1px solid rgba(232,221,208,0.14);
+    border-radius: 60px; padding: 36px 50px; font-size: 30px; color: rgba(232,221,208,0.4);
+  }
+  .mic-btn {
+    width: 100px; height: 100px; border-radius: 50%;
+    background: rgba(200,184,154,0.15); border: 1px solid rgba(200,184,154,0.35);
+    display: flex; align-items: center; justify-content: center; font-size: 44px;
+  }
+  /* Caption */
+  .caption-overlay {
+    position: absolute; top: 0; left: 0; right: 0;
+    background: linear-gradient(180deg, rgba(10,10,15,0.95) 0%, transparent 100%);
+    padding: 150px 80px 120px; text-align: center; pointer-events: none;
+  }
+  .caption-tag { font-size: 26px; font-weight: 600; letter-spacing: 0.15em; color: #C8B89A; text-transform: uppercase; margin-bottom: 18px; }
+  .caption-title { font-size: 68px; font-weight: 800; color: #E8DDD0; line-height: 1.1; margin-bottom: 22px; }
+  .caption-sub { font-size: 34px; color: rgba(232,221,208,0.45); font-weight: 300; line-height: 1.5; }
+  .home-indicator {
+    position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+    width: 240px; height: 8px; border-radius: 100px;
+    background: rgba(232,221,208,0.22);
+  }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="bg-glow"></div>
+  <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+
+  <div class="chat-header">
+    <div class="orb"></div>
+    <div class="orb-name">Noa · Online</div>
+  </div>
+
+  <div class="messages">
+    <div class="msg msg-user">
+      <div class="bubble bubble-user">Can I afford a £600 holiday this month?</div>
+      <div class="msg-time">9:38</div>
+    </div>
+
+    <div class="msg msg-noa">
+      <div class="bubble bubble-noa">Tight but possible. You have £340 surplus this month and £180 already spent on lifestyle. That leaves £160 before you'd dip into savings.<br><br>If you put £200 toward it now and split the rest next month, you stay on track. Want me to adjust your plan?</div>
+      <div class="msg-time">9:38 · Noa</div>
+    </div>
+
+    <div class="msg msg-user">
+      <div class="bubble bubble-user">Yes, do it</div>
+      <div class="msg-time">9:39</div>
+    </div>
+
+    <div class="msg msg-noa">
+      <div class="bubble bubble-noa">Done. I've noted the holiday in your goals. Your new safe daily spend is £12 for the rest of May.<br><br>One thing — your Spotify, Netflix and gym together are £47/month. Pausing one for June would cover the rest of the holiday outright.</div>
+      <div class="msg-time">9:39 · Noa</div>
+    </div>
+
+    <div class="msg msg-user">
+      <div class="bubble bubble-user">Good point. Cancel Spotify for June</div>
+      <div class="msg-time">9:40</div>
+    </div>
+
+    <div class="msg msg-noa">
+      <div class="bubble bubble-noa">Smart. Holiday's covered. Daily spend back up to £18. 🌍</div>
+      <div class="msg-time">9:40 · Noa</div>
+    </div>
+  </div>
+
+  <div class="input-bar">
+    <div class="input-field">Ask Noa anything…</div>
+    <div class="mic-btn">🎙</div>
+  </div>
+
+  <!-- Caption at top -->
+  <div class="caption-overlay">
+    <div class="caption-tag">Voice & Text</div>
+    <div class="caption-title">Ask anything.<br>Get real answers.</div>
+    <div class="caption-sub">No generic tips. Noa knows<br>your actual numbers.</div>
+  </div>
+
+  <div class="home-indicator"></div>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Screenshot 1 — Splash</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1290px; height: 2796px; overflow: hidden;
+    background: #111318; font-family: 'Inter', system-ui, sans-serif;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    position: relative;
+  }
+  /* Background radial glow */
+  .bg-glow {
+    position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse 800px 800px at 50% 44%, rgba(200,184,154,0.13) 0%, transparent 70%);
+  }
+  /* Orb */
+  .orb {
+    width: 320px; height: 320px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #e0d8cc, #C8B89A 50%, #7a6a52);
+    box-shadow: 0 0 140px 60px rgba(200,184,154,0.45), 0 0 40px 12px rgba(200,184,154,0.25);
+    margin-bottom: 90px;
+  }
+  .wordmark {
+    font-size: 180px; font-weight: 200; letter-spacing: 0.25em;
+    color: rgba(232,221,208,0.92); margin-bottom: 32px;
+    font-family: Georgia, 'Times New Roman', serif;
+  }
+  .tagline {
+    font-size: 42px; font-weight: 400; letter-spacing: 0.18em;
+    color: rgba(200,184,154,0.55); text-transform: uppercase;
+    margin-bottom: 80px;
+  }
+  .separator {
+    width: 200px; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(200,184,154,0.4), transparent);
+    margin-bottom: 70px;
+  }
+  .sub {
+    font-size: 34px; font-weight: 300; color: rgba(232,221,208,0.32);
+    letter-spacing: 0.1em; text-align: center; line-height: 1.7;
+  }
+  /* Device frame hint */
+  .status-bar {
+    position: absolute; top: 60px; left: 0; right: 0;
+    display: flex; justify-content: space-between; padding: 0 80px;
+    font-size: 30px; font-weight: 600; color: rgba(232,221,208,0.4);
+    letter-spacing: 0.05em;
+  }
+  .home-indicator {
+    position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+    width: 240px; height: 8px; border-radius: 100px;
+    background: rgba(232,221,208,0.22);
+  }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="bg-glow"></div>
+  <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+  <div class="orb"></div>
+  <div class="wordmark">noa</div>
+  <div class="tagline">Your Financial Navigator</div>
+  <div class="separator"></div>
+  <div class="sub">Know where your money goes.<br>Keep what you earn.</div>
+  <div class="home-indicator"></div>
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Screenshot 2 — Dashboard</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1290px; height: 2796px; overflow: hidden;
+    background: #111318; font-family: 'Inter', system-ui, sans-serif;
+    color: #E8DDD0; position: relative;
+  }
+  .bg-glow {
+    position: absolute; top: 0; left: 0; right: 0; height: 1200px; pointer-events: none;
+    background: radial-gradient(ellipse 700px 700px at 50% 30%, rgba(200,184,154,0.09) 0%, transparent 70%);
+  }
+  .status-bar {
+    position: relative; z-index: 1;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 60px 80px 0; font-size: 30px; font-weight: 600;
+    color: rgba(232,221,208,0.45);
+  }
+  .content { position: relative; z-index: 1; padding: 60px 70px 0; }
+  /* Top hero */
+  .hero { display: flex; flex-direction: column; align-items: center; padding: 60px 0 50px; gap: 24px; }
+  .orb-small {
+    width: 100px; height: 100px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #e0d8cc, #C8B89A 50%, #7a6a52);
+    box-shadow: 0 0 50px 18px rgba(200,184,154,0.35);
+  }
+  .mood-label { font-size: 22px; letter-spacing: 0.15em; color: #7CAE9E; font-weight: 600; text-transform: uppercase; }
+  .main-num { font-size: 120px; font-weight: 800; color: #7CAE9E; letter-spacing: -4px; line-height: 1; }
+  .main-sub { font-size: 30px; color: rgba(232,221,208,0.36); }
+  /* Forecast strip */
+  .forecast { display: flex; gap: 24px; overflow: hidden; margin-bottom: 50px; }
+  .fc-card {
+    flex: 1; background: rgba(232,221,208,0.04); border: 1px solid rgba(232,221,208,0.08);
+    border-radius: 28px; padding: 30px 20px; text-align: center;
+  }
+  .fc-emoji { font-size: 40px; margin-bottom: 8px; }
+  .fc-label { font-size: 18px; color: rgba(232,221,208,0.3); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 10px; }
+  .fc-value { font-size: 28px; font-weight: 700; color: #C8B89A; }
+  .fc-sub { font-size: 16px; color: rgba(232,221,208,0.22); }
+  /* Health score ring card */
+  .ring-card {
+    background: rgba(232,221,208,0.04); border: 1px solid rgba(232,221,208,0.08);
+    border-radius: 28px; padding: 50px 40px; margin-bottom: 36px;
+    display: flex; flex-direction: column; align-items: center; gap: 20px;
+  }
+  .ring-label { font-size: 24px; font-weight: 700; color: #7CAE9E; }
+  .payday-tag { font-size: 22px; color: rgba(232,221,208,0.4); }
+  /* Vela score */
+  .score-row {
+    display: flex; gap: 30px; margin-bottom: 36px;
+  }
+  .score-card {
+    flex: 1; background: rgba(232,221,208,0.04); border: 1px solid rgba(232,221,208,0.08);
+    border-radius: 28px; padding: 40px 36px;
+  }
+  .score-num { font-size: 80px; font-weight: 800; color: #7CAE9E; letter-spacing: -3px; line-height: 1; }
+  .score-tag { font-size: 20px; color: rgba(232,221,208,0.3); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 10px; }
+  .streak-num { font-size: 80px; font-weight: 800; color: #C8B89A; letter-spacing: -3px; line-height: 1; }
+  /* Bottom nav */
+  .bottom-nav {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: rgba(13,13,13,0.97); border-top: 1px solid rgba(255,255,255,0.05);
+    display: flex; padding: 40px 0 60px;
+  }
+  .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .nav-icon { font-size: 44px; }
+  .nav-label { font-size: 18px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: #444; }
+  .nav-item.active .nav-label { color: #C8B89A; }
+  .home-indicator {
+    position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+    width: 240px; height: 8px; border-radius: 100px;
+    background: rgba(232,221,208,0.22);
+  }
+  /* Caption overlay */
+  .caption-overlay {
+    position: absolute; top: 0; left: 0; right: 0;
+    background: linear-gradient(180deg, rgba(10,10,15,0.95) 0%, transparent 100%);
+    padding: 150px 80px 120px; text-align: center;
+  }
+  .caption-tag { font-size: 26px; font-weight: 600; letter-spacing: 0.15em; color: #C8B89A; text-transform: uppercase; margin-bottom: 18px; }
+  .caption-title { font-size: 68px; font-weight: 800; color: #E8DDD0; line-height: 1.1; margin-bottom: 22px; }
+  .caption-sub { font-size: 34px; color: rgba(232,221,208,0.45); font-weight: 300; line-height: 1.5; }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="bg-glow"></div>
+  <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+
+  <div class="content">
+    <div class="hero">
+      <div class="orb-small"></div>
+      <div class="mood-label">Steady</div>
+      <div class="main-num">14</div>
+      <div class="main-sub">days of freedom</div>
+    </div>
+
+    <div class="forecast">
+      <div class="fc-card"><div class="fc-emoji">☀️</div><div class="fc-label">Pocket</div><div class="fc-value">£18</div><div class="fc-sub">per day</div></div>
+      <div class="fc-card"><div class="fc-emoji">📅</div><div class="fc-label">Payday</div><div class="fc-value">9 days</div><div class="fc-sub">on the 25th</div></div>
+      <div class="fc-card"><div class="fc-emoji">💰</div><div class="fc-label">Surplus</div><div class="fc-value">£340</div><div class="fc-sub">this month</div></div>
+    </div>
+
+    <!-- Health score ring -->
+    <div class="ring-card">
+      <svg width="180" height="180" viewBox="0 0 180 180">
+        <circle cx="90" cy="90" r="70" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="12"/>
+        <circle cx="90" cy="90" r="70" fill="none" stroke="#7CAE9E" stroke-width="12"
+          stroke-linecap="round" stroke-dasharray="330 439" transform="rotate(-90 90 90)"/>
+        <text x="90" y="84" text-anchor="middle" fill="#7CAE9E" font-size="52" font-weight="800" font-family="Inter">75</text>
+        <text x="90" y="118" text-anchor="middle" fill="rgba(232,221,208,0.3)" font-size="20" font-family="Inter" letter-spacing="3">HEALTH</text>
+      </svg>
+      <div class="ring-label">Good financial health</div>
+      <div class="payday-tag">Payday in 9 days</div>
+    </div>
+
+    <div class="score-row">
+      <div class="score-card">
+        <div class="score-tag">Vela Score</div>
+        <div class="score-num">72</div>
+      </div>
+      <div class="score-card">
+        <div class="score-tag">Streak</div>
+        <div class="streak-num">12d</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Caption overlay at top -->
+  <div class="caption-overlay">
+    <div class="caption-tag">Your Financial Dashboard</div>
+    <div class="caption-title">Know exactly<br>where you stand</div>
+    <div class="caption-sub">Real-time score. Daily spending limit.<br>Days of financial freedom.</div>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item active"><div class="nav-icon">🏠</div><div class="nav-label" style="color:#C8B89A">Home</div></div>
+    <div class="nav-item"><div class="nav-icon">📊</div><div class="nav-label">Insights</div></div>
+    <div class="nav-item"><div class="nav-icon">💬</div><div class="nav-label">Ask Noa</div></div>
+    <div class="nav-item"><div class="nav-icon">⚙️</div><div class="nav-label">Settings</div></div>
+  </div>
+  <div class="home-indicator"></div>
+</body>
+</html>
