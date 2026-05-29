@@ -566,6 +566,11 @@
     </div>
   </nav>
 
+  <!-- REFERRAL BANNER (shown when ?ref= is in URL) -->
+  <div id="ref-banner" style="display:none;background:rgba(200,184,154,0.08);border-bottom:1px solid rgba(200,184,154,0.14);padding:10px 20px;text-align:center;font-size:13px;color:rgba(200,184,154,0.75);letter-spacing:0.02em;">
+    A friend shared Noa with you. Start your free trial — their referral code is saved automatically.
+  </div>
+
   <!-- HERO -->
   <div class="hero">
     <div class="hero-bg"></div>
@@ -577,7 +582,7 @@
     </div>
     <div class="hero-tag">AI Financial Navigator</div>
     <h1>Meet Noa.</h1>
-    <p class="hero-sub">Your AI financial navigator. She knows your money, remembers your goals, and tells you the truth.</p>
+    <p class="hero-sub" id="hero-sub">Your AI financial navigator. She knows your money, remembers your goals, and tells you the truth.</p>
     <div class="hero-ctas">
       <a href="https://finance-tracker-2026-navy.vercel.app" class="btn-main" target="_blank" rel="noopener">Try Noa Free</a>
       <a href="#features" class="btn-sec">See what she does</a>
@@ -818,6 +823,27 @@
   </footer>
 
   <script>
+    // ── Referral code from URL (?ref=NOA-XXXXXX) ─────────────────────
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get('ref');
+      if (ref && /^NOA-[A-Z0-9]{6}$/.test(ref)) {
+        // Store referral code
+        if (!localStorage.getItem('noa_referral_source')) {
+          localStorage.setItem('noa_referral_source', ref);
+        }
+        // Show referral banner
+        document.getElementById('ref-banner').style.display = 'block';
+        // Personalise hero sub
+        const heroSub = document.getElementById('hero-sub');
+        if (heroSub) heroSub.textContent = 'Someone you know is already managing their money with Noa. She knows your money, remembers your goals, and tells you the truth.';
+        // Save to waitlist tracking
+        const refList = JSON.parse(localStorage.getItem('noa_referrals') || '{}');
+        refList[ref] = (refList[ref] || 0) + 1;
+        localStorage.setItem('noa_referrals', JSON.stringify(refList));
+      }
+    })();
+
     // ── Sticky nav ─────────────────────────────────────────────────────
     const nav = document.getElementById('main-nav');
     window.addEventListener('scroll', () => {

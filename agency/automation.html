@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Daily Automation — Aldric Group (Internal)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+:root {
+  --bg:#080808; --bg2:#0f0f0f; --bg3:#161616; --bg4:#1b1b1b;
+  --gold:#C9A96E; --gold-lt:#e0c48a; --cream:#F0E8DA;
+  --muted:#6b6b6b; --border:rgba(201,169,110,0.15); --text:#e8e0d4;
+  --green:#5aad7a; --red:#e05555; --amber:#c9883e; --blue:#5a8fad;
+}
+html { scroll-behavior:smooth; }
+body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); line-height:1.6; -webkit-font-smoothing:antialiased; }
+::-webkit-scrollbar{width:4px;height:4px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:rgba(201,169,110,0.2);border-radius:2px}
+
+/* NAV */
+nav { position:fixed; top:0; left:0; right:0; z-index:100; display:flex; align-items:center; justify-content:space-between; padding:14px 40px; border-bottom:1px solid rgba(201,169,110,0.08); background:rgba(8,8,8,0.96); backdrop-filter:blur(20px); }
+.nav-logo { font-family:'Playfair Display',serif; font-size:18px; font-weight:700; color:var(--gold); text-decoration:none; letter-spacing:0.05em; }
+.nav-links { display:flex; gap:20px; align-items:center; }
+.nav-links a { font-size:12px; font-weight:500; color:var(--muted); text-decoration:none; letter-spacing:0.04em; transition:color 0.2s; }
+.nav-links a:hover { color:var(--cream); }
+.nav-links a.active { color:var(--gold); }
+.internal-badge { font-size:10px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--red); background:rgba(224,85,85,0.1); border:1px solid rgba(224,85,85,0.2); padding:3px 9px; border-radius:3px; }
+
+/* LAYOUT */
+.layout { display:grid; grid-template-columns:1fr 320px; gap:28px; max-width:1300px; margin:0 auto; padding:90px 40px 80px; }
+@media(max-width:1000px){ .layout{grid-template-columns:1fr;padding:80px 20px 60px;} }
+
+/* SECTION */
+.section { background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:22px; margin-bottom:20px; }
+.section-title { font-size:11px; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; color:var(--gold); margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+.section-title .dot { width:6px; height:6px; border-radius:50%; background:var(--gold); }
+
+/* BRIEFING */
+.brief-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px; }
+@media(max-width:700px){ .brief-grid{grid-template-columns:1fr 1fr;} }
+.brief-stat { text-align:center; padding:12px 8px; background:var(--bg3); border-radius:8px; border:1px solid rgba(201,169,110,0.07); }
+.brief-val { font-size:22px; font-weight:700; color:var(--cream); letter-spacing:-0.02em; }
+.brief-val.gold { color:var(--gold); }
+.brief-val.green { color:var(--green); }
+.brief-val.amber { color:var(--amber); }
+.brief-lbl { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em; margin-top:3px; }
+.brief-insight { font-size:13px; color:var(--text); padding:12px 14px; background:rgba(201,169,110,0.05); border:1px solid rgba(201,169,110,0.12); border-radius:8px; line-height:1.6; }
+.brief-insight strong { color:var(--gold-lt); }
+
+/* PLAN PROGRESS */
+.plan-day-strip { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:12px; }
+.plan-day { width:36px; height:36px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; border:1px solid rgba(201,169,110,0.12); background:var(--bg3); color:var(--muted); transition:all 0.2s; cursor:default; }
+.plan-day.past { background:rgba(90,173,122,0.12); border-color:rgba(90,173,122,0.25); color:var(--green); }
+.plan-day.today { background:rgba(201,169,110,0.15); border-color:var(--gold); color:var(--gold-lt); }
+.plan-day.future { opacity:0.35; }
+
+/* START DATE */
+.start-row { display:flex; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
+.start-row label { font-size:11px; color:var(--muted); }
+.start-row input[type=date] { background:var(--bg3); border:1px solid var(--border); border-radius:6px; color:var(--text); font-family:'Inter',sans-serif; font-size:12px; padding:6px 10px; outline:none; color-scheme:dark; }
+.start-row input:focus { border-color:rgba(201,169,110,0.35); }
+
+/* MESSAGE QUEUE */
+.queue-input-area { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+@media(max-width:600px){ .queue-input-area{grid-template-columns:1fr;} }
+select, input[type=text], textarea {
+  background:var(--bg3); border:1px solid rgba(201,169,110,0.12);
+  border-radius:7px; color:var(--text); font-family:'Inter',sans-serif;
+  font-size:13px; padding:9px 12px; outline:none; transition:border-color 0.2s; width:100%;
+}
+select:focus, input[type=text]:focus, textarea:focus { border-color:rgba(201,169,110,0.3); }
+select { cursor:pointer; }
+option { background:#1a1a1a; }
+textarea { resize:vertical; min-height:100px; line-height:1.6; }
+
+.profiles-textarea { min-height:120px; }
+.profiles-hint { font-size:11px; color:rgba(201,169,110,0.4); margin-top:5px; line-height:1.5; }
+
+/* API KEY */
+.api-bar { display:flex; align-items:center; gap:10px; background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:10px 14px; margin-bottom:14px; }
+.api-bar label { font-size:12px; color:var(--muted); white-space:nowrap; }
+.api-bar input { flex:1; background:transparent; border:none; outline:none; color:var(--text); font-size:13px; font-family:'Inter',sans-serif; }
+.api-status { font-size:11px; font-weight:600; white-space:nowrap; }
+.api-status.ok { color:var(--green); }
+.api-status.bad { color:var(--muted); }
+
+/* BUTTONS */
+.btn { border:none; border-radius:7px; cursor:pointer; font-family:'Inter',sans-serif; font-weight:600; font-size:12px; padding:9px 18px; transition:all 0.18s; letter-spacing:0.04em; }
+.btn-gold { background:linear-gradient(135deg,#C9A96E,#e0c48a); color:#0a0804; }
+.btn-gold:hover:not(:disabled) { opacity:0.85; }
+.btn-gold:disabled { opacity:0.4; cursor:not-allowed; }
+.btn-ghost { background:var(--bg3); border:1px solid var(--border); color:var(--text); }
+.btn-ghost:hover { border-color:rgba(201,169,110,0.3); }
+.btn-sm { padding:5px 12px; font-size:11px; border-radius:5px; }
+
+/* GENERATED MESSAGES */
+.msg-card { background:var(--bg3); border:1px solid rgba(201,169,110,0.08); border-radius:9px; padding:14px; margin-bottom:10px; }
+.msg-card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.msg-prospect { font-size:13px; font-weight:600; color:var(--cream); }
+.msg-stage { font-size:10px; color:var(--muted); background:var(--bg4); padding:3px 8px; border-radius:20px; }
+.msg-text { font-size:12px; color:var(--text); line-height:1.65; white-space:pre-wrap; word-break:break-word; }
+.msg-actions { display:flex; gap:8px; margin-top:10px; align-items:center; }
+.sent-toggle { display:flex; align-items:center; gap:6px; cursor:pointer; user-select:none; }
+.sent-toggle input { display:none; }
+.sent-box { width:16px; height:16px; border-radius:4px; border:1px solid rgba(201,169,110,0.2); background:var(--bg4); display:flex; align-items:center; justify-content:center; transition:all 0.15s; }
+.sent-toggle.checked .sent-box { background:rgba(90,173,122,0.15); border-color:var(--green); }
+.sent-label { font-size:11px; color:var(--muted); }
+.sent-toggle.checked .sent-label { color:var(--green); }
+.copy-btn { font-size:11px; font-weight:600; color:var(--gold); background:none; border:1px solid rgba(201,169,110,0.2); border-radius:5px; cursor:pointer; font-family:'Inter',sans-serif; padding:3px 10px; transition:all 0.15s; }
+.copy-btn:hover { background:rgba(201,169,110,0.08); }
+.copy-btn.copied { color:var(--green); border-color:rgba(90,173,122,0.3); }
+
+/* LOADING DOTS */
+.dots { display:inline-flex; gap:4px; align-items:center; }
+.dots span { width:5px; height:5px; border-radius:50%; background:var(--gold); animation:dp 1.2s infinite; }
+.dots span:nth-child(2){animation-delay:.2s} .dots span:nth-child(3){animation-delay:.4s}
+@keyframes dp{0%,80%,100%{opacity:.2;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+
+/* FOLLOW-UP TABLE */
+.fu-table { width:100%; border-collapse:collapse; }
+.fu-table th { font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); font-weight:600; padding:6px 10px 8px; text-align:left; }
+.fu-table td { font-size:12px; color:var(--text); padding:8px 10px; border-top:1px solid rgba(201,169,110,0.06); vertical-align:middle; }
+.fu-table tr:hover td { background:rgba(201,169,110,0.03); }
+.stage-pill { font-size:10px; font-weight:600; padding:2px 8px; border-radius:20px; background:rgba(201,169,110,0.1); color:var(--gold); }
+.overdue-tag { font-size:10px; font-weight:700; color:var(--red); padding:2px 7px; border-radius:3px; background:rgba(224,85,85,0.1); }
+.due-today-tag { font-size:10px; font-weight:700; color:var(--amber); padding:2px 7px; border-radius:3px; background:rgba(201,136,62,0.1); }
+
+/* SENT LOG */
+.log-item { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid rgba(201,169,110,0.05); }
+.log-item:last-child { border-bottom:none; }
+.log-time { font-size:11px; color:var(--muted); flex-shrink:0; width:48px; }
+.log-name { font-size:12px; color:var(--text); font-weight:500; }
+.log-stage { font-size:10px; color:var(--muted); margin-left:auto; }
+.log-empty { text-align:center; padding:24px; font-size:12px; color:var(--muted); font-style:italic; }
+
+/* PROGRESS BAR */
+.prog-bar-wrap { margin-top:10px; }
+.prog-bar-track { height:6px; background:rgba(201,169,110,0.08); border-radius:3px; overflow:hidden; }
+.prog-bar-fill { height:100%; border-radius:3px; background:var(--gold); transition:width 0.4s; }
+.prog-label { font-size:11px; color:var(--muted); margin-top:5px; }
+
+/* SIDEBAR */
+.sidebar { position:sticky; top:90px; display:flex; flex-direction:column; gap:16px; }
+.side-card { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:18px; }
+.side-title { font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--gold); margin-bottom:12px; }
+.kpi-row { display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid rgba(201,169,110,0.05); }
+.kpi-row:last-child { border-bottom:none; }
+.kpi-name { font-size:12px; color:var(--muted); }
+.kpi-val { font-size:13px; font-weight:700; color:var(--cream); }
+.kpi-val.good { color:var(--green); }
+.kpi-val.warn { color:var(--amber); }
+
+.pace-line { font-size:12px; color:var(--muted); padding:5px 0; border-bottom:1px solid rgba(201,169,110,0.05); line-height:1.5; }
+.pace-line:last-child { border-bottom:none; }
+.pace-line strong { color:var(--text); }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">Aldric Group</a>
+  <div class="nav-links">
+    <a href="index.html">Home</a>
+    <a href="crm.html">CRM</a>
+    <a href="kpi.html">KPIs</a>
+    <a href="automation.html" class="active">Daily Automation</a>
+    <a href="client-setup.html">Client Setup</a>
+    <a href="discovery-call.html">Discovery Call</a>
+    <a href="email-outreach.html">Email Gen</a>
+    <a href="engagement-agent.html">Engagement</a>
+    <a href="clients.html">Clients</a>
+    <span class="internal-badge">Internal</span>
+  </div>
+</nav>
+
+<div class="layout">
+
+  <!-- MAIN COLUMN -->
+  <div>
+
+    <!-- SECTION 1: DAILY BRIEFING -->
+    <div class="section">
+      <div class="section-title"><span class="dot"></span>Daily Briefing</div>
+
+      <!-- Plan start date -->
+      <div class="start-row">
+        <label>Outreach start date:</label>
+        <input type="date" id="startDateInput" onchange="onStartDateChange(this.value)" style="color-scheme:dark" />
+        <span style="font-size:11px;color:var(--muted)">Day <strong id="currentDayNum" style="color:var(--gold)">—</strong> of 7</span>
+      </div>
+
+      <!-- Day strip -->
+      <div class="plan-day-strip" id="dayStrip"></div>
+
+      <!-- Stats grid -->
+      <div class="brief-grid">
+        <div class="brief-stat"><div class="brief-val gold" id="b-total">—</div><div class="brief-lbl">Total Prospects</div></div>
+        <div class="brief-stat"><div class="brief-val amber" id="b-active">—</div><div class="brief-lbl">Active Convos</div></div>
+        <div class="brief-stat"><div class="brief-val green" id="b-calls">—</div><div class="brief-lbl">Calls Booked</div></div>
+        <div class="brief-stat"><div class="brief-val" id="b-today-target">—</div><div class="brief-lbl">Today's Target</div></div>
+      </div>
+
+      <!-- Motivational insight -->
+      <div class="brief-insight" id="briefInsight">Loading your daily briefing…</div>
+    </div>
+
+    <!-- SECTION 2: MESSAGE GENERATION QUEUE -->
+    <div class="section">
+      <div class="section-title"><span class="dot"></span>Message Generation Queue</div>
+
+      <div class="api-bar">
+        <label>Claude API Key</label>
+        <input type="password" id="apiKey" placeholder="sk-ant-…" autocomplete="off" oninput="onApiKey(this.value)" />
+        <span class="api-status bad" id="apiStatus">— No key</span>
+      </div>
+
+      <div class="queue-input-area">
+        <div>
+          <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.1em">Niche</label>
+          <select id="qNiche">
+            <option value="med-spa">Med Spa / Aesthetics</option>
+            <option value="estate-agent">Estate Agent</option>
+            <option value="mortgage-broker">Mortgage Broker</option>
+            <option value="financial-advisor">Financial Advisor</option>
+            <option value="solicitor">Solicitor / Law Firm</option>
+            <option value="dental">Dental Practice</option>
+            <option value="recruitment">Recruitment Agency</option>
+            <option value="accountancy">Accountancy Firm</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.1em">Message Stage</label>
+          <select id="qStage">
+            <option value="connection">Connection Request</option>
+            <option value="first">First Message (after connect)</option>
+            <option value="followup1">Follow-Up #1</option>
+            <option value="followup2">Follow-Up #2</option>
+            <option value="final">Final Touch</option>
+          </select>
+        </div>
+      </div>
+
+      <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.1em">Prospect List (one per line: Name, Business)</label>
+      <textarea id="profilesInput" class="profiles-textarea" placeholder="Sarah Johnson, Revive Aesthetics London&#10;Mark Peters, Caldwell Estate Agents Manchester&#10;Priya Sharma, Clarity Mortgage Solutions&#10;…up to 10"></textarea>
+      <div class="profiles-hint">Enter up to 10 prospects, one per line. Format: Full Name, Business Name</div>
+
+      <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn-gold" id="generateAllBtn" onclick="generateAll()" style="flex:1;min-width:140px">
+          Generate All Messages →
+        </button>
+        <span style="font-size:11px;color:var(--muted)" id="genProgress"></span>
+      </div>
+
+      <div id="msgResults" style="margin-top:16px;display:none"></div>
+    </div>
+
+    <!-- SECTION 3: FOLLOW-UP REMINDERS -->
+    <div class="section">
+      <div class="section-title"><span class="dot"></span>Follow-Up Reminders</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Prospects from your CRM who need action today based on follow-up schedule (Day 2, 5, 8, 12 after last contact).</p>
+
+      <div id="followUpTable">
+        <div class="log-empty">Loading CRM data…</div>
+      </div>
+    </div>
+
+    <!-- SECTION 4: TODAY'S SENT LOG -->
+    <div class="section">
+      <div class="section-title"><span class="dot"></span>Today's Sent Log</div>
+
+      <div class="prog-bar-wrap" style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <span style="font-size:12px;color:var(--text)" id="sentCount">0 / <span id="dailyTarget">20</span> sent today</span>
+          <span style="font-size:12px;font-weight:600;color:var(--gold)" id="sentPct">0%</span>
+        </div>
+        <div class="prog-bar-track"><div class="prog-bar-fill" id="sentBar" style="width:0%"></div></div>
+        <div class="prog-label">Daily target: <span id="dailyTargetLabel">20</span> messages per day for consistent pipeline growth</div>
+      </div>
+
+      <div id="sentLog">
+        <div class="log-empty">No messages logged today yet</div>
+      </div>
+
+      <button class="btn btn-ghost btn-sm" onclick="clearTodayLog()" style="margin-top:10px;font-size:11px;color:var(--muted)">Clear today's log</button>
+    </div>
+
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+
+    <!-- CRM SNAPSHOT -->
+    <div class="side-card">
+      <div class="side-title">Pipeline Snapshot</div>
+      <div id="crmSnapshot">
+        <div class="kpi-row"><span class="kpi-name">New prospects</span><span class="kpi-val" id="sn-new">—</span></div>
+        <div class="kpi-row"><span class="kpi-name">Contacted</span><span class="kpi-val" id="sn-contacted">—</span></div>
+        <div class="kpi-row"><span class="kpi-name">Replied</span><span class="kpi-val" id="sn-replied">—</span></div>
+        <div class="kpi-row"><span class="kpi-name">Call booked</span><span class="kpi-val good" id="sn-call">—</span></div>
+        <div class="kpi-row"><span class="kpi-name">Client</span><span class="kpi-val good" id="sn-client">—</span></div>
+      </div>
+      <a href="crm.html" style="display:block;margin-top:12px;text-align:center;font-size:11px;color:var(--gold);text-decoration:none;padding:7px;border:1px solid rgba(201,169,110,0.2);border-radius:6px;transition:all 0.15s" onmouseover="this.style.background='rgba(201,169,110,0.08)'" onmouseout="this.style.background='transparent'">Open CRM →</a>
+    </div>
+
+    <!-- PACE CALCULATOR -->
+    <div class="side-card">
+      <div class="side-title">Statistical Pace</div>
+      <div id="paceCalc">
+        <div class="pace-line">At current reply rate: <strong id="pc-conv">—</strong> conversations started</div>
+        <div class="pace-line">Avg calls per reply: <strong>1 in 5</strong></div>
+        <div class="pace-line">Need <strong id="pc-need">—</strong> more conversations for first client</div>
+        <div class="pace-line">At 20 msgs/day: first client in <strong id="pc-days">—</strong> days</div>
+      </div>
+    </div>
+
+    <!-- QUICK LINKS -->
+    <div class="side-card">
+      <div class="side-title">Quick Access</div>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <a href="linkedin.html" style="display:flex;align-items:center;gap:8px;padding:8px 11px;background:var(--bg3);border:1px solid rgba(201,169,110,0.08);border-radius:7px;text-decoration:none;color:var(--muted);font-size:12px;transition:all 0.15s" onmouseover="this.style.borderColor='rgba(201,169,110,0.2)'" onmouseout="this.style.borderColor='rgba(201,169,110,0.08)'">💼 LinkedIn Message Gen</a>
+        <a href="email-outreach.html" style="display:flex;align-items:center;gap:8px;padding:8px 11px;background:var(--bg3);border:1px solid rgba(201,169,110,0.08);border-radius:7px;text-decoration:none;color:var(--muted);font-size:12px;transition:all 0.15s" onmouseover="this.style.borderColor='rgba(201,169,110,0.2)'" onmouseout="this.style.borderColor='rgba(201,169,110,0.08)'">📧 Email Generator</a>
+        <a href="crm.html" style="display:flex;align-items:center;gap:8px;padding:8px 11px;background:var(--bg3);border:1px solid rgba(201,169,110,0.08);border-radius:7px;text-decoration:none;color:var(--muted);font-size:12px;transition:all 0.15s" onmouseover="this.style.borderColor='rgba(201,169,110,0.2)'" onmouseout="this.style.borderColor='rgba(201,169,110,0.08)'">📋 CRM</a>
+        <a href="discovery-call.html" style="display:flex;align-items:center;gap:8px;padding:8px 11px;background:var(--bg3);border:1px solid rgba(201,169,110,0.08);border-radius:7px;text-decoration:none;color:var(--muted);font-size:12px;transition:all 0.15s" onmouseover="this.style.borderColor='rgba(201,169,110,0.2)'" onmouseout="this.style.borderColor='rgba(201,169,110,0.08)'">📞 Discovery Call Tool</a>
+        <a href="kpi.html" style="display:flex;align-items:center;gap:8px;padding:8px 11px;background:var(--bg3);border:1px solid rgba(201,169,110,0.08);border-radius:7px;text-decoration:none;color:var(--muted);font-size:12px;transition:all 0.15s" onmouseover="this.style.borderColor='rgba(201,169,110,0.2)'" onmouseout="this.style.borderColor='rgba(201,169,110,0.08)'">📊 KPI Tracker</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─── CONSTANTS ────────────────────────────────────────────
+const SENT_LOG_KEY  = 'aldric_sent_log';
+const START_DATE_KEY = 'aldric_outreach_start';
+const API_KEY_STORE = 'aldric_claude_key';
+const CRM_KEY       = 'aldric_crm_v2';
+
+// Follow-up days after last contact
+const FU_SCHEDULE = [2, 5, 8, 12];
+
+const STAGE_LABELS = {
+  connection: 'Connection Request',
+  first:      'First Message',
+  followup1:  'Follow-Up #1',
+  followup2:  'Follow-Up #2',
+  final:      'Final Touch',
+};
+
+const NICHE_MAP = {
+  'med-spa':          'Med Spa / Aesthetics Clinic (UK)',
+  'estate-agent':     'Estate Agent (UK)',
+  'mortgage-broker':  'Mortgage Broker (UK)',
+  'financial-advisor':'Financial Advisor / IFA (UK)',
+  'solicitor':        'Solicitor / Law Firm (UK)',
+  'dental':           'Dental Practice (UK)',
+  'recruitment':      'Recruitment Agency (UK)',
+  'accountancy':      'Accountancy Firm (UK)',
+};
+
+// 7-day plan targets per day
+const PLAN_TARGETS = [20, 20, 5, 20, 20, 5, 10]; // conn, conn, followup, conn, conn, followup, review
+
+// ─── INIT ─────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  // Load API key
+  const key = localStorage.getItem(API_KEY_STORE) || '';
+  if (key) { document.getElementById('apiKey').value = key; updateApiStatus(key); }
+
+  // Load / default start date
+  let startDate = localStorage.getItem(START_DATE_KEY);
+  if (!startDate) {
+    startDate = new Date().toISOString().slice(0, 10);
+    localStorage.setItem(START_DATE_KEY, startDate);
+  }
+  document.getElementById('startDateInput').value = startDate;
+
+  buildBriefing(startDate);
+  loadCrmData();
+  renderFollowUps();
+  renderSentLog();
+});
+
+function onStartDateChange(val) {
+  localStorage.setItem(START_DATE_KEY, val);
+  buildBriefing(val);
+}
+
+// ─── BRIEFING ─────────────────────────────────────────────
+function buildBriefing(startDateStr) {
+  const start   = new Date(startDateStr);
+  const today   = new Date();
+  today.setHours(0, 0, 0, 0);
+  start.setHours(0, 0, 0, 0);
+
+  const diffDays = Math.floor((today - start) / 86400000);
+  const dayNum   = Math.max(1, Math.min(7, diffDays + 1));
+
+  document.getElementById('currentDayNum').textContent = dayNum;
+
+  // Day strip
+  const strip = document.getElementById('dayStrip');
+  strip.innerHTML = '';
+  for (let i = 1; i <= 7; i++) {
+    const el = document.createElement('div');
+    el.className = 'plan-day' + (i < dayNum ? ' past' : i === dayNum ? ' today' : ' future');
+    el.textContent = i;
+    el.title = `Day ${i}`;
+    strip.appendChild(el);
+  }
+
+  // Today's target
+  const target = PLAN_TARGETS[dayNum - 1] || 20;
+  document.getElementById('b-today-target').textContent = target;
+  document.getElementById('dailyTarget').textContent = target;
+  document.getElementById('dailyTargetLabel').textContent = target;
+
+  loadCrmData();
+  buildInsight(dayNum, target);
+}
+
+function loadCrmData() {
+  try {
+    const crm = JSON.parse(localStorage.getItem(CRM_KEY) || '[]');
+    const total      = crm.length;
+    const active     = crm.filter(p => p.status === 'In Conversation').length;
+    const calls      = crm.filter(p => p.status === 'Call Booked').length;
+    const newP       = crm.filter(p => p.status === 'New').length;
+    const contacted  = crm.filter(p => p.status === 'Contacted').length;
+    const replied    = crm.filter(p => p.status === 'Replied').length;
+    const clients    = crm.filter(p => p.status === 'Client').length;
+
+    document.getElementById('b-total').textContent  = total;
+    document.getElementById('b-active').textContent = active;
+    document.getElementById('b-calls').textContent  = calls;
+
+    document.getElementById('sn-new').textContent       = newP;
+    document.getElementById('sn-contacted').textContent = contacted;
+    document.getElementById('sn-replied').textContent   = replied;
+    document.getElementById('sn-call').textContent      = calls;
+    document.getElementById('sn-client').textContent    = clients;
+
+    // Pace calc
+    const totalSent = parseInt(localStorage.getItem('aldric_total_sent') || '0', 10) || (contacted + replied + active);
+    const replyRate = totalSent > 0 ? Math.round((replied + active + calls + clients) / totalSent * 100) : 8;
+    const convos    = replied + active + calls + clients;
+    const needed    = Math.max(0, 8 - clients); // target 1 client, need ~8 calls, ~40 convos
+    const daysToClient = totalSent > 0 && replyRate > 0 ? Math.round((needed * (100/replyRate) * 5) / 20) : '?';
+
+    document.getElementById('pc-conv').textContent = convos;
+    document.getElementById('pc-need').textContent = Math.max(0, (needed * 5) - convos);
+    document.getElementById('pc-days').textContent = daysToClient;
+
+    return crm;
+  } catch {
+    return [];
+  }
+}
+
+function buildInsight(dayNum, target) {
+  const crm = loadCrmData();
+  const replied = crm.filter(p => ['Replied','In Conversation','Call Booked','Client'].includes(p.status)).length;
+  const clients = crm.filter(p => p.status === 'Client').length;
+  const needed  = Math.max(0, 40 - replied);
+
+  let insight;
+  if (clients > 0) {
+    insight = `🎯 <strong>${clients} client${clients > 1 ? 's' : ''} secured.</strong> Focus on delivery and referrals. Keep the pipeline warm with ${target} touches today.`;
+  } else if (replied >= 20) {
+    insight = `📞 You have <strong>${replied} active conversations.</strong> Convert them — each replied prospect is statistically 1-in-5 to a call. Focus on booking today, not adding volume.`;
+  } else if (replied >= 5) {
+    insight = `📈 <strong>${replied} prospects have replied.</strong> You need <strong>${needed} more conversations</strong> to statistically reach your first client. Send ${target} today.`;
+  } else {
+    const daysLeft = Math.ceil(needed / target);
+    insight = `🚀 Day ${dayNum} of your 7-day sprint. You need <strong>~40 replies</strong> to land your first client statistically. At ${target}/day that's <strong>${daysLeft} more active days.</strong> Stay consistent.`;
+  }
+
+  document.getElementById('briefInsight').innerHTML = insight;
+}
+
+// ─── FOLLOW-UPS ───────────────────────────────────────────
+function renderFollowUps() {
+  const crm   = loadCrmData();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const due = [];
+  crm.forEach(p => {
+    if (!p.lastContacted || ['Client','Call Booked','Not Interested'].includes(p.status)) return;
+    const last = new Date(p.lastContacted);
+    last.setHours(0, 0, 0, 0);
+    const daysSince = Math.floor((today - last) / 86400000);
+
+    // Find the next follow-up day
+    const nextFu = FU_SCHEDULE.find(d => d === daysSince);
+    const overdue = FU_SCHEDULE.find(d => d < daysSince && !FU_SCHEDULE.find(x => x > d && x <= daysSince));
+
+    if (nextFu !== undefined) {
+      due.push({ ...p, daysSince, tag: 'due-today' });
+    } else if (daysSince > FU_SCHEDULE[FU_SCHEDULE.length - 1]) {
+      due.push({ ...p, daysSince, tag: 'overdue' });
+    }
+  });
+
+  const container = document.getElementById('followUpTable');
+
+  if (!due.length) {
+    container.innerHTML = '<div class="log-empty">No follow-ups due today — good work.</div>';
+    return;
+  }
+
+  const stageFromStatus = s => {
+    if (s === 'Contacted')      return 'followup1';
+    if (s === 'Replied')        return 'followup2';
+    if (s === 'In Conversation') return 'final';
+    return 'followup1';
+  };
+
+  container.innerHTML = `<table class="fu-table">
+    <thead><tr>
+      <th>Name</th><th>Business</th><th>Last Stage</th><th>Days Since</th><th>Action</th>
+    </tr></thead>
+    <tbody>
+    ${due.map(p => {
+      const stage = stageFromStatus(p.status);
+      const tag = p.tag === 'overdue'
+        ? '<span class="overdue-tag">Overdue</span>'
+        : '<span class="due-today-tag">Due today</span>';
+      return `<tr>
+        <td><strong>${esc(p.name || '—')}</strong></td>
+        <td style="color:var(--muted)">${esc(p.business || '—')}</td>
+        <td><span class="stage-pill">${STAGE_LABELS[stage] || stage}</span></td>
+        <td>${p.daysSince}d ${tag}</td>
+        <td><a href="linkedin.html?stage=${stage}&name=${encodeURIComponent(p.name||'')}" class="btn btn-ghost btn-sm" style="text-decoration:none;display:inline-block">Generate →</a></td>
+      </tr>`;
+    }).join('')}
+    </tbody>
+  </table>`;
+}
+
+// ─── SENT LOG ─────────────────────────────────────────────
+function getSentLog() {
+  const today = new Date().toISOString().slice(0, 10);
+  try {
+    const all = JSON.parse(localStorage.getItem(SENT_LOG_KEY) || '{}');
+    return all[today] || [];
+  } catch { return []; }
+}
+
+function addToSentLog(name, stage) {
+  const today = new Date().toISOString().slice(0, 10);
+  try {
+    const all  = JSON.parse(localStorage.getItem(SENT_LOG_KEY) || '{}');
+    const list = all[today] || [];
+    list.push({ name, stage, ts: new Date().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }) });
+    all[today] = list;
+    localStorage.setItem(SENT_LOG_KEY, JSON.stringify(all));
+  } catch {}
+  renderSentLog();
+}
+
+function clearTodayLog() {
+  const today = new Date().toISOString().slice(0, 10);
+  try {
+    const all = JSON.parse(localStorage.getItem(SENT_LOG_KEY) || '{}');
+    delete all[today];
+    localStorage.setItem(SENT_LOG_KEY, JSON.stringify(all));
+  } catch {}
+  renderSentLog();
+}
+
+function renderSentLog() {
+  const list   = getSentLog();
+  const target = parseInt(document.getElementById('dailyTarget')?.textContent || '20', 10);
+  const pct    = Math.min(100, Math.round(list.length / target * 100));
+
+  document.getElementById('sentCount').innerHTML = `${list.length} / <span id="dailyTarget">${target}</span> sent today`;
+  document.getElementById('sentPct').textContent = `${pct}%`;
+  document.getElementById('sentBar').style.width = `${pct}%`;
+
+  const container = document.getElementById('sentLog');
+  if (!list.length) {
+    container.innerHTML = '<div class="log-empty">No messages logged today yet</div>';
+    return;
+  }
+
+  container.innerHTML = [...list].reverse().map(e => `
+    <div class="log-item">
+      <span class="log-time">${e.ts}</span>
+      <span class="log-name">${esc(e.name)}</span>
+      <span class="log-stage">${STAGE_LABELS[e.stage] || e.stage}</span>
+    </div>`).join('');
+}
+
+// ─── API KEY ──────────────────────────────────────────────
+function onApiKey(val) {
+  val = val.trim();
+  if (val) localStorage.setItem(API_KEY_STORE, val);
+  updateApiStatus(val);
+}
+
+function updateApiStatus(val) {
+  const el = document.getElementById('apiStatus');
+  if (val && val.startsWith('sk-ant-')) {
+    el.textContent = '✓ Ready'; el.className = 'api-status ok';
+  } else if (val) {
+    el.textContent = '⚠ Invalid'; el.className = 'api-status bad';
+  } else {
+    el.textContent = '— No key'; el.className = 'api-status bad';
+  }
+}
+
+// ─── GENERATE ALL ─────────────────────────────────────────
+async function generateAll() {
+  const apiKey = (document.getElementById('apiKey').value || localStorage.getItem(API_KEY_STORE) || '').trim();
+  if (!apiKey) { alert('Please enter your Claude API key first.'); return; }
+
+  const raw    = document.getElementById('profilesInput').value.trim();
+  const niche  = document.getElementById('qNiche').value;
+  const stage  = document.getElementById('qStage').value;
+
+  if (!raw) { alert('Please enter at least one prospect.'); return; }
+
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean).slice(0, 10);
+  const prospects = lines.map(l => {
+    const parts = l.split(',');
+    return { name: (parts[0] || '').trim(), business: (parts[1] || '').trim() };
+  }).filter(p => p.name);
+
+  if (!prospects.length) { alert('Could not parse any prospects. Use format: Name, Business'); return; }
+
+  const btn = document.getElementById('generateAllBtn');
+  btn.disabled = true;
+  const progress = document.getElementById('genProgress');
+
+  const results = document.getElementById('msgResults');
+  results.style.display = 'block';
+  results.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:10px 0">Generating ${prospects.length} messages…</div>`;
+
+  const cards = [];
+
+  for (let i = 0; i < prospects.length; i++) {
+    const p = prospects[i];
+    progress.textContent = `${i + 1} / ${prospects.length}`;
+    cards[i] = { ...p, stage, text: null, loading: true };
+    renderCards(cards, stage);
+
+    try {
+      const text = await callClaude(apiKey, niche, stage, p.name, p.business);
+      cards[i] = { ...cards[i], text, loading: false };
+    } catch (err) {
+      cards[i] = { ...cards[i], text: `Error: ${err.message}`, loading: false };
+    }
+    renderCards(cards, stage);
+  }
+
+  btn.disabled = false;
+  progress.textContent = `✓ ${prospects.length} generated`;
+}
+
+function renderCards(cards, stage) {
+  const results = document.getElementById('msgResults');
+  results.innerHTML = cards.map((c, i) => `
+    <div class="msg-card" id="msgcard-${i}">
+      <div class="msg-card-header">
+        <div>
+          <div class="msg-prospect">${esc(c.name)}${c.business ? ` · <span style="font-weight:400;color:var(--muted)">${esc(c.business)}</span>` : ''}</div>
+        </div>
+        <span class="msg-stage">${STAGE_LABELS[stage] || stage}</span>
+      </div>
+      <div class="msg-text">${c.loading ? '<div class="dots"><span></span><span></span><span></span></div>' : esc(c.text || '')}</div>
+      ${!c.loading ? `
+      <div class="msg-actions">
+        <label class="sent-toggle" id="toggle-${i}" onclick="markSent(${i}, '${esc(c.name)}', '${stage}', this)">
+          <div class="sent-box">✓</div>
+          <span class="sent-label">Mark as sent</span>
+        </label>
+        <button class="copy-btn" id="copybtn-${i}" onclick="copyMsg(${i}, '${esc(c.text)}')">Copy</button>
+      </div>` : ''}
+    </div>`).join('');
+}
+
+function markSent(i, name, stage, label) {
+  label.classList.toggle('checked');
+  if (label.classList.contains('checked')) {
+    addToSentLog(name, stage);
+  }
+}
+
+function copyMsg(i, text) {
+  navigator.clipboard.writeText(text.replace(/&#10;/g, '\n')).then(() => {
+    const btn = document.getElementById(`copybtn-${i}`);
+    if (btn) { btn.textContent = 'Copied ✓'; btn.classList.add('copied'); setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000); }
+  });
+}
+
+// ─── CLAUDE API ───────────────────────────────────────────
+async function callClaude(apiKey, niche, stage, name, business) {
+  const STAGE_INSTR = {
+    connection: `Write a LinkedIn CONNECTION REQUEST note. Max 250 characters. Just a short, human observation that makes them want to accept. No pitch.`,
+    first:      `Write the FIRST MESSAGE after connection accepted. 2-3 sentences max. Make an observation about their business, hint at a result, ask one soft question. Under 300 characters.`,
+    followup1:  `Write FOLLOW-UP #1. They didn't reply. Add social proof (mention another client result in their niche). 3 sentences max. Different angle from first message.`,
+    followup2:  `Write FOLLOW-UP #2. Still no reply. Ask one direct question about their biggest current marketing challenge. Under 200 characters. No pitch.`,
+    final:      `Write a FINAL TOUCH message. Make it clear this is the last message. Create mild scarcity (you're taking on one more client in their niche this quarter). Leave door open. Under 300 characters.`,
+  };
+
+  const prompt = `You are writing LinkedIn outreach messages for Aldric Group, a premium AI marketing agency for UK service businesses.
+
+PROSPECT: ${name}
+BUSINESS: ${business || 'Their business'}
+NICHE: ${NICHE_MAP[niche] || niche}
+
+INSTRUCTION: ${STAGE_INSTR[stage] || 'Write a professional outreach message.'}
+
+Write ONLY the message text. No subject line. No preamble. No quotes. Just the message itself.`;
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 300,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  });
+
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    throw new Error(e?.error?.message || `API error ${res.status}`);
+  }
+  const d = await res.json();
+  return d.content?.[0]?.text?.trim() || '(empty response)';
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Client Setup — Aldric Group (Internal)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+:root {
+  --bg:#080808; --bg2:#0f0f0f; --bg3:#161616; --bg4:#1b1b1b;
+  --gold:#C9A96E; --gold-lt:#e0c48a; --cream:#F0E8DA;
+  --muted:#6b6b6b; --border:rgba(201,169,110,0.15); --text:#e8e0d4;
+  --green:#5aad7a; --red:#e05555; --amber:#c9883e; --blue:#5a8fad;
+}
+html { scroll-behavior:smooth; }
+body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); line-height:1.6; -webkit-font-smoothing:antialiased; }
+::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:rgba(201,169,110,0.2);border-radius:2px}
+
+/* NAV */
+nav { position:fixed; top:0; left:0; right:0; z-index:100; display:flex; align-items:center; justify-content:space-between; padding:14px 40px; border-bottom:1px solid rgba(201,169,110,0.08); background:rgba(8,8,8,0.96); backdrop-filter:blur(20px); }
+.nav-logo { font-family:'Playfair Display',serif; font-size:18px; font-weight:700; color:var(--gold); text-decoration:none; letter-spacing:0.05em; }
+.nav-links { display:flex; gap:20px; align-items:center; flex-wrap:wrap; }
+.nav-links a { font-size:12px; font-weight:500; color:var(--muted); text-decoration:none; letter-spacing:0.04em; transition:color 0.2s; }
+.nav-links a:hover { color:var(--cream); }
+.nav-links a.active { color:var(--gold); }
+.internal-badge { font-size:10px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--red); background:rgba(224,85,85,0.1); border:1px solid rgba(224,85,85,0.2); padding:3px 9px; border-radius:3px; }
+
+/* LAYOUT */
+.wrapper { max-width:960px; margin:0 auto; padding:90px 32px 80px; }
+@media(max-width:700px){ .wrapper{padding:80px 16px 60px;} }
+
+/* PAGE HEADER */
+.page-header { margin-bottom:36px; }
+.page-header h1 { font-family:'Playfair Display',serif; font-size:30px; font-weight:700; color:var(--cream); margin-bottom:6px; }
+.page-header p { font-size:14px; color:var(--muted); }
+
+/* CLIENT SELECT BAR */
+.client-bar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:16px 20px; margin-bottom:28px; }
+.client-bar label { font-size:12px; color:var(--muted); font-weight:600; letter-spacing:0.06em; text-transform:uppercase; white-space:nowrap; }
+.client-bar select, .client-bar input[type=text] { flex:1; min-width:160px; background:var(--bg3); border:1px solid rgba(201,169,110,0.12); border-radius:7px; color:var(--text); font-family:'Inter',sans-serif; font-size:13px; padding:8px 12px; outline:none; }
+.client-bar select:focus, .client-bar input:focus { border-color:rgba(201,169,110,0.3); }
+option { background:#1a1a1a; }
+.btn-gold { background:rgba(201,169,110,0.12); border:1px solid rgba(201,169,110,0.35); border-radius:7px; color:var(--gold-lt); font-family:'Inter',sans-serif; font-size:12px; font-weight:600; letter-spacing:0.04em; padding:8px 18px; cursor:pointer; transition:all 0.2s; }
+.btn-gold:hover { background:rgba(201,169,110,0.2); }
+.btn-sm { background:var(--bg3); border:1px solid rgba(201,169,110,0.12); border-radius:6px; color:var(--muted); font-family:'Inter',sans-serif; font-size:11px; font-weight:600; padding:6px 12px; cursor:pointer; transition:all 0.2s; }
+.btn-sm:hover { border-color:rgba(201,169,110,0.3); color:var(--text); }
+.btn-green { background:rgba(90,173,122,0.12); border:1px solid rgba(90,173,122,0.3); border-radius:7px; color:var(--green); font-family:'Inter',sans-serif; font-size:12px; font-weight:600; padding:8px 18px; cursor:pointer; transition:all 0.2s; }
+.btn-green:hover { background:rgba(90,173,122,0.2); }
+
+/* STEPS TIMELINE */
+.steps-nav { display:flex; gap:0; margin-bottom:28px; overflow-x:auto; }
+.step-tab { flex:1; min-width:140px; display:flex; flex-direction:column; align-items:center; gap:4px; padding:14px 8px; background:var(--bg2); border:1px solid rgba(201,169,110,0.06); cursor:pointer; transition:all 0.2s; position:relative; }
+.step-tab:first-child { border-radius:10px 0 0 10px; }
+.step-tab:last-child { border-radius:0 10px 10px 0; }
+.step-tab:not(:last-child)::after { content:''; position:absolute; right:-1px; top:50%; transform:translateY(-50%); width:0; height:0; border-top:10px solid transparent; border-bottom:10px solid transparent; border-left:10px solid var(--bg2); z-index:2; }
+.step-tab.active { background:rgba(201,169,110,0.08); border-color:rgba(201,169,110,0.3); }
+.step-tab.done { background:rgba(90,173,122,0.06); border-color:rgba(90,173,122,0.2); }
+.step-tab.active::after { border-left-color:rgba(201,169,110,0.08); }
+.step-tab.done::after { border-left-color:rgba(90,173,122,0.06); }
+.step-num { width:24px; height:24px; border-radius:50%; border:1.5px solid var(--muted); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:var(--muted); }
+.step-tab.active .step-num { border-color:var(--gold); color:var(--gold); }
+.step-tab.done .step-num { background:var(--green); border-color:var(--green); color:#fff; font-size:13px; }
+.step-tab span.step-label { font-size:11px; font-weight:600; letter-spacing:0.03em; color:var(--muted); text-align:center; }
+.step-tab.active span.step-label { color:var(--gold-lt); }
+.step-tab.done span.step-label { color:var(--green); }
+
+/* STEP PANELS */
+.step-panel { display:none; }
+.step-panel.active { display:block; }
+
+/* SECTION */
+.section { background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:22px; margin-bottom:20px; }
+.section-title { font-size:11px; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; color:var(--gold); margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+.section-title .dot { width:6px; height:6px; border-radius:50%; background:var(--gold); }
+
+/* FORM GRID */
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+@media(max-width:600px){ .form-grid{grid-template-columns:1fr;} }
+.form-group { display:flex; flex-direction:column; gap:5px; }
+.form-group.full { grid-column:1/-1; }
+.form-group label { font-size:11px; font-weight:600; color:var(--muted); letter-spacing:0.05em; text-transform:uppercase; }
+input[type=text], input[type=email], input[type=url], textarea, select {
+  background:var(--bg3); border:1px solid rgba(201,169,110,0.12);
+  border-radius:7px; color:var(--text); font-family:'Inter',sans-serif;
+  font-size:13px; padding:9px 12px; outline:none; transition:border-color 0.2s; width:100%;
+}
+input:focus, textarea:focus, select:focus { border-color:rgba(201,169,110,0.3); }
+textarea { resize:vertical; min-height:80px; line-height:1.6; }
+
+/* API BAR */
+.api-bar { display:flex; align-items:center; gap:10px; background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:10px 14px; margin-bottom:16px; }
+.api-bar label { font-size:11px; color:var(--muted); white-space:nowrap; }
+.api-bar input { flex:1; background:transparent; border:none; font-size:12px; color:var(--text); padding:0; outline:none; font-family:'Inter',sans-serif; }
+.api-dot { width:8px; height:8px; border-radius:50%; background:var(--muted); flex-shrink:0; }
+.api-dot.green { background:var(--green); }
+.api-dot.red { background:var(--red); }
+
+/* OUTPUT AREA */
+.output-area { background:var(--bg3); border:1px solid rgba(201,169,110,0.1); border-radius:10px; padding:18px; margin-top:14px; }
+.output-area pre { font-family:'Inter',sans-serif; font-size:13px; color:var(--text); white-space:pre-wrap; word-break:break-word; line-height:1.7; }
+.output-empty { font-size:13px; color:var(--muted); font-style:italic; }
+.output-actions { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+
+/* CALENDAR MONTH */
+.calendar-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:14px; }
+@media(max-width:600px){ .calendar-grid{grid-template-columns:repeat(2,1fr);} }
+.week-card { background:var(--bg3); border:1px solid rgba(201,169,110,0.08); border-radius:9px; padding:12px; }
+.week-card h4 { font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--gold); margin-bottom:8px; }
+.week-post { font-size:12px; color:var(--text); padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.03); line-height:1.4; }
+.week-post:last-child { border-bottom:none; }
+.post-type { display:inline-block; font-size:10px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; padding:1px 6px; border-radius:3px; margin-bottom:2px; }
+.type-edu { background:rgba(90,173,122,0.12); color:var(--green); }
+.type-proof { background:rgba(90,143,173,0.12); color:var(--blue); }
+.type-promo { background:rgba(201,169,110,0.12); color:var(--gold); }
+.type-bts { background:rgba(201,136,62,0.12); color:var(--amber); }
+
+/* CHECKLIST */
+.checklist { list-style:none; }
+.checklist li { display:flex; align-items:flex-start; gap:10px; padding:9px 0; border-bottom:1px solid rgba(255,255,255,0.04); }
+.checklist li:last-child { border-bottom:none; }
+.check-box { width:18px; height:18px; flex-shrink:0; border:1.5px solid var(--muted); border-radius:4px; cursor:pointer; display:flex; align-items:center; justify-content:center; margin-top:2px; transition:all 0.2s; }
+.check-box.checked { background:var(--green); border-color:var(--green); }
+.check-box.checked::after { content:'✓'; color:#fff; font-size:11px; font-weight:700; }
+.checklist-text { flex:1; font-size:13px; color:var(--text); }
+.checklist-text.checked { color:var(--muted); text-decoration:line-through; }
+.checklist-tag { font-size:10px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; padding:2px 7px; border-radius:3px; background:var(--bg4); color:var(--muted); margin-left:6px; }
+
+/* POSTS GRID */
+.posts-grid { display:grid; gap:12px; margin-top:14px; }
+.post-card { background:var(--bg3); border:1px solid rgba(201,169,110,0.08); border-radius:9px; padding:14px; }
+.post-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.post-num { font-size:11px; font-weight:700; color:var(--muted); }
+.post-body { font-size:13px; color:var(--text); line-height:1.7; white-space:pre-wrap; }
+.post-footer { display:flex; gap:8px; margin-top:10px; }
+
+/* WELCOME EMAIL */
+.email-preview { background:var(--bg3); border:1px solid rgba(201,169,110,0.1); border-radius:10px; padding:20px; font-size:13px; line-height:1.8; color:var(--text); white-space:pre-wrap; margin-top:14px; }
+
+/* SPINNER */
+.spinner { display:inline-block; width:16px; height:16px; border:2px solid rgba(201,169,110,0.2); border-top-color:var(--gold); border-radius:50%; animation:spin 0.7s linear infinite; vertical-align:middle; margin-right:6px; }
+@keyframes spin { to{transform:rotate(360deg)} }
+
+/* NAV BUTTONS */
+.step-nav { display:flex; gap:12px; margin-top:24px; justify-content:space-between; }
+.progress-bar { height:3px; background:rgba(201,169,110,0.1); border-radius:2px; margin-bottom:24px; overflow:hidden; }
+.progress-fill { height:100%; background:var(--gold); border-radius:2px; transition:width 0.4s; }
+
+/* TOAST */
+.toast { position:fixed; bottom:32px; left:50%; transform:translateX(-50%); background:var(--bg3); border:1px solid rgba(201,169,110,0.3); border-radius:8px; padding:10px 22px; font-size:13px; color:var(--gold-lt); z-index:999; display:none; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">Aldric Group</a>
+  <div class="nav-links">
+    <a href="index.html">Home</a>
+    <a href="crm.html">CRM</a>
+    <a href="kpi.html">KPIs</a>
+    <a href="automation.html">Daily Automation</a>
+    <a href="client-setup.html" class="active">Client Setup</a>
+    <a href="discovery-call.html">Discovery Call</a>
+    <a href="email-outreach.html">Email Gen</a>
+    <a href="engagement-agent.html">Engagement</a>
+    <a href="clients.html">Clients</a>
+    <span class="internal-badge">Internal</span>
+  </div>
+</nav>
+
+<div class="wrapper">
+
+  <div class="page-header">
+    <h1>Client Setup Workflow</h1>
+    <p>5-step onboarding from signed contract to live campaigns — complete every step before end of Week 1.</p>
+  </div>
+
+  <!-- API KEY -->
+  <div class="api-bar">
+    <label>CLAUDE API</label>
+    <input type="password" id="apiKeyInput" placeholder="sk-ant-..." autocomplete="off" oninput="saveKey()" />
+    <div class="api-dot" id="apiDot"></div>
+    <button class="btn-sm" onclick="toggleShowKey()">👁</button>
+  </div>
+
+  <!-- CLIENT SELECT -->
+  <div class="client-bar">
+    <label>CLIENT</label>
+    <input type="text" id="clientName" placeholder="e.g. Revive Aesthetics" oninput="updateClientField()" />
+    <select id="clientNiche" onchange="updateClientField()">
+      <option value="">— Niche —</option>
+      <option value="Med Spa / Aesthetics">Med Spa / Aesthetics</option>
+      <option value="Estate Agent">Estate Agent</option>
+      <option value="Mortgage Broker">Mortgage Broker</option>
+      <option value="Financial Advisor / IFA">Financial Advisor / IFA</option>
+      <option value="Solicitor / Law Firm">Solicitor / Law Firm</option>
+      <option value="Accountancy Practice">Accountancy Practice</option>
+      <option value="Dental Practice">Dental Practice</option>
+      <option value="Recruitment Agency">Recruitment Agency</option>
+    </select>
+    <select id="clientPackage" onchange="updateClientField()">
+      <option value="">— Package —</option>
+      <option value="Growth (£750/mo)">Growth £750/mo</option>
+      <option value="Scale (£1,250/mo)">Scale £1,250/mo</option>
+      <option value="Dominance (£1,500/mo)">Dominance £1,500/mo</option>
+    </select>
+    <button class="btn-gold" onclick="loadClient()">Load from CRM</button>
+  </div>
+
+  <!-- PROGRESS BAR -->
+  <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:20%"></div></div>
+
+  <!-- STEP TABS -->
+  <div class="steps-nav">
+    <div class="step-tab active" id="tab-1" onclick="goStep(1)">
+      <div class="step-num" id="stepnum-1">1</div>
+      <span class="step-label">Brand Brief</span>
+    </div>
+    <div class="step-tab" id="tab-2" onclick="goStep(2)">
+      <div class="step-num" id="stepnum-2">2</div>
+      <span class="step-label">Content Calendar</span>
+    </div>
+    <div class="step-tab" id="tab-3" onclick="goStep(3)">
+      <div class="step-num" id="stepnum-3">3</div>
+      <span class="step-label">First Content</span>
+    </div>
+    <div class="step-tab" id="tab-4" onclick="goStep(4)">
+      <div class="step-num" id="stepnum-4">4</div>
+      <span class="step-label">Checklist</span>
+    </div>
+    <div class="step-tab" id="tab-5" onclick="goStep(5)">
+      <div class="step-num" id="stepnum-5">5</div>
+      <span class="step-label">Welcome Email</span>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────── -->
+  <!-- STEP 1: BRAND BRIEF -->
+  <!-- ─────────────────────────────────────────── -->
+  <div class="step-panel active" id="panel-1">
+    <div class="section">
+      <div class="section-title"><span class="dot"></span>Brand Brief — Step 1 of 5</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Business Name</label>
+          <input type="text" id="b-business" placeholder="e.g. Revive Aesthetics" />
+        </div>
+        <div class="form-group">
+          <label>Location / City</label>
+          <input type="text" id="b-location" placeholder="e.g. Manchester" />
+        </div>
+        <div class="form-group">
+          <label>Primary Service / Offer</label>
+          <input type="text" id="b-service" placeholder="e.g. anti-wrinkle, lip filler, Profhilo" />
+        </div>
+        <div class="form-group">
+          <label>Price Range</label>
+          <input type="text" id="b-price" placeholder="e.g. £200–£600 per treatment" />
+        </div>
+        <div class="form-group full">
+          <label>Target Audience</label>
+          <input type="text" id="b-audience" placeholder="e.g. Women 30–55, professionals, looking to refresh without surgery" />
+        </div>
+        <div class="form-group">
+          <label>Brand Tone</label>
+          <select id="b-tone">
+            <option value="professional and warm">Professional & Warm</option>
+            <option value="luxurious and aspirational">Luxurious & Aspirational</option>
+            <option value="clinical and trustworthy">Clinical & Trustworthy</option>
+            <option value="friendly and approachable">Friendly & Approachable</option>
+            <option value="bold and confident">Bold & Confident</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Key Differentiator</label>
+          <input type="text" id="b-diff" placeholder="e.g. 10 years experience, only CQC-registered clinic in area" />
+        </div>
+        <div class="form-group full">
+          <label>Biggest Goal (from Discovery Call)</label>
+          <textarea id="b-goal" rows="2" placeholder="e.g. fill 20 extra slots/month, build brand authority on social, grow email list from 200 to 1000"></textarea>
+        </div>
+        <div class="form-group full">
+          <label>Additional Context / Notes</label>
+          <textarea id="b-notes" rows="2" placeholder="Anything else from the onboarding call — existing content, platforms used, past campaigns..."></textarea>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
+        <button class="btn-gold" onclick="saveBrief()">Save Brief</button>
+        <button class="btn-sm" onclick="exportBrief()">Export PDF / TXT</button>
+        <button class="btn-sm" onclick="copyBrief()">Copy</button>
+      </div>
+      <div id="briefSaved" style="display:none;margin-top:10px;font-size:12px;color:var(--green);">✓ Brief saved</div>
+    </div>
+
+    <div class="step-nav">
+      <div></div>
+      <button class="btn-gold" onclick="nextStep(1)">Next: Content Calendar →</button>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────── -->
+  <!-- STEP 2: 30-DAY CONTENT CALENDAR -->
+  <!-- ─────────────────────────────────────────── -->
+  <div class="step-panel" id="panel-2">
+    <div class="section">
+      <div class="section-title"><span class="dot"></span>30-Day Content Calendar — Step 2 of 5</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Claude will generate a structured 4-week social media calendar based on your brand brief. Each week contains 5 posts (Mon–Fri) with type tags.</p>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Posting Frequency</label>
+          <select id="cal-freq">
+            <option value="5 days/week (Mon–Fri)">5 days/week (Mon–Fri)</option>
+            <option value="3 days/week (Mon, Wed, Fri)">3 days/week (Mon, Wed, Fri)</option>
+            <option value="daily (7 days/week)">Daily (7 days/week)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Start Date</label>
+          <input type="text" id="cal-start" placeholder="e.g. Monday 2 June 2026" />
+        </div>
+        <div class="form-group full">
+          <label>Campaign Focus / Key Dates</label>
+          <input type="text" id="cal-focus" placeholder="e.g. summer promotion, pre-wedding season, new treatment launch" />
+        </div>
+      </div>
+
+      <button class="btn-gold" id="genCalBtn" onclick="generateCalendar()" style="margin-top:14px;">
+        ✦ Generate 30-Day Calendar
+      </button>
+
+      <div id="calendarOutput" style="margin-top:16px;"></div>
+      <div id="calendarActions" style="display:none;" class="output-actions">
+        <button class="btn-green" onclick="exportCalendar()">Export as CSV</button>
+        <button class="btn-sm" onclick="copyCalendar()">Copy</button>
+        <button class="btn-sm" onclick="generateCalendar()">Regenerate</button>
+      </div>
+    </div>
+
+    <div class="step-nav">
+      <button class="btn-sm" onclick="prevStep(2)">← Back</button>
+      <button class="btn-gold" onclick="nextStep(2)">Next: First Content →</button>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────── -->
+  <!-- STEP 3: FIRST 5 POSTS -->
+  <!-- ─────────────────────────────────────────── -->
+  <div class="step-panel" id="panel-3">
+    <div class="section">
+      <div class="section-title"><span class="dot"></span>First 5 Social Posts — Step 3 of 5</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Claude generates the first week of ready-to-publish posts. Each post includes caption, hashtags, and posting tip.</p>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Platform</label>
+          <select id="post-platform">
+            <option value="Instagram">Instagram</option>
+            <option value="LinkedIn">LinkedIn</option>
+            <option value="Facebook">Facebook</option>
+            <option value="Instagram + LinkedIn">Instagram + LinkedIn (dual-format)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Opening Post Style</label>
+          <select id="post-style">
+            <option value="introduce the business and team">Introduction / About Us</option>
+            <option value="share a client transformation story (no names)">Client Transformation</option>
+            <option value="educational — explain the signature treatment">Educational</option>
+            <option value="behind-the-scenes clinic day">Behind the Scenes</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn-gold" id="genPostsBtn" onclick="generatePosts()" style="margin-top:14px;">
+        ✦ Generate First 5 Posts
+      </button>
+
+      <div id="postsOutput" class="posts-grid"></div>
+    </div>
+
+    <div class="step-nav">
+      <button class="btn-sm" onclick="prevStep(3)">← Back</button>
+      <button class="btn-gold" onclick="nextStep(3)">Next: Setup Checklist →</button>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────── -->
+  <!-- STEP 4: ONBOARDING CHECKLIST -->
+  <!-- ─────────────────────────────────────────── -->
+  <div class="step-panel" id="panel-4">
+    <div class="section">
+      <div class="section-title"><span class="dot"></span>Setup Checklist — Step 4 of 5</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Complete every item before sending the welcome email. Check off as you go — progress saves automatically.</p>
+
+      <ul class="checklist" id="checklistItems"></ul>
+
+      <div style="margin-top:16px;display:flex;align-items:center;gap:14px;">
+        <div style="font-size:13px;color:var(--muted);">Progress: <strong id="checkPct" style="color:var(--gold)">0%</strong></div>
+        <button class="btn-sm" onclick="resetChecklist()">Reset</button>
+        <button class="btn-sm" onclick="exportChecklist()">Export</button>
+      </div>
+    </div>
+
+    <div class="step-nav">
+      <button class="btn-sm" onclick="prevStep(4)">← Back</button>
+      <button class="btn-gold" onclick="nextStep(4)">Next: Welcome Email →</button>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────── -->
+  <!-- STEP 5: WELCOME EMAIL -->
+  <!-- ─────────────────────────────────────────── -->
+  <div class="step-panel" id="panel-5">
+    <div class="section">
+      <div class="section-title"><span class="dot"></span>Welcome Email — Step 5 of 5</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Claude drafts a personalised welcome email to send to the client after setup is complete. Professional, warm, and sets clear expectations.</p>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Client Contact Name</label>
+          <input type="text" id="e-contact" placeholder="e.g. Sarah" />
+        </div>
+        <div class="form-group">
+          <label>Client Email</label>
+          <input type="email" id="e-email" placeholder="sarah@reviveaesthetics.co.uk" />
+        </div>
+        <div class="form-group full">
+          <label>Key Deliverables This Month (brief summary)</label>
+          <input type="text" id="e-deliverables" placeholder="e.g. 20 Instagram posts, 2 email newsletters, LinkedIn content strategy" />
+        </div>
+        <div class="form-group full">
+          <label>First Check-in Date</label>
+          <input type="text" id="e-checkin" placeholder="e.g. Friday 6 June at 3pm" />
+        </div>
+      </div>
+
+      <button class="btn-gold" id="genEmailBtn" onclick="generateWelcomeEmail()" style="margin-top:14px;">
+        ✦ Generate Welcome Email
+      </button>
+
+      <div id="welcomeEmailOutput"></div>
+      <div id="emailActions" style="display:none;" class="output-actions" style="margin-top:10px;">
+        <button class="btn-green" id="sendEmailBtn" onclick="openEmailClient()">Open in Email</button>
+        <button class="btn-sm" onclick="copyEmail()">Copy</button>
+        <button class="btn-sm" onclick="generateWelcomeEmail()">Regenerate</button>
+      </div>
+    </div>
+
+    <div class="section" style="background:rgba(90,173,122,0.05);border-color:rgba(90,173,122,0.2);">
+      <div class="section-title" style="color:var(--green);"><span class="dot" style="background:var(--green)"></span>Setup Complete</div>
+      <p style="font-size:13px;color:var(--text);line-height:1.7;">Once the welcome email is sent, move the client to <strong style="color:var(--green)">Active</strong> in the CRM and schedule your Week 1 check-in in the calendar.</p>
+      <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
+        <a href="crm.html" class="btn-green" style="text-decoration:none;display:inline-flex;align-items:center;">Open CRM →</a>
+        <a href="clients.html" class="btn-sm" style="text-decoration:none;display:inline-flex;align-items:center;">Client Dashboard →</a>
+        <button class="btn-sm" onclick="saveSetupComplete()">Mark Setup Complete</button>
+      </div>
+    </div>
+
+    <div class="step-nav">
+      <button class="btn-sm" onclick="prevStep(5)">← Back</button>
+      <div></div>
+    </div>
+  </div>
+
+</div><!-- /wrapper -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let currentStep = 1;
+let brief = {};
+let calendarData = [];
+let postsData = [];
+let welcomeEmailText = '';
+
+const STEPS = 5;
+
+// Checklist items with categories
+const CHECKLIST_ITEMS = [
+  { id:'c1',  text:'Signed contract received and stored',       tag:'Admin' },
+  { id:'c2',  text:'Invoice / deposit confirmed paid',          tag:'Admin' },
+  { id:'c3',  text:'Brand brief completed (Step 1)',            tag:'Brief' },
+  { id:'c4',  text:'Client granted access to shared folder',   tag:'Admin' },
+  { id:'c5',  text:'Brand assets received (logo, photos, bio)', tag:'Assets' },
+  { id:'c6',  text:'Social media login credentials received',  tag:'Access' },
+  { id:'c7',  text:'Instagram / Facebook admin access granted', tag:'Access' },
+  { id:'c8',  text:'LinkedIn page admin access granted',        tag:'Access' },
+  { id:'c9',  text:'Google Business Profile access (if applicable)', tag:'Access' },
+  { id:'c10', text:'Buffer / scheduling tool connected',        tag:'Tools' },
+  { id:'c11', text:'Content calendar generated and approved',  tag:'Content' },
+  { id:'c12', text:'First 5 posts generated',                   tag:'Content' },
+  { id:'c13', text:'First post scheduled in Buffer',            tag:'Content' },
+  { id:'c14', text:'Email list / Mailchimp / Instantly access', tag:'Access' },
+  { id:'c15', text:'Welcome email drafted and sent',            tag:'Email' },
+  { id:'c16', text:'Client added to CRM as Active',             tag:'CRM' },
+  { id:'c17', text:'Week 1 check-in call booked',               tag:'Follow-up' },
+];
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  loadKey();
+  loadBrief();
+  renderChecklist();
+  const saved = JSON.parse(localStorage.getItem('aldric_setup_step') || '{}');
+  if (saved.step) { currentStep = saved.step; goStep(currentStep); }
+});
+
+// ─── API KEY ──────────────────────────────────────────────────────────────────
+function saveKey() {
+  const val = document.getElementById('apiKeyInput').value.trim();
+  if (val) { localStorage.setItem('aldric_claude_key', val); updateApiDot(true); }
+}
+function loadKey() {
+  const k = localStorage.getItem('aldric_claude_key') || '';
+  if (k) { document.getElementById('apiKeyInput').value = k; updateApiDot(true); }
+  else updateApiDot(false);
+}
+function updateApiDot(ok) {
+  const d = document.getElementById('apiDot');
+  d.className = 'api-dot ' + (ok ? 'green' : 'red');
+}
+function toggleShowKey() {
+  const inp = document.getElementById('apiKeyInput');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+// ─── CLIENT FIELD ────────────────────────────────────────────────────────────
+function updateClientField() {
+  const name = document.getElementById('clientName').value.trim();
+  const niche = document.getElementById('clientNiche').value;
+  if (name) document.getElementById('b-business').value = name;
+  // also update brief state
+}
+function loadClient() {
+  const crm = JSON.parse(localStorage.getItem('aldric_crm_v2') || '[]');
+  const name = document.getElementById('clientName').value.trim().toLowerCase();
+  if (!name) { showToast('Enter a client name first'); return; }
+  const match = crm.find(p => p.name?.toLowerCase().includes(name) || p.business?.toLowerCase().includes(name));
+  if (!match) { showToast('Client not found in CRM'); return; }
+  document.getElementById('clientName').value = match.business || match.name || '';
+  if (match.sector) {
+    const sel = document.getElementById('clientNiche');
+    for (let i = 0; i < sel.options.length; i++) {
+      if (sel.options[i].value.toLowerCase().includes(match.sector.toLowerCase())) { sel.selectedIndex = i; break; }
+    }
+  }
+  if (match.package) {
+    const sel = document.getElementById('clientPackage');
+    for (let i = 0; i < sel.options.length; i++) {
+      if (sel.options[i].value.toLowerCase().includes(match.package.toLowerCase())) { sel.selectedIndex = i; break; }
+    }
+  }
+  document.getElementById('b-business').value = match.business || match.name || '';
+  showToast('Client loaded from CRM ✓');
+}
+
+// ─── STEPS ────────────────────────────────────────────────────────────────────
+function goStep(n) {
+  for (let i = 1; i <= STEPS; i++) {
+    document.getElementById('panel-' + i).classList.toggle('active', i === n);
+    const tab = document.getElementById('tab-' + i);
+    tab.classList.remove('active', 'done');
+    if (i === n) tab.classList.add('active');
+    else if (i < n) tab.classList.add('done');
+  }
+  currentStep = n;
+  document.getElementById('progressFill').style.width = ((n / STEPS) * 100) + '%';
+  // Mark done steps
+  const done = JSON.parse(localStorage.getItem('aldric_setup_done') || '{}');
+  for (let i = 1; i < n; i++) {
+    if (!done[i]) { done[i] = true; }
+    document.getElementById('stepnum-' + i).textContent = '✓';
+  }
+  localStorage.setItem('aldric_setup_step', JSON.stringify({ step: n }));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function nextStep(n) { goStep(Math.min(n + 1, STEPS)); }
+function prevStep(n) { goStep(Math.max(n - 1, 1)); }
+
+// ─── BRIEF ────────────────────────────────────────────────────────────────────
+function saveBrief() {
+  brief = {
+    business: document.getElementById('b-business').value.trim(),
+    location: document.getElementById('b-location').value.trim(),
+    service:  document.getElementById('b-service').value.trim(),
+    price:    document.getElementById('b-price').value.trim(),
+    audience: document.getElementById('b-audience').value.trim(),
+    tone:     document.getElementById('b-tone').value,
+    diff:     document.getElementById('b-diff').value.trim(),
+    goal:     document.getElementById('b-goal').value.trim(),
+    notes:    document.getElementById('b-notes').value.trim(),
+    niche:    document.getElementById('clientNiche').value,
+    package:  document.getElementById('clientPackage').value,
+  };
+  localStorage.setItem('aldric_setup_brief', JSON.stringify(brief));
+  document.getElementById('briefSaved').style.display = 'block';
+  setTimeout(() => document.getElementById('briefSaved').style.display = 'none', 2000);
+}
+function loadBrief() {
+  const saved = JSON.parse(localStorage.getItem('aldric_setup_brief') || 'null');
+  if (!saved) return;
+  brief = saved;
+  const fields = ['business','location','service','price','audience','diff','goal','notes'];
+  fields.forEach(f => { const el = document.getElementById('b-' + f); if (el && saved[f]) el.value = saved[f]; });
+  if (saved.tone) document.getElementById('b-tone').value = saved.tone;
+  if (saved.niche) document.getElementById('clientNiche').value = saved.niche;
+  if (saved.package) document.getElementById('clientPackage').value = saved.package;
+  if (saved.business) document.getElementById('clientName').value = saved.business;
+}
+function getBrief() {
+  return {
+    business: document.getElementById('b-business').value.trim() || brief.business || '[Business]',
+    location: document.getElementById('b-location').value.trim() || brief.location || '[Location]',
+    service:  document.getElementById('b-service').value.trim()  || brief.service  || '[Service]',
+    price:    document.getElementById('b-price').value.trim()    || brief.price    || '[Price]',
+    audience: document.getElementById('b-audience').value.trim() || brief.audience || '[Audience]',
+    tone:     document.getElementById('b-tone').value            || brief.tone     || 'professional',
+    diff:     document.getElementById('b-diff').value.trim()     || brief.diff     || '[Differentiator]',
+    goal:     document.getElementById('b-goal').value.trim()     || brief.goal     || '[Goal]',
+    notes:    document.getElementById('b-notes').value.trim()    || brief.notes    || '',
+    niche:    document.getElementById('clientNiche').value       || brief.niche    || '[Niche]',
+    package:  document.getElementById('clientPackage').value     || brief.package  || '[Package]',
+  };
+}
+function exportBrief() {
+  const b = getBrief();
+  const txt = `BRAND BRIEF — ${b.business}\n${'─'.repeat(50)}\nBusiness: ${b.business}\nLocation: ${b.location}\nNiche: ${b.niche}\nPackage: ${b.package}\nPrimary Service: ${b.service}\nPrice Range: ${b.price}\nTarget Audience: ${b.audience}\nBrand Tone: ${b.tone}\nKey Differentiator: ${b.diff}\nGoal: ${b.goal}\nNotes: ${b.notes}\n`;
+  download(txt, `brief-${b.business.replace(/\s+/g,'-').toLowerCase()}.txt`);
+}
+function copyBrief() {
+  const b = getBrief();
+  const txt = `Business: ${b.business} | Niche: ${b.niche} | Service: ${b.service} | Audience: ${b.audience} | Tone: ${b.tone} | Goal: ${b.goal}`;
+  navigator.clipboard.writeText(txt).then(() => showToast('Brief copied'));
+}
+
+// ─── CALENDAR ─────────────────────────────────────────────────────────────────
+async function generateCalendar() {
+  const key = localStorage.getItem('aldric_claude_key');
+  if (!key) { showToast('Add your Claude API key first'); return; }
+  const b = getBrief();
+  if (!b.business || b.business === '[Business]') { showToast('Complete the brand brief first'); return; }
+  const btn = document.getElementById('genCalBtn');
+  btn.innerHTML = '<span class="spinner"></span>Generating…';
+  btn.disabled = true;
+  const freq = document.getElementById('cal-freq').value;
+  const start = document.getElementById('cal-start').value || 'next Monday';
+  const focus = document.getElementById('cal-focus').value || 'general brand building';
+
+  const prompt = `You are a UK social media strategist at Aldric Group creating a 30-day content calendar for a client.
+
+CLIENT: ${b.business} — ${b.niche} in ${b.location}
+SERVICE: ${b.service} | PRICE RANGE: ${b.price}
+AUDIENCE: ${b.audience}
+TONE: ${b.tone}
+GOAL: ${b.goal}
+CAMPAIGN FOCUS: ${focus}
+POSTING FREQUENCY: ${freq}
+START DATE: ${start}
+
+Create a structured 4-week content calendar. Output EXACTLY this JSON format and nothing else:
+{
+  "weeks": [
+    {
+      "week": "Week 1 — [dates]",
+      "posts": [
+        { "day": "Mon", "date": "[date]", "type": "Educational", "topic": "[specific topic]", "hook": "[opening line]" },
+        ...5 posts per week
+      ]
+    },
+    ... 4 weeks total
+  ]
+}
+
+Post types: Educational, Social Proof, Promotional, Behind-the-Scenes
+Make each topic specific to the business — no generic content.`;
+
+  try {
+    const res = await callClaude(key, prompt, 2000);
+    const jsonStr = res.match(/\{[\s\S]*\}/)?.[0];
+    if (!jsonStr) throw new Error('No JSON in response');
+    calendarData = JSON.parse(jsonStr);
+    renderCalendar(calendarData);
+    document.getElementById('calendarActions').style.display = 'flex';
+    localStorage.setItem('aldric_setup_calendar', JSON.stringify(calendarData));
+  } catch (e) {
+    document.getElementById('calendarOutput').innerHTML = `<div class="output-area"><pre style="color:var(--red)">${e.message}</pre></div>`;
+  }
+  btn.innerHTML = '✦ Regenerate Calendar';
+  btn.disabled = false;
+}
+
+function renderCalendar(data) {
+  const typeClass = { 'Educational':'type-edu','Social Proof':'type-proof','Promotional':'type-promo','Behind-the-Scenes':'type-bts','BTS':'type-bts' };
+  const html = `<div class="calendar-grid">${(data.weeks||[]).map(w => `
+    <div class="week-card">
+      <h4>${w.week}</h4>
+      ${(w.posts||[]).map(p => `
+        <div class="week-post">
+          <div><span class="post-type ${typeClass[p.type]||'type-edu'}">${p.type}</span></div>
+          <strong style="font-size:12px;color:var(--cream)">${p.day} ${p.date||''}</strong><br>
+          <span style="font-size:11px;color:var(--muted)">${p.topic}</span>
+        </div>`).join('')}
+    </div>`).join('')}</div>`;
+  document.getElementById('calendarOutput').innerHTML = html;
+}
+
+function exportCalendar() {
+  if (!calendarData.weeks) { showToast('Generate calendar first'); return; }
+  const rows = [['Week','Day','Date','Type','Topic','Hook']];
+  calendarData.weeks.forEach(w => {
+    (w.posts||[]).forEach(p => rows.push([w.week, p.day, p.date||'', p.type, p.topic, p.hook||'']));
+  });
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  download(csv, `calendar-${getBrief().business.replace(/\s+/g,'-').toLowerCase()}.csv`);
+}
+function copyCalendar() {
+  if (!calendarData.weeks) { showToast('Generate calendar first'); return; }
+  const txt = calendarData.weeks.map(w => `${w.week}\n${(w.posts||[]).map(p=>`  ${p.day}: [${p.type}] ${p.topic}`).join('\n')}`).join('\n\n');
+  navigator.clipboard.writeText(txt).then(() => showToast('Calendar copied'));
+}
+
+// ─── POSTS ────────────────────────────────────────────────────────────────────
+async function generatePosts() {
+  const key = localStorage.getItem('aldric_claude_key');
+  if (!key) { showToast('Add your Claude API key first'); return; }
+  const b = getBrief();
+  if (!b.business || b.business === '[Business]') { showToast('Complete the brand brief first'); return; }
+  const btn = document.getElementById('genPostsBtn');
+  btn.innerHTML = '<span class="spinner"></span>Generating posts…';
+  btn.disabled = true;
+  const platform = document.getElementById('post-platform').value;
+  const style = document.getElementById('post-style').value;
+
+  const prompt = `You are a UK social media copywriter at Aldric Group.
+
+CLIENT: ${b.business} — ${b.niche} in ${b.location}
+SERVICE: ${b.service} | AUDIENCE: ${b.audience}
+TONE: ${b.tone} | DIFFERENTIATOR: ${b.diff}
+PLATFORM: ${platform}
+FIRST POST STYLE: ${style}
+
+Write 5 ready-to-publish social media posts for the first week. The first post should ${style}. Vary the remaining 4 across: educational, social proof, promotional, behind-the-scenes.
+
+Output EXACTLY this JSON format:
+[
+  {
+    "number": 1,
+    "type": "Introduction",
+    "caption": "[full caption with line breaks, emojis, and hashtags — Instagram-ready]",
+    "tip": "[one-sentence posting tip]"
+  },
+  ...5 posts total
+]
+
+Each caption: 100–200 words, conversational, UK spelling, ends with 5–8 relevant hashtags.
+No placeholder text — make it specific to this business.`;
+
+  try {
+    const res = await callClaude(key, prompt, 3000);
+    const jsonStr = res.match(/\[[\s\S]*\]/)?.[0];
+    if (!jsonStr) throw new Error('No JSON in response');
+    postsData = JSON.parse(jsonStr);
+    renderPosts(postsData);
+    localStorage.setItem('aldric_setup_posts', JSON.stringify(postsData));
+  } catch (e) {
+    document.getElementById('postsOutput').innerHTML = `<div class="output-area"><pre style="color:var(--red)">${e.message}</pre></div>`;
+  }
+  btn.innerHTML = '✦ Regenerate Posts';
+  btn.disabled = false;
+}
+
+function renderPosts(posts) {
+  const container = document.getElementById('postsOutput');
+  container.innerHTML = posts.map((p,i) => `
+    <div class="post-card">
+      <div class="post-header">
+        <span class="post-num">Post ${p.number || i+1} — <strong style="color:var(--gold)">${p.type}</strong></span>
+        <div style="display:flex;gap:6px;">
+          <button class="btn-sm" onclick="copyPost(${i})">Copy</button>
+          <button class="btn-sm" onclick="schedulePost(${i})">Schedule →</button>
+        </div>
+      </div>
+      <div class="post-body">${escHtml(p.caption)}</div>
+      <div style="margin-top:8px;font-size:11px;color:var(--muted)">💡 ${p.tip}</div>
+    </div>`).join('');
+}
+function copyPost(i) {
+  if (!postsData[i]) return;
+  navigator.clipboard.writeText(postsData[i].caption).then(() => showToast('Post ' + (i+1) + ' copied'));
+}
+function schedulePost(i) {
+  window.open('https://buffer.com', '_blank');
+  copyPost(i);
+  showToast('Post copied — paste into Buffer');
+}
+
+// ─── CHECKLIST ────────────────────────────────────────────────────────────────
+function renderChecklist() {
+  const saved = JSON.parse(localStorage.getItem('aldric_setup_checklist') || '{}');
+  const ul = document.getElementById('checklistItems');
+  ul.innerHTML = CHECKLIST_ITEMS.map(item => {
+    const checked = !!saved[item.id];
+    return `<li>
+      <div class="check-box ${checked ? 'checked' : ''}" onclick="toggleCheck('${item.id}')"></div>
+      <span class="checklist-text ${checked ? 'checked' : ''}">${item.text}<span class="checklist-tag">${item.tag}</span></span>
+    </li>`;
+  }).join('');
+  updateCheckPct(saved);
+}
+function toggleCheck(id) {
+  const saved = JSON.parse(localStorage.getItem('aldric_setup_checklist') || '{}');
+  saved[id] = !saved[id];
+  localStorage.setItem('aldric_setup_checklist', JSON.stringify(saved));
+  renderChecklist();
+}
+function updateCheckPct(saved) {
+  const done = Object.values(saved).filter(Boolean).length;
+  const pct = Math.round((done / CHECKLIST_ITEMS.length) * 100);
+  document.getElementById('checkPct').textContent = pct + '%';
+}
+function resetChecklist() {
+  if (!confirm('Reset all checklist items?')) return;
+  localStorage.removeItem('aldric_setup_checklist');
+  renderChecklist();
+}
+function exportChecklist() {
+  const saved = JSON.parse(localStorage.getItem('aldric_setup_checklist') || '{}');
+  const txt = `CLIENT SETUP CHECKLIST — ${getBrief().business}\n${'─'.repeat(50)}\n` +
+    CHECKLIST_ITEMS.map(i => `[${saved[i.id] ? '✓' : ' '}] ${i.text} (${i.tag})`).join('\n');
+  download(txt, 'setup-checklist.txt');
+}
+
+// ─── WELCOME EMAIL ────────────────────────────────────────────────────────────
+async function generateWelcomeEmail() {
+  const key = localStorage.getItem('aldric_claude_key');
+  if (!key) { showToast('Add your Claude API key first'); return; }
+  const b = getBrief();
+  const contact = document.getElementById('e-contact').value.trim() || 'there';
+  const deliverables = document.getElementById('e-deliverables').value.trim() || 'your monthly deliverables';
+  const checkin = document.getElementById('e-checkin').value.trim() || 'this week';
+
+  const btn = document.getElementById('genEmailBtn');
+  btn.innerHTML = '<span class="spinner"></span>Writing email…';
+  btn.disabled = true;
+
+  const prompt = `You are Aldric Group's account manager writing a professional welcome email to a new client.
+
+CLIENT NAME (first name): ${contact}
+BUSINESS: ${b.business} — ${b.niche} in ${b.location}
+PACKAGE: ${b.package}
+DELIVERABLES THIS MONTH: ${deliverables}
+FIRST CHECK-IN: ${checkin}
+
+Write a welcome email with:
+- Subject line (on first line, prefixed "SUBJECT: ")
+- Warm professional opening
+- What we've set up / done so far
+- What they can expect in the first month
+- First check-in confirmation
+- How to contact us (WhatsApp preferred for quick questions)
+- Professional sign-off from Aldric Group
+
+Tone: warm, confident, organised. UK spelling. No buzzwords.
+Length: 200–280 words. Just the email text — no commentary.`;
+
+  try {
+    const res = await callClaude(key, prompt, 1000);
+    welcomeEmailText = res.trim();
+    document.getElementById('welcomeEmailOutput').innerHTML = `<div class="email-preview">${escHtml(welcomeEmailText)}</div>`;
+    document.getElementById('emailActions').style.display = 'flex';
+    localStorage.setItem('aldric_setup_email', welcomeEmailText);
+  } catch (e) {
+    document.getElementById('welcomeEmailOutput').innerHTML = `<div class="email-preview" style="color:var(--red)">${e.message}</div>`;
+  }
+  btn.innerHTML = '✦ Regenerate Email';
+  btn.disabled = false;
+}
+function copyEmail() {
+  if (!welcomeEmailText) return;
+  navigator.clipboard.writeText(welcomeEmailText).then(() => showToast('Email copied'));
+}
+function openEmailClient() {
+  const email = document.getElementById('e-email').value.trim();
+  const lines = (welcomeEmailText || '').split('\n');
+  let subject = 'Welcome to Aldric Group';
+  let body = welcomeEmailText;
+  if (lines[0].startsWith('SUBJECT:')) {
+    subject = lines[0].replace('SUBJECT:', '').trim();
+    body = lines.slice(1).join('\n').trim();
+  }
+  window.location.href = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+function saveSetupComplete() {
+  const b = getBrief();
+  localStorage.setItem('aldric_setup_complete_' + b.business.replace(/\s+/g,'_'), Date.now());
+  showToast('Setup marked complete ✓');
+}
+
+// ─── CLAUDE API ───────────────────────────────────────────────────────────────
+async function callClaude(key, prompt, maxTokens) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: maxTokens,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `API error ${res.status}`);
+  }
+  const data = await res.json();
+  return data.content?.[0]?.text || '';
+}
+
+// ─── UTILS ────────────────────────────────────────────────────────────────────
+function download(content, filename) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type: 'text/plain' }));
+  a.download = filename;
+  a.click();
+}
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 2200);
+}
+</script>
+
+</body>
+</html>

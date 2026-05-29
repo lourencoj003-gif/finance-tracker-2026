@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Discovery Guide — Axontra Partners (Internal)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+:root {
+  --navy:#05111f; --navy2:#071828; --navy3:#0b2035; --navy4:#0f2540;
+  --teal:#4ea3bd; --teal-lt:#7ec4d8; --silver:#b8c4d0; --cream:#e8f0f5;
+  --muted:#5a7080; --border:rgba(78,163,189,0.18); --text:#c8d8e4;
+  --green:#5aad8a; --red:#d45c5c; --amber:#c9933e; --gold:#b89a5e;
+}
+html { scroll-behavior:smooth; }
+body { font-family:'Inter',sans-serif; background:var(--navy); color:var(--text); line-height:1.6; -webkit-font-smoothing:antialiased; }
+::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:rgba(78,163,189,0.2);border-radius:2px}
+
+/* NAV */
+nav { position:fixed; top:0; left:0; right:0; z-index:100; display:flex; align-items:center; justify-content:space-between; padding:14px 40px; border-bottom:1px solid rgba(78,163,189,0.1); background:rgba(5,17,31,0.96); backdrop-filter:blur(20px); }
+.nav-logo { font-family:'Playfair Display',serif; font-size:17px; font-weight:700; color:var(--teal); text-decoration:none; letter-spacing:0.06em; }
+.nav-links { display:flex; gap:20px; align-items:center; }
+.nav-links a { font-size:12px; font-weight:500; color:var(--muted); text-decoration:none; letter-spacing:0.04em; transition:color 0.2s; }
+.nav-links a:hover { color:var(--cream); }
+.nav-links a.active { color:var(--teal); }
+.internal-badge { font-size:10px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--amber); background:rgba(201,147,62,0.1); border:1px solid rgba(201,147,62,0.2); padding:3px 9px; border-radius:3px; }
+
+/* LAYOUT */
+.layout { display:grid; grid-template-columns:260px 1fr; gap:0; max-width:1240px; margin:0 auto; padding:76px 0 80px; }
+@media(max-width:900px){ .layout{grid-template-columns:1fr;padding:76px 0 60px;} }
+
+/* SIDEBAR NAV */
+.side-nav { padding:28px 0; position:sticky; top:76px; align-self:start; max-height:calc(100vh - 76px); overflow-y:auto; border-right:1px solid rgba(78,163,189,0.08); }
+.side-section { margin-bottom:28px; padding:0 20px; }
+.side-label { font-size:9px; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; color:rgba(78,163,189,0.4); margin-bottom:8px; }
+.side-link { display:block; font-size:12px; color:var(--muted); text-decoration:none; padding:5px 0; transition:color 0.2s; border-left:2px solid transparent; padding-left:8px; margin-left:-8px; }
+.side-link:hover { color:var(--cream); }
+.side-link.active { color:var(--teal-lt); border-left-color:var(--teal); }
+
+/* MAIN */
+.main-content { padding:28px 40px 60px; }
+@media(max-width:900px){ .main-content{padding:20px 16px 60px;} .side-nav{display:none;} }
+
+/* PAGE HEADER */
+.page-header { margin-bottom:36px; border-bottom:1px solid var(--border); padding-bottom:24px; }
+.page-kicker { font-size:10px; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; color:var(--teal); margin-bottom:8px; }
+.page-header h1 { font-family:'Playfair Display',serif; font-size:28px; font-weight:700; color:var(--cream); margin-bottom:6px; }
+.page-header p { font-size:14px; color:var(--muted); max-width:600px; }
+
+/* SECTION */
+.section { margin-bottom:48px; }
+.section-anchor { scroll-margin-top:90px; }
+.section h2 { font-size:15px; font-weight:700; color:var(--teal-lt); letter-spacing:0.04em; margin-bottom:16px; display:flex; align-items:center; gap:10px; }
+.section h2::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* CHECKLIST */
+.checklist { list-style:none; display:flex; flex-direction:column; gap:8px; }
+.check-item { display:flex; align-items:flex-start; gap:10px; padding:10px 14px; background:var(--navy2); border:1px solid rgba(78,163,189,0.08); border-radius:9px; cursor:pointer; transition:all 0.2s; }
+.check-item:hover { border-color:rgba(78,163,189,0.2); }
+.check-item.done { opacity:0.5; }
+.check-box { width:18px; height:18px; flex-shrink:0; border:1.5px solid var(--muted); border-radius:4px; display:flex; align-items:center; justify-content:center; margin-top:1px; transition:all 0.2s; }
+.check-item.done .check-box { background:var(--green); border-color:var(--green); }
+.check-item.done .check-box::after { content:'✓'; color:#fff; font-size:11px; font-weight:700; }
+.check-text { flex:1; font-size:13px; color:var(--text); line-height:1.5; }
+.check-item.done .check-text { color:var(--muted); text-decoration:line-through; }
+.check-tag { display:inline-block; font-size:9px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; padding:1px 7px; border-radius:3px; margin-left:6px; vertical-align:middle; }
+.tag-prep { background:rgba(78,163,189,0.12); color:var(--teal); }
+.tag-linkedin { background:rgba(90,100,170,0.15); color:#8a9adf; }
+.tag-research { background:rgba(201,147,62,0.12); color:var(--amber); }
+.tag-psych { background:rgba(90,173,138,0.12); color:var(--green); }
+
+/* CONVERSATION FRAMEWORK */
+.conv-steps { display:flex; flex-direction:column; gap:0; }
+.conv-step { display:flex; gap:16px; }
+.conv-step-line { display:flex; flex-direction:column; align-items:center; }
+.conv-num { width:32px; height:32px; border-radius:50%; background:rgba(78,163,189,0.12); border:1.5px solid var(--teal); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:var(--teal); flex-shrink:0; }
+.conv-line { flex:1; width:1px; background:var(--border); margin:4px 0; min-height:20px; }
+.conv-body { flex:1; padding-bottom:24px; }
+.conv-title { font-size:13px; font-weight:700; color:var(--cream); margin-bottom:4px; }
+.conv-time { font-size:10px; color:var(--muted); margin-bottom:8px; font-weight:600; letter-spacing:0.05em; text-transform:uppercase; }
+.conv-script { background:var(--navy3); border-left:3px solid var(--teal); border-radius:0 8px 8px 0; padding:12px 14px; margin-bottom:8px; font-size:13px; color:var(--cream); line-height:1.75; font-style:italic; }
+.conv-note { font-size:12px; color:var(--muted); line-height:1.6; }
+
+/* OBJECTIONS TABLE */
+.obj-list { display:flex; flex-direction:column; gap:10px; }
+.obj-card { background:var(--navy2); border:1px solid rgba(78,163,189,0.08); border-radius:10px; overflow:hidden; }
+.obj-q { padding:12px 16px; font-size:13px; font-weight:600; color:var(--cream); cursor:pointer; display:flex; justify-content:space-between; align-items:center; user-select:none; }
+.obj-q:hover { background:var(--navy3); }
+.obj-badge { font-size:10px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; padding:2px 8px; border-radius:3px; flex-shrink:0; }
+.badge-insurance { background:rgba(90,100,170,0.15); color:#8a9adf; }
+.badge-timing { background:rgba(201,147,62,0.12); color:var(--amber); }
+.badge-tech { background:rgba(78,163,189,0.12); color:var(--teal); }
+.badge-budget { background:rgba(213,92,92,0.12); color:var(--red); }
+.obj-a { display:none; padding:12px 16px 14px; border-top:1px solid rgba(78,163,189,0.07); }
+.obj-a.open { display:block; }
+.obj-response { font-size:13px; color:var(--text); line-height:1.7; font-style:italic; margin-bottom:8px; }
+.obj-why { font-size:11px; color:var(--muted); line-height:1.5; }
+.chevron { font-size:10px; color:var(--muted); transition:transform 0.2s; }
+.chevron.open { transform:rotate(180deg); }
+
+/* BRING LIST */
+.bring-grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; }
+@media(max-width:600px){ .bring-grid{grid-template-columns:1fr;} }
+.bring-card { background:var(--navy2); border:1px solid rgba(78,163,189,0.08); border-radius:9px; padding:14px; }
+.bring-icon { font-size:20px; margin-bottom:6px; }
+.bring-title { font-size:12px; font-weight:700; color:var(--cream); margin-bottom:3px; }
+.bring-desc { font-size:11px; color:var(--muted); line-height:1.5; }
+
+/* POST-CALL */
+.action-list { display:flex; flex-direction:column; gap:8px; }
+.action-item { display:flex; align-items:center; gap:12px; padding:10px 14px; background:var(--navy2); border:1px solid rgba(78,163,189,0.08); border-radius:8px; }
+.action-timing { font-size:10px; font-weight:700; color:var(--teal); background:rgba(78,163,189,0.1); padding:3px 8px; border-radius:4px; letter-spacing:0.06em; text-transform:uppercase; flex-shrink:0; white-space:nowrap; }
+.action-text { font-size:13px; color:var(--text); }
+
+/* NOTES */
+textarea { background:var(--navy3); border:1px solid rgba(78,163,189,0.15); border-radius:8px; color:var(--text); font-family:'Inter',sans-serif; font-size:13px; padding:10px 12px; outline:none; width:100%; resize:vertical; line-height:1.6; }
+textarea:focus { border-color:rgba(78,163,189,0.35); }
+input[type=text] { background:var(--navy3); border:1px solid rgba(78,163,189,0.15); border-radius:7px; color:var(--text); font-family:'Inter',sans-serif; font-size:13px; padding:8px 12px; outline:none; width:100%; }
+input:focus { border-color:rgba(78,163,189,0.35); }
+
+/* BUTTONS */
+.btn-teal { background:rgba(78,163,189,0.12); border:1px solid rgba(78,163,189,0.3); border-radius:7px; color:var(--teal-lt); font-family:'Inter',sans-serif; font-size:12px; font-weight:600; padding:8px 18px; cursor:pointer; transition:all 0.2s; }
+.btn-teal:hover { background:rgba(78,163,189,0.2); }
+.btn-sm { background:var(--navy3); border:1px solid rgba(78,163,189,0.12); border-radius:6px; color:var(--muted); font-family:'Inter',sans-serif; font-size:11px; font-weight:600; padding:6px 12px; cursor:pointer; transition:all 0.2s; }
+.btn-sm:hover { color:var(--text); border-color:rgba(78,163,189,0.25); }
+
+/* CALLOUT */
+.callout { background:rgba(78,163,189,0.06); border:1px solid rgba(78,163,189,0.2); border-radius:10px; padding:14px 16px; font-size:13px; color:var(--text); line-height:1.7; margin-bottom:16px; }
+.callout strong { color:var(--teal-lt); }
+.callout.amber { background:rgba(201,147,62,0.05); border-color:rgba(201,147,62,0.2); }
+.callout.amber strong { color:var(--amber); }
+
+/* PROGRESS */
+.progress-bar-wrap { height:4px; background:rgba(78,163,189,0.1); border-radius:2px; margin-bottom:20px; }
+.progress-fill { height:100%; background:var(--teal); border-radius:2px; transition:width 0.4s; }
+
+/* TOAST */
+.toast { position:fixed; bottom:28px; left:50%; transform:translateX(-50%); background:var(--navy3); border:1px solid rgba(78,163,189,0.3); border-radius:8px; padding:9px 20px; font-size:13px; color:var(--teal-lt); z-index:999; display:none; pointer-events:none; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">Axontra</a>
+  <div class="nav-links">
+    <a href="index.html">Home</a>
+    <a href="diagnostic.html">Diagnostic</a>
+    <a href="pitch.html">Pitch Deck</a>
+    <a href="discovery.html" class="active">Discovery Guide</a>
+    <span class="internal-badge">Internal</span>
+  </div>
+</nav>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="side-nav">
+    <div class="side-section">
+      <div class="side-label">Before the Meeting</div>
+      <a href="#research" class="side-link active" onclick="setActive(this)">Research Checklist</a>
+      <a href="#bring" class="side-link" onclick="setActive(this)">What to Bring</a>
+    </div>
+    <div class="side-section">
+      <div class="side-label">The Conversation</div>
+      <a href="#framework" class="side-link" onclick="setActive(this)">Framework</a>
+      <a href="#objections" class="side-link" onclick="setActive(this)">Objections</a>
+    </div>
+    <div class="side-section">
+      <div class="side-label">After</div>
+      <a href="#postcall" class="side-link" onclick="setActive(this)">Post-Call Actions</a>
+      <a href="#notes" class="side-link" onclick="setActive(this)">Call Notes</a>
+    </div>
+    <div class="side-section" style="margin-top:8px;padding-top:16px;border-top:1px solid rgba(78,163,189,0.08);">
+      <div id="checkProgress" style="font-size:11px;color:var(--muted);">Research: 0% done</div>
+      <div style="margin-top:8px;">
+        <div class="progress-bar-wrap" style="margin-bottom:6px;"><div class="progress-fill" id="researchProgress" style="width:0%"></div></div>
+      </div>
+      <button class="btn-sm" onclick="resetAll()" style="margin-top:4px;">Reset checklist</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main-content">
+
+    <div class="page-header">
+      <div class="page-kicker">Axontra Partners — Internal</div>
+      <h1>Discovery Call Guide</h1>
+      <p>Anthony's conversation framework for insurance brokerages — from coffee chat to qualified opportunity. Use before, during, and immediately after every call.</p>
+    </div>
+
+    <!-- ─── SECTION 1: RESEARCH ─── -->
+    <div class="section section-anchor" id="research">
+      <h2>Pre-Meeting Research Checklist</h2>
+
+      <div class="callout">
+        <strong>Rule:</strong> Never go into a discovery call without completing at least 8 of these. The more you know before you walk in, the less selling you have to do inside the room.
+      </div>
+
+      <ul class="checklist" id="researchList">
+        <li class="check-item" onclick="toggleCheck(this,'r1')">
+          <div class="check-box"></div>
+          <span class="check-text">Find the firm on LinkedIn — check headcount, growth trajectory, recent posts <span class="check-tag tag-linkedin">LinkedIn</span></span>
+        </li>
+        <li class="check-item" onclick="toggleCheck(this,'r2')">
+          <div class="check-box"></div>
+          <span class="check-text">Check their website — what classes of business do they specialise in? Any claims or awards mentioned? <span class="check-tag tag-research">Research</span></span>
+        </li>
+        <li class="check-item" onclick="toggleCheck(this,'r3')">
+          <div class="check-box"></div>
+          <span class="check-text">Google the MD/director you're meeting — any press, interviews, industry association roles? <span class="check-tag tag-research">Research</span></span>
+        </li>
+        <li class="check-item" onclick="toggleCheck(this,'r4')">
+          <div class="check-box"></div>
+          <span class="check-text">Check FCA Register for their permissions — any restrictions, recent changes? <span class="check-tag tag-prep">Prep</span></span>
+        </li>
+        <li class="check-item" onclick="toggleCheck(this,'r5')">
+          <div class="check-box"></div>
+          <span class="check-text">Note their approximate GWP tier (small &lt;£5M / mid £5–25M / large £25M+) from headcount and client types <span class="check-tag tag-research">Research</span></span>
+        </li>
+        <li class="check-item" onclick="toggleCheck(this,'r6')">
+          <div class="check-box"></div>
+          <span class="check-text">Check if they use a network (Brokerbility, Broker Insights, Acturis) — look for public mentions <span class="check-tag tag-research">Research</span></span>
+        </li>
+        <li class="check-item" onclick="toggleCheck(this,'r7')">
+          <div class="check-box"></div>
+          <span class="check-text">Note 1–2 genuine observations to open with — recent news, a LinkedIn post, an award, a market challenge specific to their niche <span class="check-tag tag-psych">Opener</span></span>
+        </li>
+        <li class="check-item" onclick="toggleCheck(this,'r8')">
+          <div class="check-box"></div>
+          <span class="check-text">Know the relevant market stat for their niche: 72% of UK brokers still on manual workflows, avg 23% renewal leakage <span class="check-tag tag-prep">Data</span></span>
+        </li>
+        <li class="check-item" onclick="toggleCheck(this,'r9')">
+          <div class="check-box"></div>
+          <span class="check-text">Prepare a relevant case study from memory — similar niche, quantified result, 3 sentences max <span class="check-tag tag-prep">Proof</span></span>
+        </li>
+        <li class="check-item" onclick="toggleCheck(this,'r10')">
+          <div class="check-box"></div>
+          <span class="check-text">Check if any mutual connections (LinkedIn) — can be a natural opener <span class="check-tag tag-linkedin">LinkedIn</span></span>
+        </li>
+        <li class="check-item" onclick="toggleCheck(this,'r11')">
+          <div class="check-box"></div>
+          <span class="check-text">Review recent Lloyd's / IUA market bulletins or FCA news relevant to their class of business <span class="check-tag tag-prep">Market</span></span>
+        </li>
+        <li class="check-item" onclick="toggleCheck(this,'r12')">
+          <div class="check-box"></div>
+          <span class="check-text">Write down 3 diagnosis questions you specifically want answered in this meeting <span class="check-tag tag-psych">Questions</span></span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- ─── SECTION 2: WHAT TO BRING ─── -->
+    <div class="section section-anchor" id="bring">
+      <h2>What to Bring / Have Ready</h2>
+      <div class="bring-grid">
+        <div class="bring-card">
+          <div class="bring-icon">📊</div>
+          <div class="bring-title">The Diagnostic Tool</div>
+          <div class="bring-desc">Have <code style="font-size:10px;background:rgba(78,163,189,0.1);padding:1px 4px;border-radius:3px;">axontra.co.uk/diagnostic</code> ready on your phone. Offer to run it together. It quantifies the problem in 3 minutes — before you've pitched anything.</div>
+        </div>
+        <div class="bring-card">
+          <div class="bring-icon">📋</div>
+          <div class="bring-title">One Relevant Case Study</div>
+          <div class="bring-desc">Memorise one result: firm type, the specific problem, the outcome in numbers. Don't use a printout — tell it. "We had a mid-market commercial broker in Manchester…"</div>
+        </div>
+        <div class="bring-card">
+          <div class="bring-icon">🧮</div>
+          <div class="bring-title">Back-of-envelope ROI calc</div>
+          <div class="bring-desc">GWP × 2.3% renewal leakage = £X they're losing now. Have the formula ready. If they tell you their GWP, you can quote their number immediately.</div>
+        </div>
+        <div class="bring-card">
+          <div class="bring-icon">📱</div>
+          <div class="bring-title">LinkedIn — Connected</div>
+          <div class="bring-desc">Connect with them on LinkedIn before the meeting if you haven't. Mention something from their recent post — genuine engagement, not sycophantic.</div>
+        </div>
+        <div class="bring-card">
+          <div class="bring-icon">🤐</div>
+          <div class="bring-title">Nothing to Sell</div>
+          <div class="bring-desc">The worst thing you can walk in with is a product to push. Walk in with questions. The only agenda is understanding their operation — the pitch comes later, if it fits.</div>
+        </div>
+        <div class="bring-card">
+          <div class="bring-icon">📝</div>
+          <div class="bring-title">3 Specific Questions Written</div>
+          <div class="bring-desc">Your three most important diagnosis questions, written before you walk in. Not memorised generics — specific to what you know about this firm.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── SECTION 3: CONVERSATION FRAMEWORK ─── -->
+    <div class="section section-anchor" id="framework">
+      <h2>Coffee Conversation Framework</h2>
+
+      <div class="callout amber">
+        <strong>This is not a sales call.</strong> It's a conversation between two people who understand the insurance market. Your job is to ask questions, listen, and find out if there's a problem worth solving. If there is — and only if there is — you mention Axontra.
+      </div>
+
+      <div class="conv-steps">
+
+        <div class="conv-step">
+          <div class="conv-step-line"><div class="conv-num">1</div><div class="conv-line"></div></div>
+          <div class="conv-body">
+            <div class="conv-title">Opening — Establish Peer Credibility</div>
+            <div class="conv-time">First 5 minutes</div>
+            <div class="conv-script">"I appreciate the time. I've been working with commercial brokers for a while now — quite a few in [their niche / region]. I wanted to have a proper conversation rather than pitch anything. Tell me about [Business] — how long have you been in commercial?"</div>
+            <div class="conv-note">💡 You're positioning yourself as a peer who knows the market, not a vendor. The question turns the floor over to them immediately. Let them talk.</div>
+          </div>
+        </div>
+
+        <div class="conv-step">
+          <div class="conv-step-line"><div class="conv-num">2</div><div class="conv-line"></div></div>
+          <div class="conv-body">
+            <div class="conv-title">Diagnosis — Understand Their Operation</div>
+            <div class="conv-time">Minutes 5–15</div>
+            <div class="conv-script">"What does your renewal process look like at the moment — how far out do you start chasing, and how do you track where things are?"</div>
+            <div class="conv-script">"Where do you find the biggest friction in the submission process — is it getting the right info from clients, or is it more on the underwriter side?"</div>
+            <div class="conv-script">"If you could change one thing about how the operation runs day-to-day, what would it be?"</div>
+            <div class="conv-note">💡 These three questions cover: renewal (where leakage happens), submissions (where inefficiency lives), and operations (what they actually care about). Don't ask all three at once — let conversations flow naturally to each one.</div>
+          </div>
+        </div>
+
+        <div class="conv-step">
+          <div class="conv-step-line"><div class="conv-num">3</div><div class="conv-line"></div></div>
+          <div class="conv-body">
+            <div class="conv-title">Quantify — Make the Problem Concrete</div>
+            <div class="conv-time">Minutes 15–22</div>
+            <div class="conv-script">"What's your approximate renewal retention rate? Most commercial brokers I talk to are somewhere around 77–82%. Does that sound about right for you?"</div>
+            <div class="conv-script">"If you brought that up by 5 points — at your GWP — what does that look like in income terms?"</div>
+            <div class="conv-note">💡 You're not making up numbers — you're helping them quantify what they already know is a problem. The calculation is theirs. You're just asking the question. The formula: GWP × lost retention % × avg commission rate.</div>
+          </div>
+        </div>
+
+        <div class="conv-step">
+          <div class="conv-step-line"><div class="conv-num">4</div><div class="conv-line"></div></div>
+          <div class="conv-body">
+            <div class="conv-title">Bridge — Connect Problem to Solution (Only If Earned)</div>
+            <div class="conv-time">Minutes 22–28</div>
+            <div class="conv-script">"What you're describing is pretty common — the gap between what the system can track and what actually needs attention in the next two weeks. That's exactly the problem we built Axontra to solve."</div>
+            <div class="conv-script">"We work specifically with commercial brokers — not software generalists. The system surfaces the renewals at risk, prioritises submission quality, and flags the accounts where your team should be spending time."</div>
+            <div class="conv-note">💡 Only bridge if they've confirmed the problem exists. If they said "actually our retention is great and the operation runs fine" — don't force it. This coffee becomes a relationship conversation instead. That's fine.</div>
+          </div>
+        </div>
+
+        <div class="conv-step">
+          <div class="conv-step-line"><div class="conv-num">5</div><div class="conv-line"></div></div>
+          <div class="conv-body">
+            <div class="conv-title">Proof — One Specific Story</div>
+            <div class="conv-time">Minutes 28–33</div>
+            <div class="conv-script">"We've got a mid-market broker in the Lloyd's market — about 18 people, mixed commercial book. When they came to us they were losing roughly £180k/year in renewal leakage they didn't even know about. Twelve weeks after implementation: 14 point retention improvement, 40% faster submission turnaround. Their largest property account renewed that they'd written off."</div>
+            <div class="conv-note">💡 One story, three sentences, specific numbers. Don't list features — tell a result. The most credible thing you can say is "here's exactly what happened."</div>
+          </div>
+        </div>
+
+        <div class="conv-step">
+          <div class="conv-step-line"><div class="conv-num">6</div><div class="conv-line"></div></div>
+          <div class="conv-body">
+            <div class="conv-title">Close — Always End with a Concrete Next Step</div>
+            <div class="conv-time">Final 5 minutes</div>
+            <div class="conv-script">"Would it be worth doing a proper diagnostic together — it's a 20-minute session, I'd run the numbers on your actual book and you'd see exactly where the gaps are. No obligation. If nothing comes of it, you at least have the benchmarking data."</div>
+            <div class="conv-note">💡 The diagnostic is the close. It's valuable in itself — they get real numbers. It also means the next conversation starts with evidence, not a pitch. Never leave without a date or a "yes, send me the link."</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ─── SECTION 4: OBJECTIONS ─── -->
+    <div class="section section-anchor" id="objections">
+      <h2>Insurance-Specific Objections</h2>
+
+      <div class="obj-list">
+
+        <div class="obj-card">
+          <div class="obj-q" onclick="toggleObj(this)">
+            "We already use Acturis / Applied / SSP."
+            <span style="display:flex;align-items:center;gap:8px;"><span class="obj-badge badge-tech">Technology</span><span class="chevron">▼</span></span>
+          </div>
+          <div class="obj-a">
+            <div class="obj-response">"Acturis is a great system for transaction management — we integrate with it. What Axontra does is the layer above that: surfacing the accounts that need attention across your book, before a renewal is lost or a submission goes cold. Most brokers on Acturis tell me it's brilliant at recording what happened, but it doesn't proactively tell you what's at risk right now. Is that a fair description of how you use it?"</div>
+            <div class="obj-why">💡 Never criticise their current system — reframe Axontra as additive, not replacement. The integration angle removes the "more disruption" objection immediately.</div>
+          </div>
+        </div>
+
+        <div class="obj-card">
+          <div class="obj-q" onclick="toggleObj(this)">
+            "We're not really at the size where this makes sense."
+            <span style="display:flex;align-items:center;gap:8px;"><span class="obj-badge badge-insurance">Fit</span><span class="chevron">▼</span></span>
+          </div>
+          <div class="obj-a">
+            <div class="obj-response">"Honestly, the brokers where we see the highest ROI are in the 10–30 account manager range — where there's enough complexity to lose track, but not enough headcount to have a dedicated analytics team. You're right in that sweet spot. The renewal leakage problem doesn't scale with size — it scales with complexity. What's your split between commercial and personal lines?"</div>
+            <div class="obj-why">💡 Reframe 'too small' into 'ideal size.' The question at the end shifts them back to diagnosis mode.</div>
+          </div>
+        </div>
+
+        <div class="obj-card">
+          <div class="obj-q" onclick="toggleObj(this)">
+            "We had a bad experience with a data project / IT rollout."
+            <span style="display:flex;align-items:center;gap:8px;"><span class="obj-badge badge-tech">Risk</span><span class="chevron">▼</span></span>
+          </div>
+          <div class="obj-a">
+            <div class="obj-response">"That's probably the most common thing I hear — and usually it was a generic software vendor who didn't understand the brokerage operation. Axontra is insurance-specific, and the implementation is 6 weeks with dedicated support throughout. We don't go live until you're satisfied. The diagnostic I mentioned actually starts before we touch any of your systems — it's just a conversation about your data, so you see the value before any commitment."</div>
+            <div class="obj-why">💡 Acknowledge the pain, differentiate on specificity, reduce perceived risk with the diagnostic-first approach.</div>
+          </div>
+        </div>
+
+        <div class="obj-card">
+          <div class="obj-q" onclick="toggleObj(this)">
+            "The FCA/GDPR situation means we can't share client data easily."
+            <span style="display:flex;align-items:center;gap:8px;"><span class="obj-badge badge-insurance">Compliance</span><span class="chevron">▼</span></span>
+          </div>
+          <div class="obj-a">
+            <div class="obj-response">"That's a legitimate concern and we take it seriously. Axontra was built for FCA-regulated firms from day one — we're fully GDPR-compliant, we operate on a data processing agreement, and all data stays within UK jurisdiction. We can walk through the data governance model in detail before anything moves. Most of our clients found that was actually simpler than they expected."</div>
+            <div class="obj-why">💡 Don't dismiss the concern — validate it and offer the data governance detail proactively. Have the DPA framework ready for the next conversation.</div>
+          </div>
+        </div>
+
+        <div class="obj-card">
+          <div class="obj-q" onclick="toggleObj(this)">
+            "What's this going to cost — we don't have budget for another SaaS subscription."
+            <span style="display:flex;align-items:center;gap:8px;"><span class="obj-badge badge-budget">Budget</span><span class="chevron">▼</span></span>
+          </div>
+          <div class="obj-a">
+            <div class="obj-response">"I'd rather not quote a number until we've actually done the diagnostic — because the number only makes sense in context of what you're currently losing. If your retention is 82% and we bring it to 86% on a £10M GWP book at 10% commission, that's £40k additional income. The platform cost is a fraction of that. But let's get the numbers right first — then the question becomes whether the ROI makes sense, not whether the cost is high."</div>
+            <div class="obj-why">💡 Delay the price conversation until ROI is established. Never give a price before value is clear.</div>
+          </div>
+        </div>
+
+        <div class="obj-card">
+          <div class="obj-q" onclick="toggleObj(this)">
+            "We're going through a merger / acquisition at the moment."
+            <span style="display:flex;align-items:center;gap:8px;"><span class="obj-badge badge-timing">Timing</span><span class="chevron">▼</span></span>
+          </div>
+          <div class="obj-a">
+            <div class="obj-response">"Actually that's often the best time to have this conversation — because you're about to integrate two books of business and two sets of data. The brokers that come out of acquisitions fastest are the ones who have the operational intelligence in place first. Would it be useful to think about the diagnostic as a way to baseline both books before the integration?"</div>
+            <div class="obj-why">💡 Turn a timing objection into a reason to move now. Acquisitions create exactly the kind of operational complexity Axontra addresses.</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ─── SECTION 5: POST-CALL ACTIONS ─── -->
+    <div class="section section-anchor" id="postcall">
+      <h2>Post-Call Actions</h2>
+
+      <div class="action-list">
+        <div class="action-item">
+          <span class="action-timing">Within 1hr</span>
+          <span class="action-text">Send a LinkedIn connection request with a note referencing one specific thing from the conversation — not generic</span>
+        </div>
+        <div class="action-item">
+          <span class="action-timing">Within 2hrs</span>
+          <span class="action-text">Email follow-up: 3 sentences — what you discussed, what you said you'd send, one concrete next step with a date</span>
+        </div>
+        <div class="action-item">
+          <span class="action-timing">Same day</span>
+          <span class="action-text">Log the conversation in CRM: firm name, GWP tier, key problem identified, next step, follow-up date</span>
+        </div>
+        <div class="action-item">
+          <span class="action-timing">Within 24hrs</span>
+          <span class="action-text">Send the diagnostic link with a personalised one-liner about why it's relevant to their specific situation</span>
+        </div>
+        <div class="action-item">
+          <span class="action-timing">Day 3</span>
+          <span class="action-text">If no response to diagnostic: WhatsApp (if they use it) or email — 1 sentence, soft nudge, reference what they said</span>
+        </div>
+        <div class="action-item">
+          <span class="action-timing">Day 7</span>
+          <span class="action-text">Send a relevant industry article or market insight — no pitch, pure value. Shows you're thinking about their market</span>
+        </div>
+        <div class="action-item">
+          <span class="action-timing">Day 14</span>
+          <span class="action-text">If still no response: final short email — "completely understand if the timing isn't right, happy to reconnect in a few months"</span>
+        </div>
+      </div>
+
+      <div class="callout" style="margin-top:16px;">
+        <strong>The follow-up email template:</strong> "Good to talk earlier. As promised, I'm sending the [item you mentioned]. Whenever you're ready to run the diagnostic on your book — just reply and we'll set up 20 minutes. Otherwise, happy to reconnect when timing is better."
+      </div>
+    </div>
+
+    <!-- ─── SECTION 6: NOTES ─── -->
+    <div class="section section-anchor" id="notes">
+      <h2>Call Notes</h2>
+      <div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+        <input type="text" id="note-firm" placeholder="Firm name" style="max-width:200px;" oninput="saveNotes()" />
+        <input type="text" id="note-contact" placeholder="Contact name" style="max-width:160px;" oninput="saveNotes()" />
+        <input type="text" id="note-gwp" placeholder="Est. GWP" style="max-width:120px;" oninput="saveNotes()" />
+        <input type="text" id="note-date" placeholder="Meeting date" style="max-width:140px;" oninput="saveNotes()" />
+      </div>
+      <textarea id="note-body" rows="8" placeholder="Key points from the conversation:
+— What problem did they describe?
+— What's their current process?
+— Any numbers mentioned (GWP, retention, team size)?
+— Their reaction to Axontra?
+— Agreed next step + date?" oninput="saveNotes()"></textarea>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <button class="btn-teal" onclick="exportNotes()">Export Notes</button>
+        <button class="btn-sm" onclick="copyNotes()">Copy</button>
+        <button class="btn-sm" onclick="clearNotes()">Clear</button>
+      </div>
+      <div id="notesSaved" style="display:none;font-size:11px;color:var(--green);margin-top:6px;">✓ Saved</div>
+    </div>
+
+  </div><!-- /main-content -->
+</div><!-- /layout -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── CHECKLIST ──────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  loadChecklist();
+  loadNotes();
+  updateProgress();
+  setupIntersectionObserver();
+});
+
+function toggleCheck(li, id) {
+  const saved = JSON.parse(localStorage.getItem('axontra_discovery_checks') || '{}');
+  saved[id] = !saved[id];
+  localStorage.setItem('axontra_discovery_checks', JSON.stringify(saved));
+  li.classList.toggle('done', !!saved[id]);
+  updateProgress();
+}
+
+function loadChecklist() {
+  const saved = JSON.parse(localStorage.getItem('axontra_discovery_checks') || '{}');
+  document.querySelectorAll('#researchList .check-item').forEach((li, i) => {
+    const id = 'r' + (i + 1);
+    if (saved[id]) li.classList.add('done');
+  });
+}
+
+function updateProgress() {
+  const saved = JSON.parse(localStorage.getItem('axontra_discovery_checks') || '{}');
+  const total = 12;
+  const done  = Object.values(saved).filter(Boolean).length;
+  const pct   = Math.round((done / total) * 100);
+  document.getElementById('researchProgress').style.width = pct + '%';
+  document.getElementById('checkProgress').textContent = `Research: ${done}/${total} done (${pct}%)`;
+}
+
+function resetAll() {
+  if (!confirm('Reset all checklist items?')) return;
+  localStorage.removeItem('axontra_discovery_checks');
+  document.querySelectorAll('.check-item').forEach(li => li.classList.remove('done'));
+  updateProgress();
+}
+
+// ─── OBJECTIONS ──────────────────────────────────────────────────────────────
+function toggleObj(qEl) {
+  const a = qEl.nextElementSibling;
+  const ch = qEl.querySelector('.chevron');
+  a.classList.toggle('open');
+  ch.classList.toggle('open');
+}
+
+// ─── SIDEBAR ACTIVE LINK ─────────────────────────────────────────────────────
+function setActive(el) {
+  document.querySelectorAll('.side-link').forEach(l => l.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function setupIntersectionObserver() {
+  const sections = document.querySelectorAll('.section-anchor');
+  const links = document.querySelectorAll('.side-link');
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const id = e.target.id;
+        links.forEach(l => {
+          l.classList.toggle('active', l.getAttribute('href') === '#' + id);
+        });
+      }
+    });
+  }, { rootMargin: '-20% 0px -60% 0px' });
+  sections.forEach(s => io.observe(s));
+}
+
+// ─── NOTES ───────────────────────────────────────────────────────────────────
+function saveNotes() {
+  const data = {
+    firm:    document.getElementById('note-firm').value,
+    contact: document.getElementById('note-contact').value,
+    gwp:     document.getElementById('note-gwp').value,
+    date:    document.getElementById('note-date').value,
+    body:    document.getElementById('note-body').value,
+  };
+  localStorage.setItem('axontra_discovery_notes', JSON.stringify(data));
+  const el = document.getElementById('notesSaved');
+  el.style.display = 'block';
+  clearTimeout(window._notesTimer);
+  window._notesTimer = setTimeout(() => el.style.display = 'none', 1500);
+}
+
+function loadNotes() {
+  const saved = JSON.parse(localStorage.getItem('axontra_discovery_notes') || 'null');
+  if (!saved) return;
+  ['firm','contact','gwp','date'].forEach(f => {
+    const el = document.getElementById('note-' + f);
+    if (el && saved[f]) el.value = saved[f];
+  });
+  const body = document.getElementById('note-body');
+  if (body && saved.body) body.value = saved.body;
+}
+
+function exportNotes() {
+  const firm    = document.getElementById('note-firm').value || 'Unknown';
+  const contact = document.getElementById('note-contact').value || '';
+  const gwp     = document.getElementById('note-gwp').value || '';
+  const date    = document.getElementById('note-date').value || new Date().toLocaleDateString('en-GB');
+  const body    = document.getElementById('note-body').value || '';
+  const txt = `DISCOVERY CALL NOTES\n${'─'.repeat(50)}\nFirm:    ${firm}\nContact: ${contact}\nEst GWP: ${gwp}\nDate:    ${date}\n\n${body}`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([txt], { type:'text/plain' }));
+  a.download = `discovery-${firm.replace(/\s+/g,'-').toLowerCase()}-${date.replace(/\//g,'-')}.txt`;
+  a.click();
+}
+
+function copyNotes() {
+  const firm = document.getElementById('note-firm').value || 'Unknown';
+  const body = document.getElementById('note-body').value || '';
+  navigator.clipboard.writeText(`${firm}\n\n${body}`).then(() => showToast('Notes copied'));
+}
+
+function clearNotes() {
+  if (!confirm('Clear call notes?')) return;
+  localStorage.removeItem('axontra_discovery_notes');
+  ['firm','contact','gwp','date'].forEach(f => document.getElementById('note-' + f).value = '');
+  document.getElementById('note-body').value = '';
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 2200);
+}
+</script>
+
+</body>
+</html>
