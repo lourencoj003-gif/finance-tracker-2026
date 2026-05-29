@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Engagement Agent — Aldric Group</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --gold:#C9A96E; --gold-lt:#e0c48a; --gold-dim:rgba(201,169,110,0.15);
+      --cream:#F0E8DA; --bg:#080808; --bg2:#0f0f0f; --bg3:#161616;
+      --border:rgba(201,169,110,0.1); --muted:#6b6559; --text:#d4cdc5;
+      --green:#4ade80; --amber:#fbbf24; --red:#e05555; --blue:#60a5fa;
+    }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; font-size:14px; line-height:1.6; min-height:100vh; }
+
+    /* NAV */
+    nav { position:fixed; top:0; left:0; right:0; z-index:100; display:flex; align-items:center; justify-content:space-between; padding:14px 40px; border-bottom:1px solid rgba(201,169,110,0.08); background:rgba(8,8,8,0.96); backdrop-filter:blur(20px); }
+    .nav-logo { font-family:'Playfair Display',serif; font-size:18px; font-weight:700; color:var(--gold); text-decoration:none; letter-spacing:0.05em; }
+    .nav-links { display:flex; gap:20px; align-items:center; }
+    .nav-links a { font-size:12px; font-weight:500; color:var(--muted); text-decoration:none; letter-spacing:0.04em; transition:color 0.2s; }
+    .nav-links a:hover { color:var(--cream); }
+    .nav-links a.active { color:var(--gold); }
+    .internal-badge { font-size:10px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--red); background:rgba(224,85,85,0.1); border:1px solid rgba(224,85,85,0.2); padding:3px 9px; border-radius:3px; }
+
+    /* LAYOUT */
+    .layout { display:grid; grid-template-columns:1fr 300px; gap:24px; max-width:1300px; margin:0 auto; padding:90px 40px 80px; }
+    @media(max-width:1000px){ .layout{grid-template-columns:1fr;padding:80px 20px 60px;} }
+
+    /* SECTION */
+    .section { background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:22px; margin-bottom:20px; }
+    .section-title { font-size:11px; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; color:var(--gold); margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+    .section-title .dot { width:6px; height:6px; border-radius:50%; background:var(--gold); }
+
+    /* FORM ELEMENTS */
+    label { font-size:11px; font-weight:600; color:var(--muted); letter-spacing:0.06em; text-transform:uppercase; display:block; margin-bottom:5px; }
+    input, select, textarea {
+      width:100%; background:var(--bg3); border:1px solid var(--border); border-radius:7px;
+      color:var(--cream); font-family:'Inter',sans-serif; font-size:13px; padding:9px 12px;
+      outline:none; transition:border-color 0.2s; resize:vertical;
+    }
+    input:focus, select:focus, textarea:focus { border-color:rgba(201,169,110,0.4); }
+    select option { background:var(--bg3); }
+    .form-row { display:grid; gap:12px; margin-bottom:14px; }
+    .form-row.two { grid-template-columns:1fr 1fr; }
+    .form-row.three { grid-template-columns:1fr 1fr 1fr; }
+    @media(max-width:600px){ .form-row.two,.form-row.three{grid-template-columns:1fr;} }
+
+    /* CHIPS */
+    .chips { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:14px; }
+    .chip { font-size:11px; font-weight:600; padding:5px 12px; border-radius:20px; border:1px solid var(--border); color:var(--muted); cursor:pointer; transition:all 0.2s; letter-spacing:0.03em; }
+    .chip:hover { border-color:rgba(201,169,110,0.3); color:var(--cream); }
+    .chip.active { border-color:var(--gold); color:var(--gold); background:rgba(201,169,110,0.08); }
+
+    /* BUTTONS */
+    .btn { display:inline-flex; align-items:center; gap:7px; padding:9px 18px; border-radius:7px; font-family:'Inter',sans-serif; font-size:12px; font-weight:600; letter-spacing:0.04em; cursor:pointer; transition:all 0.2s; border:none; }
+    .btn-gold { background:var(--gold); color:#080808; }
+    .btn-gold:hover { background:var(--gold-lt); }
+    .btn-ghost { background:transparent; border:1px solid var(--border); color:var(--muted); }
+    .btn-ghost:hover { border-color:rgba(201,169,110,0.3); color:var(--cream); }
+    .btn-sm { padding:6px 12px; font-size:11px; }
+    .btn-green { background:rgba(74,222,128,0.12); border:1px solid rgba(74,222,128,0.25); color:var(--green); }
+    .btn-green:hover { background:rgba(74,222,128,0.2); }
+    .btn-red { background:rgba(224,85,85,0.1); border:1px solid rgba(224,85,85,0.2); color:var(--red); }
+    .btn-red:hover { background:rgba(224,85,85,0.18); }
+    .btn-blue { background:rgba(96,165,250,0.1); border:1px solid rgba(96,165,250,0.2); color:var(--blue); }
+    .btn-blue:hover { background:rgba(96,165,250,0.2); }
+    .btn-row { display:flex; gap:9px; flex-wrap:wrap; margin-top:14px; }
+
+    /* OUTPUT CARDS */
+    .output-card {
+      background:var(--bg3); border:1px solid rgba(201,169,110,0.12); border-radius:9px;
+      padding:14px 16px; margin-bottom:10px; position:relative;
+    }
+    .output-card .label-badge {
+      font-size:9px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase;
+      color:var(--gold); margin-bottom:8px;
+    }
+    .output-card p { font-size:13px; color:var(--cream); line-height:1.6; white-space:pre-wrap; }
+    .output-card .char-count { font-size:10px; color:var(--muted); margin-top:6px; }
+    .copy-btn { position:absolute; top:12px; right:12px; background:var(--bg2); border:1px solid var(--border); color:var(--muted); font-size:10px; padding:4px 9px; border-radius:5px; cursor:pointer; font-family:'Inter',sans-serif; font-weight:600; transition:all 0.2s; letter-spacing:0.03em; }
+    .copy-btn:hover { border-color:rgba(201,169,110,0.3); color:var(--gold); }
+
+    /* WARM LEADS TABLE */
+    .leads-table { width:100%; border-collapse:collapse; font-size:12px; }
+    .leads-table th { text-align:left; font-size:10px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); padding:7px 10px; border-bottom:1px solid var(--border); }
+    .leads-table td { padding:9px 10px; border-bottom:1px solid rgba(201,169,110,0.05); vertical-align:top; }
+    .leads-table tr:last-child td { border-bottom:none; }
+    .status-pill { font-size:10px; font-weight:700; letter-spacing:0.06em; padding:2px 8px; border-radius:10px; text-transform:uppercase; }
+    .status-new { background:rgba(96,165,250,0.12); color:var(--blue); }
+    .status-contacted { background:rgba(251,191,36,0.12); color:var(--amber); }
+    .status-booked { background:rgba(74,222,128,0.12); color:var(--green); }
+    .status-client { background:rgba(201,169,110,0.15); color:var(--gold); }
+    .empty-state { text-align:center; padding:28px; color:var(--muted); font-size:12px; }
+
+    /* TIMER */
+    .timer-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    @media(max-width:600px){ .timer-grid{grid-template-columns:1fr;} }
+    .timer-card { background:var(--bg3); border:1px solid var(--border); border-radius:9px; padding:16px; text-align:center; }
+    .timer-label { font-size:10px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+    .timer-display { font-size:32px; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-0.02em; color:var(--cream); margin:8px 0; transition:color 0.5s; }
+    .timer-display.urgent { color:var(--amber); }
+    .timer-display.overdue { color:var(--red); }
+    .timer-target { font-size:10px; color:var(--muted); margin-bottom:10px; }
+    .timer-bar { height:4px; background:rgba(255,255,255,0.05); border-radius:2px; overflow:hidden; margin-bottom:12px; }
+    .timer-bar-fill { height:100%; border-radius:2px; transition:width 0.5s, background-color 0.5s; }
+    .timer-btns { display:flex; gap:6px; justify-content:center; }
+    .timer-btns button { padding:5px 12px; font-size:11px; font-weight:600; border-radius:5px; cursor:pointer; font-family:'Inter',sans-serif; border:1px solid var(--border); background:var(--bg2); color:var(--muted); transition:all 0.2s; }
+    .timer-btns button:hover { color:var(--cream); border-color:rgba(201,169,110,0.2); }
+    .log-entry { font-size:11px; color:var(--muted); padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.03); }
+    .log-entry:last-child { border-bottom:none; }
+    .log-entry .log-time { color:var(--gold); font-weight:600; }
+
+    /* SIDEBAR */
+    .sidebar-card { background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:18px; margin-bottom:16px; }
+    .sidebar-title { font-size:10px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; color:var(--gold); margin-bottom:12px; }
+    .best-practice { border-left:2px solid rgba(201,169,110,0.2); padding-left:10px; margin-bottom:10px; }
+    .best-practice .bp-platform { font-size:10px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--gold); margin-bottom:5px; }
+    .best-practice li { font-size:11px; color:var(--text); list-style:none; padding:2px 0; line-height:1.5; }
+    .best-practice li::before { content:"→ "; color:var(--gold); font-weight:700; }
+    .stat-row { display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid rgba(201,169,110,0.05); }
+    .stat-row:last-child { border-bottom:none; }
+    .stat-label { font-size:11px; color:var(--muted); }
+    .stat-val { font-size:14px; font-weight:700; color:var(--cream); }
+    .stat-val.gold { color:var(--gold); }
+    .stat-val.green { color:var(--green); }
+
+    /* CLIENT CONTEXT BANNER */
+    .context-banner { background:rgba(201,169,110,0.07); border:1px solid rgba(201,169,110,0.18); border-radius:9px; padding:13px 16px; margin-bottom:18px; display:none; }
+    .context-banner .cb-name { font-size:13px; font-weight:700; color:var(--cream); margin-bottom:4px; }
+    .context-banner .cb-meta { font-size:11px; color:var(--muted); display:flex; gap:14px; flex-wrap:wrap; }
+    .context-banner .cb-tag { color:var(--gold); font-weight:600; }
+
+    /* LOADING */
+    .loading { opacity:0.5; pointer-events:none; }
+    .spinner { display:inline-block; width:14px; height:14px; border:2px solid rgba(201,169,110,0.2); border-top-color:var(--gold); border-radius:50%; animation:spin 0.7s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* MISC */
+    .char-bar { height:3px; border-radius:2px; margin-top:4px; transition:background 0.3s; }
+    .divider { border:none; border-top:1px solid var(--border); margin:16px 0; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">Aldric Group</a>
+  <div class="nav-links">
+    <a href="index.html">Home</a>
+    <a href="crm.html">CRM</a>
+    <a href="kpi.html">KPIs</a>
+    <a href="automation.html">Daily Automation</a>
+    <a href="client-setup.html">Client Setup</a>
+    <a href="discovery-call.html">Discovery Call</a>
+    <a href="email-outreach.html">Email Gen</a>
+    <a href="engagement-agent.html" class="active">Engagement</a>
+    <a href="clients.html">Clients</a>
+    <span class="internal-badge">Internal</span>
+  </div>
+</nav>
+
+<div class="layout">
+
+  <!-- ═══════════════════ MAIN COLUMN ═══════════════════ -->
+  <div>
+
+    <!-- ─── SECTION 1: CLIENT CONTEXT ─── -->
+    <div class="section">
+      <div class="section-title"><span class="dot"></span>Client Brand Context</div>
+
+      <div class="form-row two">
+        <div>
+          <label>Load from CRM</label>
+          <select id="crmSelect" onchange="loadClientFromCRM()">
+            <option value="">— Select active client —</option>
+          </select>
+        </div>
+        <div>
+          <label>Niche / Industry</label>
+          <select id="ctxNiche">
+            <option value="med-spa">Med Spa</option>
+            <option value="estate-agent">Estate Agent</option>
+            <option value="mortgage-broker">Mortgage Broker</option>
+            <option value="recruitment">Recruitment Agency</option>
+            <option value="solicitor">Solicitor</option>
+            <option value="accountancy">Accountancy Firm</option>
+            <option value="dental">Dental Practice</option>
+            <option value="ifa">IFA / Financial Adviser</option>
+            <option value="insurance-broker">Insurance Broker</option>
+            <option value="general">General Business</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label>Brand Voice & Tone</label>
+          <input type="text" id="ctxTone" placeholder="e.g. professional, warm, aspirational, approachable" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label>Key Themes & Topics (what they talk about)</label>
+          <input type="text" id="ctxThemes" placeholder="e.g. property investment, first-time buyers, mortgage rates, London market" />
+        </div>
+      </div>
+
+      <div id="contextBanner" class="context-banner">
+        <div class="cb-name" id="bannerName">No client loaded</div>
+        <div class="cb-meta">
+          <span>Niche: <span class="cb-tag" id="bannerNiche">—</span></span>
+          <span>Tone: <span class="cb-tag" id="bannerTone">—</span></span>
+          <span>Themes: <span class="cb-tag" id="bannerThemes">—</span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── SECTION 2: COMMENT RESPONSE GENERATOR ─── -->
+    <div class="section" id="commentSection">
+      <div class="section-title"><span class="dot"></span>Comment Response Generator</div>
+
+      <div class="form-row">
+        <div>
+          <label>Original Post (paste or summarise)</label>
+          <textarea id="origPost" rows="2" placeholder="E.g. 'Just helped our 200th first-time buyer get the keys this year. The look on their faces never gets old. 🏡'"></textarea>
+        </div>
+      </div>
+
+      <div class="form-row two">
+        <div>
+          <label>Comment to Reply To</label>
+          <textarea id="incomingComment" rows="2" placeholder="Paste the comment you want to reply to..."></textarea>
+        </div>
+        <div>
+          <label>Platform</label>
+          <div class="chips" style="margin-top:8px">
+            <div class="chip active" onclick="setChip(this,'commentPlatform','instagram')">Instagram</div>
+            <div class="chip" onclick="setChip(this,'commentPlatform','linkedin')">LinkedIn</div>
+            <div class="chip" onclick="setChip(this,'commentPlatform','facebook')">Facebook</div>
+          </div>
+          <label style="margin-top:8px">Comment Tone</label>
+          <div class="chips">
+            <div class="chip active" onclick="setChip(this,'commentTone','warm')">Warm</div>
+            <div class="chip" onclick="setChip(this,'commentTone','professional')">Professional</div>
+            <div class="chip" onclick="setChip(this,'commentTone','witty')">Witty</div>
+            <div class="chip" onclick="setChip(this,'commentTone','empathetic')">Empathetic</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-gold" onclick="generateCommentReplies()">
+          <span id="commentSpinner" style="display:none" class="spinner"></span>
+          Generate 3 Replies
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="clearSection('commentOutput','commentSection')">Clear</button>
+      </div>
+
+      <div id="commentOutput" style="margin-top:16px"></div>
+    </div>
+
+    <!-- ─── SECTION 3: FOLLOW DM GENERATOR ─── -->
+    <div class="section" id="followDmSection">
+      <div class="section-title"><span class="dot"></span>Follow DM Generator</div>
+      <p style="font-size:11px;color:var(--muted);margin-bottom:14px">Send this when someone follows you — or when you follow a warm prospect. Genuine, not salesy.</p>
+
+      <div class="form-row two">
+        <div>
+          <label>Their Name</label>
+          <input type="text" id="followName" placeholder="Sarah" />
+        </div>
+        <div>
+          <label>Their Role / Business</label>
+          <input type="text" id="followBusiness" placeholder="Director at Hargreaves Estate Agents, Manchester" />
+        </div>
+      </div>
+
+      <div class="form-row two">
+        <div>
+          <label>Trigger</label>
+          <select id="followTrigger">
+            <option value="they-followed">They followed you</option>
+            <option value="you-followed">You followed them</option>
+            <option value="mutual-connect">Mutual connection suggested</option>
+            <option value="engaged-post">They engaged with your post</option>
+          </select>
+        </div>
+        <div>
+          <label>What stood out about them (optional)</label>
+          <input type="text" id="followObservation" placeholder="e.g. saw their recent auction results post" />
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-gold" onclick="generateFollowDM()">
+          <span id="followSpinner" style="display:none" class="spinner"></span>
+          Generate Follow DM
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="clearSection('followDmOutput','followDmSection')">Clear</button>
+      </div>
+
+      <div id="followDmOutput" style="margin-top:16px"></div>
+    </div>
+
+    <!-- ─── SECTION 4: LIKE/SAVE RESPONSE DM ─── -->
+    <div class="section" id="likeSaveSection">
+      <div class="section-title"><span class="dot"></span>Like / Save Response DM</div>
+      <p style="font-size:11px;color:var(--muted);margin-bottom:14px">They liked or saved one of your client's posts. Strike while it's warm — reference the exact post.</p>
+
+      <div class="form-row two">
+        <div>
+          <label>Their Name</label>
+          <input type="text" id="likeName" placeholder="James" />
+        </div>
+        <div>
+          <label>Their Role / Business</label>
+          <input type="text" id="likeBusiness" placeholder="Partner at Thornton Solicitors" />
+        </div>
+      </div>
+
+      <div class="form-row two">
+        <div>
+          <label>Post They Engaged With</label>
+          <input type="text" id="likePostTopic" placeholder="e.g. '5 signs your social media is costing you clients'" />
+        </div>
+        <div>
+          <label>Engagement Type</label>
+          <select id="likeEngagementType">
+            <option value="liked">Liked</option>
+            <option value="saved">Saved</option>
+            <option value="liked-and-saved">Liked + Saved</option>
+            <option value="shared">Shared / Reposted</option>
+            <option value="commented">Commented positively</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-gold" onclick="generateLikeSaveDM()">
+          <span id="likeSpinner" style="display:none" class="spinner"></span>
+          Generate Response DM
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="clearSection('likeSaveOutput','likeSaveSection')">Clear</button>
+      </div>
+
+      <div id="likeSaveOutput" style="margin-top:16px"></div>
+    </div>
+
+    <!-- ─── SECTION 5: WARM LEAD ESCALATION ─── -->
+    <div class="section">
+      <div class="section-title"><span class="dot"></span>Warm Lead Escalation</div>
+
+      <div class="form-row three">
+        <div>
+          <label>Name</label>
+          <input type="text" id="leadName" placeholder="David Chen" />
+        </div>
+        <div>
+          <label>Platform Handle</label>
+          <input type="text" id="leadHandle" placeholder="@davidchen_estates" />
+        </div>
+        <div>
+          <label>Platform</label>
+          <select id="leadPlatform">
+            <option value="Instagram">Instagram</option>
+            <option value="LinkedIn">LinkedIn</option>
+            <option value="Facebook">Facebook</option>
+            <option value="Twitter/X">Twitter/X</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label>Why They're Warm (trigger / behaviour)</label>
+          <input type="text" id="leadReason" placeholder="e.g. replied to story twice, asked about pricing, saved 3 posts" />
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-gold" onclick="markWarmLead()">🔥 Mark as Warm Lead</button>
+        <button class="btn btn-ghost btn-sm" onclick="exportWarmLeads()">Export CSV</button>
+        <button class="btn btn-ghost btn-sm" onclick="copyWarmLeads()">Copy List</button>
+      </div>
+
+      <div style="margin-top:18px">
+        <div id="warmLeadsEmpty" class="empty-state" style="display:none">No warm leads yet. Mark leads as warm when they show buying signals.</div>
+        <table class="leads-table" id="warmLeadsTable">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Handle</th>
+              <th>Platform</th>
+              <th>Trigger</th>
+              <th>Added</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="warmLeadsTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ─── SECTION 6: RESPONSE TIME TRACKER ─── -->
+    <div class="section">
+      <div class="section-title"><span class="dot"></span>Response Time Tracker</div>
+      <p style="font-size:11px;color:var(--muted);margin-bottom:16px">Instagram algorithm rewards fast replies. Target: comments &lt; 30 min, DMs &lt; 2 hours.</p>
+
+      <div class="timer-grid">
+        <!-- Comment Timer -->
+        <div class="timer-card">
+          <div class="timer-label">💬 Comment Timer</div>
+          <div class="timer-display" id="commentTimerDisplay">00:00</div>
+          <div class="timer-target">Target: 30 minutes</div>
+          <div class="timer-bar">
+            <div class="timer-bar-fill" id="commentTimerBar" style="width:0%;background:var(--green)"></div>
+          </div>
+          <div class="timer-btns">
+            <button onclick="timerAction('comment','start')">Start</button>
+            <button onclick="timerAction('comment','stop')">Stop</button>
+            <button onclick="timerAction('comment','log')">✓ Replied</button>
+            <button onclick="timerAction('comment','reset')">Reset</button>
+          </div>
+        </div>
+
+        <!-- DM Timer -->
+        <div class="timer-card">
+          <div class="timer-label">📩 DM Timer</div>
+          <div class="timer-display" id="dmTimerDisplay">00:00</div>
+          <div class="timer-target">Target: 2 hours</div>
+          <div class="timer-bar">
+            <div class="timer-bar-fill" id="dmTimerBar" style="width:0%;background:var(--green)"></div>
+          </div>
+          <div class="timer-btns">
+            <button onclick="timerAction('dm','start')">Start</button>
+            <button onclick="timerAction('dm','stop')">Stop</button>
+            <button onclick="timerAction('dm','log')">✓ Replied</button>
+            <button onclick="timerAction('dm','reset')">Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Response Log -->
+      <div style="margin-top:16px">
+        <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Today's Response Log</div>
+        <div id="responseLog">
+          <div class="empty-state" style="padding:14px">No responses logged yet today.</div>
+        </div>
+        <div class="btn-row" style="margin-top:10px">
+          <button class="btn btn-ghost btn-sm" onclick="clearResponseLog()">Clear Log</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end main column -->
+
+  <!-- ═══════════════════ SIDEBAR ═══════════════════ -->
+  <div>
+
+    <!-- Stats -->
+    <div class="sidebar-card">
+      <div class="sidebar-title">📊 Today's Snapshot</div>
+      <div class="stat-row">
+        <span class="stat-label">Warm Leads Total</span>
+        <span class="stat-val gold" id="snapshotLeads">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Responses Logged</span>
+        <span class="stat-val green" id="snapshotResponses">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Avg Response Time</span>
+        <span class="stat-val" id="snapshotAvgTime">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Comments Generated</span>
+        <span class="stat-val" id="snapshotComments">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">DMs Generated</span>
+        <span class="stat-val" id="snapshotDMs">0</span>
+      </div>
+    </div>
+
+    <!-- Instagram Best Practices -->
+    <div class="sidebar-card">
+      <div class="sidebar-title">🟣 Instagram</div>
+      <div class="best-practice">
+        <div class="bp-platform">Timing</div>
+        <ul>
+          <li>Reply within 30 mins of posting — Instagram boosts reach</li>
+          <li>Be first to comment on ideal clients' posts (set notifications)</li>
+          <li>Best DM window: 8–10am and 7–9pm weekdays</li>
+        </ul>
+      </div>
+      <div class="best-practice">
+        <div class="bp-platform">Comments</div>
+        <ul>
+          <li>Always end with a genuine question — sparks conversation</li>
+          <li>4+ words minimum — single word replies get hidden</li>
+          <li>Never copy-paste — Instagram detects it and suppresses</li>
+          <li>No "Great post!" or "Love this!" — zero value signals</li>
+          <li>Reference something specific in the post</li>
+        </ul>
+      </div>
+      <div class="best-practice">
+        <div class="bp-platform">DMs</div>
+        <ul>
+          <li>Reference the exact post or story — shows genuine attention</li>
+          <li>One question per DM — don't overwhelm</li>
+          <li>Voice notes get 3× more replies than text</li>
+          <li>Wait for a reply before mentioning services</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- LinkedIn Best Practices -->
+    <div class="sidebar-card">
+      <div class="sidebar-title">🔵 LinkedIn</div>
+      <div class="best-practice">
+        <div class="bp-platform">Comments</div>
+        <ul>
+          <li>Add your perspective, not just agreement</li>
+          <li>One thoughtful comment beats 10 generic ones</li>
+          <li>Tag relevant people only if genuinely relevant</li>
+          <li>Comment early (within 2hrs of post) for max visibility</li>
+        </ul>
+      </div>
+      <div class="best-practice">
+        <div class="bp-platform">Connection Requests</div>
+        <ul>
+          <li>Always send a note — reference a shared interest</li>
+          <li>Connect after engaging 2+ times, not cold</li>
+          <li>Max 20 connections/day to avoid restriction</li>
+        </ul>
+      </div>
+      <div class="best-practice">
+        <div class="bp-platform">DMs</div>
+        <ul>
+          <li>No pitch in the first message — ever</li>
+          <li>Reference their content or background specifically</li>
+          <li>Ask one open question about their business challenge</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- General Rules -->
+    <div class="sidebar-card">
+      <div class="sidebar-title">⚡ Golden Rules</div>
+      <div class="best-practice">
+        <ul>
+          <li>Consistency beats volume — 20 real comments beat 100 fake ones</li>
+          <li>Warm leads are built over 3–7 touch-points</li>
+          <li>Never pitch cold — always qualify first</li>
+          <li>Track every warm lead in the escalation table</li>
+          <li>Sunday evening engagement = high Monday reach</li>
+          <li>Screenshot saves + story shares = buying intent</li>
+          <li>DM immediately after a call — "great chatting" message locks warmth</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="sidebar-card">
+      <div class="sidebar-title">🔗 Quick Links</div>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <a href="automation.html" style="display:flex;align-items:center;gap:8px;padding:8px 11px;background:var(--bg3);border:1px solid rgba(201,169,110,0.08);border-radius:7px;text-decoration:none;color:var(--muted);font-size:12px" onmouseover="this.style.borderColor='rgba(201,169,110,0.2)'" onmouseout="this.style.borderColor='rgba(201,169,110,0.08)'">📋 Daily Automation</a>
+        <a href="linkedin.html" style="display:flex;align-items:center;gap:8px;padding:8px 11px;background:var(--bg3);border:1px solid rgba(201,169,110,0.08);border-radius:7px;text-decoration:none;color:var(--muted);font-size:12px" onmouseover="this.style.borderColor='rgba(201,169,110,0.2)'" onmouseout="this.style.borderColor='rgba(201,169,110,0.08)'">💼 LinkedIn Message Gen</a>
+        <a href="crm.html" style="display:flex;align-items:center;gap:8px;padding:8px 11px;background:var(--bg3);border:1px solid rgba(201,169,110,0.08);border-radius:7px;text-decoration:none;color:var(--muted);font-size:12px" onmouseover="this.style.borderColor='rgba(201,169,110,0.2)'" onmouseout="this.style.borderColor='rgba(201,169,110,0.08)'">📊 CRM</a>
+        <a href="email-outreach.html" style="display:flex;align-items:center;gap:8px;padding:8px 11px;background:var(--bg3);border:1px solid rgba(201,169,110,0.08);border-radius:7px;text-decoration:none;color:var(--muted);font-size:12px" onmouseover="this.style.borderColor='rgba(201,169,110,0.2)'" onmouseout="this.style.borderColor='rgba(201,169,110,0.08)'">📧 Email Generator</a>
+      </div>
+    </div>
+
+  </div><!-- end sidebar -->
+
+</div><!-- end layout -->
+
+<script>
+/* ─────────────────────────────────────────
+   GLOBALS & STATE
+──────────────────────────────────────────*/
+const CLAUDE_KEY = () => localStorage.getItem('aldric_claude_key') || '';
+const WARM_LEADS_KEY = 'aldric_warm_leads';
+const RESP_LOG_KEY   = 'aldric_response_log';
+const STATS_KEY      = 'aldric_engagement_stats';
+
+// Chip state objects
+const chipState = { commentPlatform:'instagram', commentTone:'warm' };
+
+// Timer state
+const timers = {
+  comment: { interval:null, elapsed:0, running:false, target:30*60 },
+  dm:      { interval:null, elapsed:0, running:false, target:2*60*60 }
+};
+
+/* ─────────────────────────────────────────
+   INIT
+──────────────────────────────────────────*/
+document.addEventListener('DOMContentLoaded', () => {
+  populateCRMDropdown();
+  renderWarmLeads();
+  renderResponseLog();
+  updateSnapshot();
+});
+
+/* ─────────────────────────────────────────
+   CRM INTEGRATION
+──────────────────────────────────────────*/
+function populateCRMDropdown() {
+  const raw = localStorage.getItem('aldric_crm_v2');
+  if (!raw) return;
+  try {
+    const prospects = JSON.parse(raw);
+    const sel = document.getElementById('crmSelect');
+    const active = prospects.filter(p => p.status === 'Active Client' || p.status === 'active');
+    active.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.name || p.company || '';
+      opt.textContent = `${p.name || '—'} · ${p.company || p.niche || '—'}`;
+      opt.dataset.niche   = p.niche || '';
+      opt.dataset.company = p.company || '';
+      sel.appendChild(opt);
+    });
+    // Also add non-active with label
+    const others = prospects.filter(p => p.status !== 'Active Client' && p.status !== 'active');
+    if (others.length) {
+      const grp = document.createElement('optgroup');
+      grp.label = 'Pipeline';
+      others.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.name || '';
+        opt.textContent = `${p.name || '—'} · ${p.company || p.niche || '—'}`;
+        opt.dataset.niche   = p.niche || '';
+        opt.dataset.company = p.company || '';
+        grp.appendChild(opt);
+      });
+      sel.appendChild(grp);
+    }
+  } catch(e) {}
+}
+
+function loadClientFromCRM() {
+  const sel = document.getElementById('crmSelect');
+  const opt = sel.options[sel.selectedIndex];
+  if (!opt || !opt.value) return;
+  const niche   = opt.dataset.niche   || '';
+  const company = opt.dataset.company || '';
+  if (niche) {
+    // find matching select value
+    const nicheMap = {
+      'med spa':'med-spa','estate agent':'estate-agent','estate agents':'estate-agent',
+      'mortgage':'mortgage-broker','mortgage broker':'mortgage-broker',
+      'recruitment':'recruitment','solicitor':'solicitor','accountan':'accountancy',
+      'dental':'dental','ifa':'ifa','financial':'ifa','insurance':'insurance-broker'
+    };
+    const nicheKey = Object.keys(nicheMap).find(k => niche.toLowerCase().includes(k));
+    if (nicheKey) document.getElementById('ctxNiche').value = nicheMap[nicheKey];
+  }
+  // Show context banner
+  const banner = document.getElementById('contextBanner');
+  banner.style.display = 'block';
+  document.getElementById('bannerName').textContent    = `${opt.value}${company ? ' · '+company : ''}`;
+  document.getElementById('bannerNiche').textContent   = niche || '—';
+  document.getElementById('bannerTone').textContent    = document.getElementById('ctxTone').value || '—';
+  document.getElementById('bannerThemes').textContent  = document.getElementById('ctxThemes').value || '—';
+}
+
+function getContext() {
+  const nicheEl  = document.getElementById('ctxNiche');
+  const nicheText = nicheEl.options[nicheEl.selectedIndex].text;
+  return {
+    niche:  nicheText,
+    tone:   document.getElementById('ctxTone').value   || 'professional and approachable',
+    themes: document.getElementById('ctxThemes').value || 'industry expertise, client results, local market knowledge'
+  };
+}
+
+/* ─────────────────────────────────────────
+   CHIP TOGGLE
+──────────────────────────────────────────*/
+function setChip(el, key, val) {
+  const parent = el.closest('.chips');
+  parent.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  chipState[key] = val;
+}
+
+/* ─────────────────────────────────────────
+   CLAUDE API CALL
+──────────────────────────────────────────*/
+async function callClaude(systemPrompt, userPrompt) {
+  const key = CLAUDE_KEY();
+  if (!key) {
+    alert('No Claude API key found. Save your key to localStorage as aldric_claude_key.');
+    throw new Error('No API key');
+  }
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key': key,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 600,
+      system: systemPrompt,
+      messages: [{ role:'user', content: userPrompt }]
+    })
+  });
+  if (!res.ok) { const err = await res.json(); throw new Error(err.error?.message || 'API error'); }
+  const data = await res.json();
+  return data.content[0].text.trim();
+}
+
+/* ─────────────────────────────────────────
+   SECTION 2: COMMENT REPLIES
+──────────────────────────────────────────*/
+async function generateCommentReplies() {
+  const post    = document.getElementById('origPost').value.trim();
+  const comment = document.getElementById('incomingComment').value.trim();
+  if (!post || !comment) { alert('Please paste the post and the comment to reply to.'); return; }
+
+  const ctx      = getContext();
+  const platform = chipState.commentPlatform;
+  const tone     = chipState.commentTone;
+  const charLimit = platform === 'instagram' ? 150 : 300;
+
+  toggleSpinner('commentSpinner', true);
+  try {
+    const system = `You are a social media engagement specialist for a UK-based ${ctx.niche} business.
+Brand voice: ${ctx.tone}. Key topics: ${ctx.themes}.
+Rules:
+- NEVER start with "Great post!", "Love this!", "Amazing!" or generic praise
+- ALWAYS end with a genuine question that invites further conversation
+- Character limit per reply: ${charLimit} (for ${platform})
+- Sound human and authentic, not like AI
+- Be specific — reference the post content
+- Represent the business, not the agency`;
+
+    const user = `Post: "${post}"
+Comment to reply to: "${comment}"
+Tone: ${tone}
+
+Write 3 different comment replies. Number them 1, 2, 3. Each on its own line, separated by a blank line. No labels or explanations — just the replies.`;
+
+    const raw = await callClaude(system, user);
+
+    // Parse 3 replies
+    const lines = raw.split(/\n\s*\n/).map(l => l.replace(/^\d+[\.\)]\s*/, '').trim()).filter(Boolean).slice(0, 3);
+    const out = document.getElementById('commentOutput');
+    out.innerHTML = lines.map((reply, i) => `
+      <div class="output-card">
+        <div class="label-badge">Reply Option ${i+1}</div>
+        <p>${escHtml(reply)}</p>
+        <div class="char-count">${reply.length} chars${reply.length > charLimit ? ` <span style="color:var(--red)">⚠ over ${charLimit}</span>` : ''}</div>
+        <button class="copy-btn" onclick="copyText(this, ${JSON.stringify(reply)})">Copy</button>
+      </div>
+    `).join('');
+
+    bumpStat('comments', 3);
+    updateSnapshot();
+  } catch(e) {
+    document.getElementById('commentOutput').innerHTML = `<div class="output-card"><p style="color:var(--red)">${e.message}</p></div>`;
+  }
+  toggleSpinner('commentSpinner', false);
+}
+
+/* ─────────────────────────────────────────
+   SECTION 3: FOLLOW DM
+──────────────────────────────────────────*/
+async function generateFollowDM() {
+  const name     = document.getElementById('followName').value.trim();
+  const business = document.getElementById('followBusiness').value.trim();
+  const trigger  = document.getElementById('followTrigger').value;
+  const obs      = document.getElementById('followObservation').value.trim();
+
+  if (!name || !business) { alert('Enter their name and role/business.'); return; }
+
+  const ctx = getContext();
+  const triggerText = {
+    'they-followed':   'they just followed you',
+    'you-followed':    'you just followed them',
+    'mutual-connect':  'a mutual connection suggested you connect',
+    'engaged-post':    'they just engaged with one of your posts'
+  }[trigger];
+
+  toggleSpinner('followSpinner', true);
+  try {
+    const system = `You write concise, human Instagram/LinkedIn DMs for a UK ${ctx.niche} social media agency (Aldric Group).
+The DM is from the agency owner, reaching out to a prospect.
+Rules:
+- MAX 150 words
+- Warm, genuine, not salesy
+- Mention you noticed something specific about them
+- Light reference to social media or content — don't pitch yet
+- End with ONE open question about their business
+- No "I hope this message finds you well", no corporate speak
+- Sound like a real person, not a template`;
+
+    const user = `Prospect name: ${name}
+Their role/business: ${business}
+Context: ${triggerText}${obs ? '\nObservation: ' + obs : ''}
+Our niche (who we serve): ${ctx.niche}
+Our tone: ${ctx.tone}
+
+Write one natural DM.`;
+
+    const raw = await callClaude(system, user);
+    const out = document.getElementById('followDmOutput');
+    out.innerHTML = `
+      <div class="output-card">
+        <div class="label-badge">Follow DM — ${name}</div>
+        <p>${escHtml(raw)}</p>
+        <div class="char-count">${raw.length} chars · ~${Math.ceil(raw.split(/\s+/).length)} words</div>
+        <button class="copy-btn" onclick="copyText(this, ${JSON.stringify(raw)})">Copy</button>
+      </div>
+    `;
+    // Also offer warm lead button
+    out.innerHTML += `
+      <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="prefillLead('${escAttr(name)}','','',${JSON.stringify('Followed / DM sent')})">🔥 Add to Warm Leads</button>
+      </div>
+    `;
+    bumpStat('dms', 1);
+    updateSnapshot();
+  } catch(e) {
+    document.getElementById('followDmOutput').innerHTML = `<div class="output-card"><p style="color:var(--red)">${e.message}</p></div>`;
+  }
+  toggleSpinner('followSpinner', false);
+}
+
+/* ─────────────────────────────────────────
+   SECTION 4: LIKE/SAVE DM
+──────────────────────────────────────────*/
+async function generateLikeSaveDM() {
+  const name       = document.getElementById('likeName').value.trim();
+  const business   = document.getElementById('likeBusiness').value.trim();
+  const postTopic  = document.getElementById('likePostTopic').value.trim();
+  const engType    = document.getElementById('likeEngagementType').value;
+
+  if (!name || !postTopic) { alert('Enter their name and the post they engaged with.'); return; }
+
+  const ctx = getContext();
+  const engText = {
+    'liked':'liked','saved':'saved','liked-and-saved':'both liked and saved',
+    'shared':'shared / reposted','commented':'left a positive comment on'
+  }[engType];
+
+  toggleSpinner('likeSpinner', true);
+  try {
+    const system = `You write smart, punchy follow-up DMs for a UK ${ctx.niche} social media agency (Aldric Group).
+The DM is triggered because a prospect engaged with one of our client's posts.
+Rules:
+- MAX 120 words
+- Reference the exact post naturally — don't make it weird
+- Bridge: why the post topic is relevant to THEIR business
+- Soft CTA: ask if they'd be open to a quick chat (no pressure)
+- One DM only, no alternatives
+- Human tone: ${ctx.tone}`;
+
+    const user = `Prospect: ${name}${business ? ', ' + business : ''}
+They ${engText} your post about: "${postTopic}"
+Our niche/client type: ${ctx.niche}
+
+Write the DM.`;
+
+    const raw = await callClaude(system, user);
+    const out = document.getElementById('likeSaveOutput');
+    out.innerHTML = `
+      <div class="output-card">
+        <div class="label-badge">${engText.charAt(0).toUpperCase()+engText.slice(1)} Response DM — ${name}</div>
+        <p>${escHtml(raw)}</p>
+        <div class="char-count">${raw.length} chars · ~${Math.ceil(raw.split(/\s+/).length)} words</div>
+        <button class="copy-btn" onclick="copyText(this, ${JSON.stringify(raw)})">Copy</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="prefillLead('${escAttr(name)}','','',${JSON.stringify(engText + ' post: ' + postTopic)})">🔥 Add to Warm Leads</button>
+      </div>
+    `;
+    bumpStat('dms', 1);
+    updateSnapshot();
+  } catch(e) {
+    document.getElementById('likeSaveOutput').innerHTML = `<div class="output-card"><p style="color:var(--red)">${e.message}</p></div>`;
+  }
+  toggleSpinner('likeSpinner', false);
+}
+
+/* ─────────────────────────────────────────
+   SECTION 5: WARM LEADS
+──────────────────────────────────────────*/
+function markWarmLead() {
+  const name     = document.getElementById('leadName').value.trim();
+  const handle   = document.getElementById('leadHandle').value.trim();
+  const platform = document.getElementById('leadPlatform').value;
+  const reason   = document.getElementById('leadReason').value.trim();
+
+  if (!name) { alert('Enter the lead\'s name.'); return; }
+
+  const leads = getWarmLeads();
+  leads.unshift({
+    id: Date.now(),
+    name, handle, platform, reason,
+    added: new Date().toISOString(),
+    status: 'new'
+  });
+  saveWarmLeads(leads);
+  renderWarmLeads();
+  updateSnapshot();
+
+  // Clear inputs
+  ['leadName','leadHandle','leadReason'].forEach(id => document.getElementById(id).value = '');
+}
+
+function getWarmLeads() {
+  try { return JSON.parse(localStorage.getItem(WARM_LEADS_KEY) || '[]'); } catch { return []; }
+}
+function saveWarmLeads(leads) { localStorage.setItem(WARM_LEADS_KEY, JSON.stringify(leads)); }
+
+function setLeadStatus(id, status) {
+  const leads = getWarmLeads().map(l => l.id === id ? {...l, status} : l);
+  saveWarmLeads(leads);
+  renderWarmLeads();
+}
+
+function removeLead(id) {
+  const leads = getWarmLeads().filter(l => l.id !== id);
+  saveWarmLeads(leads);
+  renderWarmLeads();
+  updateSnapshot();
+}
+
+function moveToCRM(id) {
+  const leads = getWarmLeads();
+  const lead  = leads.find(l => l.id === id);
+  if (!lead) return;
+  try {
+    const crm = JSON.parse(localStorage.getItem('aldric_crm_v2') || '[]');
+    crm.push({
+      name: lead.name,
+      handle: lead.handle,
+      platform: lead.platform,
+      notes: `Warm lead: ${lead.reason}`,
+      status: 'Warm Lead',
+      lastContacted: new Date().toISOString().slice(0,10)
+    });
+    localStorage.setItem('aldric_crm_v2', JSON.stringify(crm));
+    alert(`${lead.name} added to CRM.`);
+  } catch(e) { alert('Could not write to CRM: ' + e.message); }
+}
+
+function renderWarmLeads() {
+  const leads = getWarmLeads();
+  const tbody = document.getElementById('warmLeadsTbody');
+  const empty = document.getElementById('warmLeadsEmpty');
+  const table = document.getElementById('warmLeadsTable');
+
+  if (!leads.length) {
+    empty.style.display = 'block';
+    table.style.display = 'none';
+    return;
+  }
+  empty.style.display = 'none';
+  table.style.display = 'table';
+
+  const statusMap = {
+    'new':     { label:'New',             cls:'status-new' },
+    'contacted':{ label:'Contacted',      cls:'status-contacted' },
+    'booked':  { label:'Discovery Booked',cls:'status-booked' },
+    'client':  { label:'Client',          cls:'status-client' }
+  };
+
+  tbody.innerHTML = leads.map(l => {
+    const sm = statusMap[l.status] || statusMap['new'];
+    const dateStr = new Date(l.added).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+    return `
+      <tr>
+        <td style="font-weight:600;color:var(--cream)">${escHtml(l.name)}</td>
+        <td style="color:var(--gold)">${escHtml(l.handle || '—')}</td>
+        <td>${escHtml(l.platform)}</td>
+        <td style="color:var(--muted);max-width:160px;font-size:11px">${escHtml(l.reason || '—')}</td>
+        <td style="color:var(--muted)">${dateStr}</td>
+        <td>
+          <select onchange="setLeadStatus(${l.id}, this.value)" style="background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:3px 6px;border-radius:4px;font-size:11px;width:auto">
+            ${['new','contacted','booked','client'].map(s => `<option value="${s}" ${s===l.status?'selected':''}>${statusMap[s].label}</option>`).join('')}
+          </select>
+        </td>
+        <td style="white-space:nowrap">
+          <button class="btn btn-blue btn-sm" onclick="moveToCRM(${l.id})" title="Add to CRM" style="margin-right:4px">→ CRM</button>
+          <button class="btn btn-red btn-sm" onclick="removeLead(${l.id})">✕</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function prefillLead(name, handle, platform, reason) {
+  document.getElementById('leadName').value   = name;
+  document.getElementById('leadHandle').value = handle;
+  if (platform) document.getElementById('leadPlatform').value = platform;
+  document.getElementById('leadReason').value = reason;
+  document.getElementById('leadName').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function exportWarmLeads() {
+  const leads = getWarmLeads();
+  if (!leads.length) { alert('No warm leads to export.'); return; }
+  const header = 'Name,Handle,Platform,Reason,Added,Status\n';
+  const rows = leads.map(l =>
+    [l.name, l.handle, l.platform, l.reason, new Date(l.added).toLocaleDateString('en-GB'), l.status]
+    .map(v => `"${(v||'').replace(/"/g,'""')}"`)
+    .join(',')
+  ).join('\n');
+  const blob = new Blob([header+rows], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='warm-leads.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function copyWarmLeads() {
+  const leads = getWarmLeads();
+  if (!leads.length) { alert('No warm leads.'); return; }
+  const text = leads.map(l =>
+    `${l.name} ${l.handle ? '('+l.handle+')' : ''} · ${l.platform} · ${l.reason || '—'} · ${l.status}`
+  ).join('\n');
+  navigator.clipboard.writeText(text).then(() => alert('Warm leads list copied!'));
+}
+
+/* ─────────────────────────────────────────
+   SECTION 6: RESPONSE TIME TRACKER
+──────────────────────────────────────────*/
+function timerAction(type, action) {
+  const t = timers[type];
+  if (action === 'start') {
+    if (t.running) return;
+    t.running = true;
+    t.interval = setInterval(() => {
+      t.elapsed++;
+      updateTimerDisplay(type);
+    }, 1000);
+  } else if (action === 'stop') {
+    clearInterval(t.interval); t.running = false;
+  } else if (action === 'reset') {
+    clearInterval(t.interval); t.running = false; t.elapsed = 0;
+    updateTimerDisplay(type);
+  } else if (action === 'log') {
+    clearInterval(t.interval); t.running = false;
+    logResponse(type, t.elapsed);
+    t.elapsed = 0;
+    updateTimerDisplay(type);
+  }
+}
+
+function updateTimerDisplay(type) {
+  const t = timers[type];
+  const dispEl = document.getElementById(`${type}TimerDisplay`);
+  const barEl  = document.getElementById(`${type}TimerBar`);
+  const pct    = Math.min(t.elapsed / t.target * 100, 100);
+  const m = Math.floor(t.elapsed/60);
+  const s = t.elapsed % 60;
+  dispEl.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+
+  // Colour urgency
+  const urgentAt = t.target * 0.7;  // 70% of target = amber
+  dispEl.classList.remove('urgent','overdue');
+  if (t.elapsed >= t.target) {
+    dispEl.classList.add('overdue');
+    barEl.style.background = 'var(--red)';
+  } else if (t.elapsed >= urgentAt) {
+    dispEl.classList.add('urgent');
+    barEl.style.background = 'var(--amber)';
+  } else {
+    barEl.style.background = 'var(--green)';
+  }
+  barEl.style.width = `${pct}%`;
+}
+
+function logResponse(type, elapsed) {
+  const logs = getResponseLog();
+  const m = Math.floor(elapsed/60), s = elapsed % 60;
+  const timeStr = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  const now = new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  logs.unshift({
+    type: type === 'comment' ? 'Comment' : 'DM',
+    elapsed, timeStr, loggedAt: now,
+    onTime: elapsed <= timers[type].target
+  });
+  saveResponseLog(logs);
+  renderResponseLog();
+  updateSnapshot();
+}
+
+function getResponseLog() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(RESP_LOG_KEY) || '{}');
+    const today = new Date().toISOString().slice(0,10);
+    return raw[today] || [];
+  } catch { return []; }
+}
+
+function saveResponseLog(logs) {
+  const today = new Date().toISOString().slice(0,10);
+  try {
+    const all = JSON.parse(localStorage.getItem(RESP_LOG_KEY) || '{}');
+    all[today] = logs;
+    localStorage.setItem(RESP_LOG_KEY, JSON.stringify(all));
+  } catch {}
+}
+
+function renderResponseLog() {
+  const logs = getResponseLog();
+  const el   = document.getElementById('responseLog');
+  if (!logs.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:14px">No responses logged yet today.</div>';
+    return;
+  }
+  el.innerHTML = logs.map(l => `
+    <div class="log-entry">
+      <span class="log-time">${l.loggedAt}</span>
+      — ${l.type} replied in <strong style="color:${l.onTime?'var(--green)':'var(--red)'}">${l.timeStr}</strong>
+      ${l.onTime ? '✓' : '⚠ over target'}
+    </div>
+  `).join('');
+}
+
+function clearResponseLog() {
+  saveResponseLog([]);
+  renderResponseLog();
+  updateSnapshot();
+}
+
+/* ─────────────────────────────────────────
+   STATS & SNAPSHOT
+──────────────────────────────────────────*/
+function bumpStat(key, count) {
+  const today = new Date().toISOString().slice(0,10);
+  try {
+    const all = JSON.parse(localStorage.getItem(STATS_KEY) || '{}');
+    if (!all[today]) all[today] = { comments:0, dms:0 };
+    all[today][key] = (all[today][key] || 0) + count;
+    localStorage.setItem(STATS_KEY, JSON.stringify(all));
+  } catch {}
+}
+
+function updateSnapshot() {
+  const leads = getWarmLeads();
+  document.getElementById('snapshotLeads').textContent = leads.length;
+
+  const logs = getResponseLog();
+  document.getElementById('snapshotResponses').textContent = logs.length;
+
+  if (logs.length) {
+    const avg = Math.round(logs.reduce((a,l) => a+l.elapsed, 0) / logs.length);
+    const m = Math.floor(avg/60), s = avg % 60;
+    document.getElementById('snapshotAvgTime').textContent = `${m}m ${s}s`;
+  }
+
+  const today = new Date().toISOString().slice(0,10);
+  try {
+    const stats = JSON.parse(localStorage.getItem(STATS_KEY) || '{}')[today] || {};
+    document.getElementById('snapshotComments').textContent = stats.comments || 0;
+    document.getElementById('snapshotDMs').textContent      = stats.dms || 0;
+  } catch {}
+}
+
+/* ─────────────────────────────────────────
+   UTILITIES
+──────────────────────────────────────────*/
+function clearSection(outputId) {
+  document.getElementById(outputId).innerHTML = '';
+}
+
+function toggleSpinner(id, show) {
+  document.getElementById(id).style.display = show ? 'inline-block' : 'none';
+}
+
+function copyText(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = 'Copied ✓';
+    setTimeout(() => { btn.textContent = orig; }, 1500);
+  });
+}
+
+function escHtml(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+
+function escAttr(str) {
+  return String(str||'').replace(/'/g,"\\'").replace(/"/g,'\\"');
+}
+</script>
+
+</body>
+</html>
