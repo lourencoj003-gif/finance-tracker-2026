@@ -871,6 +871,8 @@ export default function VelaCore({ onReset }) {
         swRegRef.current = reg;
         // Check scheduled client-side notifications on app open
         checkScheduledNotifications(reg);
+        // Streak protection: schedule 8pm reminder, cancel it now (user is in the app)
+        scheduleStreakProtection(reg);
       })
       .catch(err => console.warn('[sw] registration failed:', err));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -2158,6 +2160,41 @@ Output the quote only — no quotes around it, no emoji.`;
     }
   }
 
+  // Streak protection — schedule 8pm reminder if: streak >= 1, before 8pm, notifs granted
+  // Called every app open. User being in the app counts as opening it — cancel any pending timer.
+  function scheduleStreakProtection(reg) {
+    if (!reg?.active) return;
+    if (Notification.permission !== 'granted') return;
+    const prefs = getNotifPrefs();
+    if (!prefs.streak) return;
+
+    const sk    = parseInt(localStorage.getItem('vela_streak_count') || '0', 10);
+    const name  = getUserName() || '';
+    const now   = new Date();
+    const today = now.toISOString().slice(0, 10);
+
+    // Cancel pending timer — user is in the app, streak is safe
+    reg.active.postMessage({ type: 'CANCEL_STREAK_NOTIF' });
+
+    if (sk < 1) return; // No streak to protect
+
+    // Calculate ms until 8pm today
+    const eightPm = new Date(now);
+    eightPm.setHours(20, 0, 0, 0);
+    const msUntil8pm = eightPm.getTime() - now.getTime();
+
+    if (msUntil8pm <= 0) return; // Already past 8pm — no point scheduling
+
+    // Schedule: fires at 8pm if the user hasn't opened the app again
+    reg.active.postMessage({
+      type: 'SCHEDULE_STREAK_NOTIF',
+      streakCount: sk,
+      userName:    name,
+      msUntil8pm,
+      today,
+    });
+  }
+
   async function requestNotifPermission() {
     if (!('Notification' in window)) return;
     const perm = await Notification.requestPermission();
@@ -2572,6 +2609,33 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
             ))}
           </div>
         </div>
+
+        {/* ── Payday week banner — shows 7 days before payday ─────────── */}
+        {daysToNextPay >= 1 && daysToNextPay <= 7 && income > 0 && (
+          <button
+            onClick={() => { if (!paydayPlanText) fetchPaydayPlan(); setShowPaydayPlan(true); }}
+            style={{
+              width: '100%', marginBottom: 6,
+              background: 'linear-gradient(90deg, rgba(201,169,110,0.14) 0%, rgba(201,169,110,0.1) 100%)',
+              border: '1px solid rgba(201,169,110,0.35)',
+              borderRadius: 12, padding: '10px 16px',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              cursor: 'pointer', fontFamily: 'inherit',
+              animation: 'cardIn 0.4s ease-out',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 16 }}>💰</span>
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#C9A96E', letterSpacing: '0.2px' }}>
+                  Payday in {daysToNextPay} day{daysToNextPay === 1 ? '' : 's'}
+                </div>
+                <div style={{ fontSize: 10, color: 'rgba(201,169,110,0.55)' }}>Your plan is ready</div>
+              </div>
+            </div>
+            <div style={{ fontSize: 10, color: 'rgba(201,169,110,0.5)', fontWeight: 600 }}>Open →</div>
+          </button>
+        )}
 
         {/* Top hero section — fixed height, swipe-up to detail */}
         <div

@@ -79,19 +79,80 @@ self.addEventListener('notificationclick', event => {
   );
 });
 
-// Triggered directly from the main thread (for client-side scheduled notifications)
-// The main app posts: { type: 'SHOW_NOTIFICATION', title, body, tag }
+// ── Scheduled streak-protection timeout ──────────────────────────────
+// Stored per-day so we don't double-schedule across reopens.
+let _streakTimerId   = null;
+let _streakTimerDate = null; // 'YYYY-MM-DD' of the day it was set
+
+// ── Message handler ───────────────────────────────────────────────────
+// Accepts three message types from the main thread:
+//
+//   SHOW_NOTIFICATION       — show immediately
+//   SCHEDULE_STREAK_NOTIF   — schedule a 8pm streak-protection push
+//   CANCEL_STREAK_NOTIF     — user opened app, cancel pending timer
+//
 self.addEventListener('message', event => {
-  if (event.data?.type !== 'SHOW_NOTIFICATION') return;
-  const { title = 'Noa', body = '', tag = 'noa-local' } = event.data;
-  event.waitUntil(
-    self.registration.showNotification(title, {
-      body,
-      icon:    '/apple-touch-icon.png',
-      badge:   '/apple-touch-icon.png',
-      vibrate: [180, 80, 180],
-      tag,
-      data:    { url: '/' },
-    })
-  );
+  const { type } = event.data || {};
+
+  // ── Immediate notification (existing behaviour) ───────────────────
+  if (type === 'SHOW_NOTIFICATION') {
+    const { title = 'Noa', body = '', tag = 'noa-local' } = event.data;
+    event.waitUntil(
+      self.registration.showNotification(title, {
+        body,
+        icon:    '/apple-touch-icon.png',
+        badge:   '/apple-touch-icon.png',
+        vibrate: [180, 80, 180],
+        tag,
+        data:    { url: '/' },
+      })
+    );
+    return;
+  }
+
+  // ── Schedule streak-protection notification at 8pm ────────────────
+  // Payload: { type, streakCount, userName, msUntil8pm, today }
+  if (type === 'SCHEDULE_STREAK_NOTIF') {
+    const { streakCount = 1, userName = '', msUntil8pm = 0, today = '' } = event.data;
+
+    // Don't double-schedule for the same calendar day
+    if (_streakTimerDate === today && _streakTimerId !== null) return;
+
+    // Clear any stale timer from a previous day
+    if (_streakTimerId !== null) {
+      clearTimeout(_streakTimerId);
+      _streakTimerId   = null;
+      _streakTimerDate = null;
+    }
+
+    if (msUntil8pm <= 0) return; // Already past 8pm — don't schedule
+
+    _streakTimerDate = today;
+    _streakTimerId   = setTimeout(() => {
+      _streakTimerId   = null;
+      _streakTimerDate = null;
+
+      const nameStr = userName ? `, ${userName}` : '';
+      self.registration.showNotification('Noa', {
+        body:    `Your ${streakCount}-day streak ends at midnight${nameStr}. Noa's waiting.`,
+        icon:    '/apple-touch-icon.png',
+        badge:   '/apple-touch-icon.png',
+        vibrate: [200, 100, 200],
+        tag:     'noa-streak-protect',
+        data:    { url: '/' },
+      });
+    }, msUntil8pm);
+
+    return;
+  }
+
+  // ── Cancel streak-protection (user opened app — streak is safe) ───
+  if (type === 'CANCEL_STREAK_NOTIF') {
+    if (_streakTimerId !== null) {
+      clearTimeout(_streakTimerId);
+      _streakTimerId   = null;
+      _streakTimerDate = null;
+    }
+    return;
+  }
 });
