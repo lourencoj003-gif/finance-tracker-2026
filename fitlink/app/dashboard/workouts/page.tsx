@@ -299,18 +299,18 @@ function CompleteModal({
 }
 
 // ── XP celebration banner ─────────────────────────────────────────────────────
-function XpBanner({ awarded, newXp, onDismiss }: { awarded: number; newXp: number; onDismiss: () => void }) {
+function XpBanner({ awarded, newXp, label, onDismiss }: { awarded: number; newXp: number; label?: string; onDismiss: () => void }) {
   useEffect(() => {
-    const t = setTimeout(onDismiss, 4000)
+    const t = setTimeout(onDismiss, 4500)
     return () => clearTimeout(t)
   }, [onDismiss])
 
   return (
-    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-3 px-5 py-3 rounded-2xl bg-primary text-black font-bold shadow-[0_0_40px_rgba(163,245,16,0.4)] animate-[slideDown_0.4s_ease-out]"
+    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-3 px-5 py-3 rounded-2xl bg-primary text-black font-bold shadow-[0_0_40px_rgba(163,245,16,0.4)]"
       style={{ animation: 'slideDown 0.4s ease-out' }}>
       <span className="text-2xl">⚡</span>
       <div>
-        <div className="text-base font-black">+{awarded} XP earned!</div>
+        <div className="text-base font-black">{label ?? `+${awarded} XP — workout logged!`}</div>
         <div className="text-[11px] font-medium opacity-70">{newXp.toLocaleString()} XP total</div>
       </div>
     </div>
@@ -434,15 +434,205 @@ function WorkoutCard({
   )
 }
 
+// ── Quick Log Modal ───────────────────────────────────────────────────────────
+// Logs a completed workout immediately and awards XP.
+const WORKOUT_SUGGESTIONS = ['Running', 'Cycling', 'Strength', 'HIIT', 'Yoga', 'Swimming', 'Walking', 'Pilates', 'Boxing', 'CrossFit']
+
+function QuickLogModal({
+  onClose,
+  onLogged,
+}: {
+  onClose:  () => void
+  onLogged: (workout: Workout, xpResult: { awarded: number; newXp: number; newLevel: number; hitTarget: boolean }) => void
+}) {
+  const [workoutType,     setWorkoutType]     = useState('')
+  const [durationMinutes, setDurationMinutes] = useState(30)
+  const [intensity,       setIntensity]       = useState(5)
+  const [caloriesBurned,  setCaloriesBurned]  = useState('')
+  const [notes,           setNotes]           = useState('')
+  const [hitTarget,       setHitTarget]       = useState(false)
+  const [err,             setErr]             = useState('')
+  const [pending, start]                      = useTransition()
+
+  function submit() {
+    if (!workoutType.trim()) { setErr('Enter a workout type'); return }
+    if (durationMinutes < 1) { setErr('Duration must be at least 1 minute'); return }
+    setErr('')
+
+    start(async () => {
+      const res = await fetch('/api/workouts/log', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workoutType: workoutType.trim(),
+          durationMinutes,
+          intensity,
+          caloriesBurned: caloriesBurned ? parseInt(caloriesBurned, 10) : undefined,
+          notes:          notes.trim() || undefined,
+          hitTarget,
+        }),
+      })
+      const d = await res.json()
+      if (res.ok) {
+        onLogged(d.workout, { awarded: d.awarded, newXp: d.newXp, newLevel: d.newLevel, hitTarget: d.hitTarget })
+        onClose()
+      } else {
+        setErr(d.error ?? 'Something went wrong')
+      }
+    })
+  }
+
+  const intensityLabel = intensity <= 3 ? 'Easy' : intensity <= 6 ? 'Moderate' : intensity <= 8 ? 'Hard' : 'Max effort'
+  const intensityColor = intensity <= 3 ? '#38bdf8' : intensity <= 6 ? '#facc15' : intensity <= 8 ? '#fb923c' : '#f87171'
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/80 flex items-start justify-center p-4 z-50 overflow-y-auto"
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div className="bg-[#111] border border-white/10 rounded-2xl p-6 w-full max-w-md mt-8 mb-8">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h2 className="font-heading text-xl font-bold text-white">Log Workout</h2>
+            <p className="text-[#555] text-xs mt-0.5">Record what you just did and earn XP</p>
+          </div>
+          <button onClick={onClose} className="text-[#555] hover:text-white transition text-xl w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/5">✕</button>
+        </div>
+
+        {/* Workout type */}
+        <div className="mb-4">
+          <label className="block text-xs text-[#888] uppercase tracking-wider mb-1.5">Workout type</label>
+          <input
+            value={workoutType}
+            onChange={e => setWorkoutType(e.target.value)}
+            placeholder="e.g. Running, Strength, Yoga…"
+            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm placeholder-[#444] focus:outline-none focus:border-primary/60"
+          />
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {WORKOUT_SUGGESTIONS.map(s => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setWorkoutType(s)}
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                  workoutType === s ? 'bg-primary text-black' : 'bg-white/6 text-[#888] hover:bg-white/10 hover:text-white'
+                }`}
+              >{s}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* Duration */}
+        <div className="mb-4">
+          <label className="block text-xs text-[#888] uppercase tracking-wider mb-1.5">Duration (minutes)</label>
+          <input
+            type="number"
+            min={1}
+            max={999}
+            value={durationMinutes}
+            onChange={e => setDurationMinutes(Math.max(1, parseInt(e.target.value || '1', 10)))}
+            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-primary/60"
+          />
+        </div>
+
+        {/* Intensity */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="text-xs text-[#888] uppercase tracking-wider">Intensity</label>
+            <span className="text-sm font-bold" style={{ color: intensityColor }}>{intensity}/10 — {intensityLabel}</span>
+          </div>
+          <input
+            type="range"
+            min={1}
+            max={10}
+            value={intensity}
+            onChange={e => setIntensity(parseInt(e.target.value, 10))}
+            className="w-full accent-primary"
+          />
+          <div className="flex justify-between text-[10px] text-[#444] mt-0.5">
+            <span>Easy</span><span>Moderate</span><span>Hard</span><span>Max</span>
+          </div>
+        </div>
+
+        {/* Calories */}
+        <div className="mb-4">
+          <label className="block text-xs text-[#888] uppercase tracking-wider mb-1.5">Calories burned <span className="text-[#444] normal-case">(optional)</span></label>
+          <input
+            type="number"
+            min={0}
+            max={5000}
+            value={caloriesBurned}
+            onChange={e => setCaloriesBurned(e.target.value)}
+            placeholder="e.g. 350"
+            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm placeholder-[#444] focus:outline-none focus:border-primary/60"
+          />
+        </div>
+
+        {/* Notes */}
+        <div className="mb-4">
+          <label className="block text-xs text-[#888] uppercase tracking-wider mb-1.5">Notes <span className="text-[#444] normal-case">(optional)</span></label>
+          <textarea
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+            rows={2}
+            placeholder="How did it feel?"
+            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm placeholder-[#444] focus:outline-none focus:border-primary/60 resize-none"
+          />
+        </div>
+
+        {/* Hit target */}
+        <button
+          type="button"
+          onClick={() => setHitTarget(h => !h)}
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all mb-5 ${
+            hitTarget
+              ? 'bg-primary/10 border-primary/40 text-white'
+              : 'bg-white/3 border-white/8 text-[#666] hover:border-white/15'
+          }`}
+        >
+          <span className="text-lg">{hitTarget ? '🎯' : '○'}</span>
+          <div className="flex-1 text-left">
+            <div className="text-sm font-semibold">Hit my target</div>
+            <div className="text-xs text-[#555]">+50 bonus XP when you nail your goal</div>
+          </div>
+          {hitTarget && <span className="text-primary text-xs font-bold">+50 XP</span>}
+        </button>
+
+        {/* XP preview */}
+        <div className="flex items-center justify-between p-3 rounded-xl bg-white/3 mb-5">
+          <span className="text-xs text-[#555]">XP you'll earn</span>
+          <span className="font-heading font-black text-lg text-primary">+{hitTarget ? 200 : 150} XP</span>
+        </div>
+
+        {err && <p className="text-[#f87171] text-xs mb-3">{err}</p>}
+
+        <div className="flex gap-2">
+          <button onClick={onClose} className="flex-1 py-3 rounded-xl bg-white/5 text-[#888] text-sm font-semibold hover:bg-white/8 transition">
+            Cancel
+          </button>
+          <button
+            onClick={submit}
+            disabled={pending}
+            className="flex-1 py-3 rounded-xl bg-primary text-black text-sm font-bold hover:bg-[#8ad40e] transition active:scale-[0.98] disabled:opacity-50"
+          >
+            {pending ? 'Logging…' : 'Log Workout ✓'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function WorkoutsPage() {
-  const [workouts,     setWorkouts]     = useState<Workout[]>([])
-  const [loading,      setLoading]      = useState(true)
-  const [tab,          setTab]          = useState<'upcoming' | 'history'>('upcoming')
-  const [showCreate,   setShowCreate]   = useState(false)
-  const [editWorkout,  setEditWorkout]  = useState<Workout | null>(null)
-  const [completeWkt,  setCompleteWkt]  = useState<Workout | null>(null)
-  const [xpBanner,     setXpBanner]     = useState<{ awarded: number; newXp: number } | null>(null)
+  const [workouts,      setWorkouts]     = useState<Workout[]>([])
+  const [loading,       setLoading]      = useState(true)
+  const [tab,           setTab]          = useState<'upcoming' | 'history'>('upcoming')
+  const [showCreate,    setShowCreate]   = useState(false)
+  const [showQuickLog,  setShowQuickLog] = useState(false)
+  const [editWorkout,   setEditWorkout]  = useState<Workout | null>(null)
+  const [completeWkt,   setCompleteWkt]  = useState<Workout | null>(null)
+  const [xpBanner,      setXpBanner]     = useState<{ awarded: number; newXp: number; hitTarget?: boolean } | null>(null)
   const [, startDelete] = useTransition()
 
   // Load workouts
@@ -468,6 +658,15 @@ export default function WorkoutsPage() {
   function handleComplete(updated: Workout, xpResult: { awarded: number; newXp: number; newLevel: number } | null) {
     setWorkouts(prev => prev.map(w => w.id === updated.id ? updated : w))
     if (xpResult) setXpBanner({ awarded: xpResult.awarded, newXp: xpResult.newXp })
+  }
+
+  function handleQuickLogged(
+    workout: Workout,
+    xpResult: { awarded: number; newXp: number; newLevel: number; hitTarget: boolean },
+  ) {
+    setWorkouts(prev => [workout, ...prev])
+    setXpBanner({ awarded: xpResult.awarded, newXp: xpResult.newXp, hitTarget: xpResult.hitTarget })
+    setTab('history') // Switch to history so the new log is visible
   }
 
   function handleDelete(id: string) {
@@ -510,12 +709,21 @@ export default function WorkoutsPage() {
               <p className="text-[#888] text-sm mb-0.5">Train smart</p>
               <h1 className="font-heading text-3xl font-bold">Workouts</h1>
             </div>
-            <button
-              onClick={() => setShowCreate(true)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-black text-sm font-bold hover:bg-[#8ad40e] transition active:scale-[0.98]"
-            >
-              <span>+</span> Log Workout
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowCreate(true)}
+                className="px-3 py-2.5 rounded-xl bg-white/8 border border-white/10 text-[#888] text-sm font-semibold hover:bg-white/12 hover:text-white transition active:scale-[0.98]"
+                title="Plan a future workout"
+              >
+                Plan
+              </button>
+              <button
+                onClick={() => setShowQuickLog(true)}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-black text-sm font-bold hover:bg-[#8ad40e] transition active:scale-[0.98]"
+              >
+                <span>+</span> Log Workout
+              </button>
+            </div>
           </div>
 
           {/* Summary strip */}
@@ -565,7 +773,7 @@ export default function WorkoutsPage() {
               </p>
               {tab === 'upcoming' && (
                 <button
-                  onClick={() => setShowCreate(true)}
+                  onClick={() => setShowQuickLog(true)}
                   className="mt-6 px-6 py-3 rounded-xl bg-primary text-black font-bold text-sm hover:bg-[#8ad40e] transition active:scale-[0.98]"
                 >
                   Log first workout →
@@ -602,6 +810,9 @@ export default function WorkoutsPage() {
       </nav>
 
       {/* Modals */}
+      {showQuickLog && (
+        <QuickLogModal onClose={() => setShowQuickLog(false)} onLogged={handleQuickLogged} />
+      )}
       {showCreate && (
         <WorkoutModal onClose={() => setShowCreate(false)} onSave={handleSave} />
       )}
@@ -621,6 +832,7 @@ export default function WorkoutsPage() {
         <XpBanner
           awarded={xpBanner.awarded}
           newXp={xpBanner.newXp}
+          label={xpBanner.hitTarget ? `+${xpBanner.awarded} XP — target hit! 🎯` : undefined}
           onDismiss={() => setXpBanner(null)}
         />
       )}

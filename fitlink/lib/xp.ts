@@ -4,8 +4,10 @@
 // ── XP values per action ──────────────────────────────────────────────────────
 
 export const XP = {
-  WORKOUT_COMPLETE:  100,   // Completed a workout session
-  TASK_COMPLETE:      50,   // Completed an assigned or self-created task
+  WORKOUT_COMPLETE:    100,   // Completed a workout session (from planned workflow)
+  WORKOUT_QUICK_LOG:  150,   // Logged a completed workout via quick-log form
+  WORKOUT_TARGET_HIT:  50,   // Bonus: hit target during quick-logged workout
+  TASK_COMPLETE:        50,   // Completed an assigned or self-created task
   HEALTH_LOG:         30,   // Logged health data (steps, water, sleep, etc.)
   NUTRITION_LOG:      20,   // Added food entries for the day
   STEPS_GOAL_HIT:     40,   // Hit daily step goal
