@@ -2,6 +2,62 @@
 
 ---
 
+## Session: 2026-05-28 — Part 7 (Aldric automation dashboard, client setup, discovery call, Noa push notifications, financial insights, social sharing, Axontra discovery guide, launch checklist)
+
+### Commits
+- `05f3be5` — feat: Aldric daily automation dashboard — briefing, queue, follow-ups, sent log
+- `7a30bc8` — feat: Axontra discovery guide — Anthony conversation framework, research checklist, objections, post-call
+- `1a6b8a3` — docs: MONDAY.md — complete launch checklist (domain, email, Netlify, LinkedIn, first week, client onboarding)
+- `a5146ff` — feat: Aldric social engagement agent — comment replies, DMs, warm lead escalation
+
+### TASK 1 — Aldric Daily Automation Dashboard ✅
+`public/agency/automation.html` — daily outreach execution hub:
+- **Section 1 — Daily Briefing**: reads `aldric_outreach_start` localStorage, calculates current day of 7-day plan (targets: [20,20,5,20,20,5,10]), renders day strip with past/today/future states, CRM stats from `aldric_crm_v2` (total, active, calls, today's target), motivational insight
+- **Section 2 — Message Queue**: paste up to 10 prospects (Name, Business format), niche + stage selectors (8 niches, 5 stages), "Generate All" calls `claude-haiku-4-5-20251001` sequentially, per-stage prompts with character limits, cards with copy + mark-as-sent toggle → writes to `aldric_sent_log`
+- **Section 3 — Follow-Up Reminders**: reads `aldric_crm_v2`, calculates days since `lastContacted`, shows prospects due at Days [2,5,8,12] with direct links to linkedin.html per stage
+- **Section 4 — Sent Log**: reads/writes `aldric_sent_log` (date-keyed object), progress bar vs daily plan target, timestamp list of sent messages
+- **Sidebar**: Pipeline Snapshot (live from `aldric_crm_v2`), Pace Calculator (conversations needed for first client), Quick Links to all tools
+- Uses `aldric_claude_key` from localStorage — key never leaves api.anthropic.com
+- Added "Daily Automation" link to navs in: `email-outreach.html`, `clients.html`, `linkedin.html`, `results-simulator.html`
+
+### TASK 8 — MONDAY.md Launch Checklist ✅
+`MONDAY.md` — complete pre-launch and ongoing checklist:
+- **Domain & Hosting**: DNS setup, HTTPS via Netlify, canonicalisation, robots.txt/sitemap
+- **Email Setup**: Google Workspace or Zoho, SPF/DKIM/DMARC records, deliverability testing via mail-tester.com
+- **Netlify Deployment**: GitHub → Netlify, build config (`npm run build` / `build` dir), env vars (VAPID, etc.), server-side-only key safety rules, deploy notifications
+- **Analytics**: GA4, Search Console, Hotjar/Clarity, Google Sheet for lead tracking
+- **LinkedIn Optimisation**: Personal profile (headshot, banner, 300-word summary, Featured, Skills, 5+ recommendations), Company Page (logo, banner, about, 3 seed posts)
+- **First Week Schedule**: Day-by-day actions for Days 1–7 (go live, outreach batches, engagement sessions, calls, content creation, weekly review)
+- **Client Onboarding Checklist**: contract, invoice, brand brief, content setup, launch, reporting template
+- **Financial Setup**: business bank account, accounting tool, sole trader registration, pricing tiers (Starter £500/mo, Growth £900/mo, Scale £1,500/mo)
+- **Tools Stack**: Netlify, Google Workspace, GA4, Buffer/Metricool, Canva Pro, Claude/ChatGPT, Wave/FreeAgent, Calendly, Notion, LinkedIn Sales Nav
+- **Launch Confidence Checklist**: 10-point gate check before going public
+
+### TASK 9 — Aldric Social Engagement Agent ✅
+`public/agency/engagement-agent.html` — full social engagement automation system:
+- **Section 1 — Client Brand Context**: CRM dropdown (reads `aldric_crm_v2`), niche selector, tone + themes inputs, context banner shows loaded client
+- **Section 2 — Comment Response Generator**: paste original post + comment to reply to, platform chips (Instagram/LinkedIn/Facebook), tone chips (Warm/Professional/Witty/Empathetic), generates 3 alternatives, rules enforced: no "Great post!", always end with question, <150 chars Instagram, copy buttons per reply
+- **Section 3 — Follow DM Generator**: name + role, trigger dropdown (they-followed/you-followed/mutual/engaged-post), optional observation, generates 1 warm DM (max 150 words, one open question, light service mention only), "Add to Warm Leads" shortcut
+- **Section 4 — Like/Save Response DM**: name + business, post topic, engagement type (liked/saved/liked+saved/shared/commented), generates DM referencing specific post → bridge to social media value → soft CTA, "Add to Warm Leads" shortcut
+- **Section 5 — Warm Lead Escalation**: name + handle + platform + trigger reason → "Mark as Warm Lead" → stored in `aldric_warm_leads`, status dropdown per lead (New/Contacted/Discovery Booked/Client), "→ CRM" button writes to `aldric_crm_v2`, Export CSV, Copy List, delete
+- **Section 6 — Response Time Tracker**: dual timers (Comment: 30min target, DM: 2hr target), urgency colour system (green → amber → red at 70%/100% of target), "✓ Replied" logs entry to `aldric_response_log` (today's date key), daily log renders with on-time/over-target flag
+- **Sidebar**: Today's Snapshot (live stats: warm leads, responses, avg time, comments/DMs generated), Instagram best practices (timing, comment rules, DM rules), LinkedIn best practices (comments, connection requests, DMs), Golden Rules (7 engagement principles)
+- Added "Engagement" link to navs in: `automation.html`, `clients.html`, `client-setup.html`, `discovery-call.html`, `email-outreach.html`
+- All Claude calls: `claude-haiku-4-5-20251001`, key from `aldric_claude_key` localStorage → only ever to api.anthropic.com
+
+### TASK 7 — Axontra Discovery Guide ✅
+`public/axontra/discovery.html` — Anthony conversation guide for insurance brokerage discovery calls:
+- **Research Checklist**: 12-item pre-call checklist (current broker, renewal date, headcount, Acturis/Acturis-based system, claims history, key decision makers, regulatory appetite, growth plans, tech frustrations, staff benefits, compliance pain, industry risks), localStorage persistence in `axontra_discovery_checks`, sidebar progress bar
+- **What to Bring**: 6 prep cards (Company Overview, Case Studies deck, ROI Calculator, NDA, Testimonials, Comparison Sheet)
+- **Coffee Conversation Framework**: 6 phases with verbatim scripts + coaching notes (Warm Up, Diagnose Pain, Current Situation, Implications, Vision, Soft Close)
+- **Insurance Objections**: 6 expandable cards with "hear it / reframe / response" structure — Acturis/system lock, size fit concerns, bad IT experience, GDPR/FCA worries, budget constraints, merger/timing excuses
+- **Post-Call Actions**: 7 timed action cards (Within 1hr through Day 14) — thank-you note, LinkedIn, bespoke proposal, case study send, CRM update, follow-up call, referral ask
+- **Call Notes**: full textarea with save/export-as-txt/copy/clear, stored in `axontra_discovery_notes`
+- Sticky two-column layout; IntersectionObserver highlights active sidebar section
+- Axontra navy/teal design (`#05111f` bg, `#4ea3bd` teal)
+
+---
+
 ## Session: 2026-05-28 — Part 6 (onboarding polish, email generator, client dashboard, case studies, Axontra credibility, FitLink audit)
 
 ### Commits
