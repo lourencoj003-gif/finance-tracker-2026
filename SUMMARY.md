@@ -2,6 +2,112 @@
 
 ---
 
+## Session: 2026-05-29 — Part 8 (App Store prep, retention mechanics, FitLink workout logging, FitLink check-in, Aldric nav, Noa onboarding email)
+
+### Commits
+- `e7cfa65` — fix: downgrade React to 18 for react-scripts compatibility *(pre-session)*
+- `26dae8c` — fix: correct build configuration for Vercel deployment *(pre-session)*
+- `717f6c1` — docs: SUMMARY.md — AI agent system + nav update *(pre-session)*
+- `9bbe0c6` — feat: Aldric AI agent execution system + full nav update *(pre-session)*
+- `81e1099` — feat: Aldric automation safety system + client retention system *(pre-session)*
+- `d769f4a` — feat: Noa compress onboarding to 4 steps
+- `7994661` — feat: Noa Plaid UX — prominent skip, graceful failures, manual balance entry
+- `5256dee` — feat: Noa email re-engagement — waitlist API, day-11 modal, Notify Me
+- `36c7351` — feat: Noa premium shareable insight card — score ring, metrics, ambient glow
+- `600d90f` — feat: FitLink AI calorie estimator — /api/nutrition/ai-parse, describe mode, review flow
+- `7f4943e` — feat: FitLink workout logging — quick-log API, intensity/hitTarget, XP awards
+- `de04610` — feat: Aldric nav consistency — Engagement + CRM links in crm/kpi/contract headers
+- `2efaa98` — feat: Noa onboarding email flow — auto-signup to waitlist on completion
+
+### TASK 1 — Noa: App Store preparation (June 7th) ✅
+`ios/App/App/Info.plist` — added `NSCameraUsageDescription` ("Noa does not use your camera")
+
+`public/app-store-screenshots/` — 6 HTML templates at 1290×2796px (iPhone 15 Pro Max):
+- `1-splash.html` — Noa orb + wordmark + status bar + home indicator
+- `2-dashboard.html` — Health score SVG ring (75), forecast strip, score/streak row
+- `3-chat.html` — "Can I afford a £600 holiday?" realistic conversation
+- `4-payday-plan.html` — countdown (9 days), allocation breakdown (Fixed/Savings/Lifestyle/Holiday/Debt)
+- `5-log-transaction.html` — recent tx list, auto-suggest badges, category chips
+- `6-share-card.html` — 9:16 story card with score ring, metrics, referral code
+
+`APPSTORE_SUBMISSION.md` — complete June 7th guide:
+- App name: "Noa — Financial Navigator", subtitle: "Know your money. Keep it."
+- 4000-char description (UK-optimised, Finance + Lifestyle categories)
+- Keywords (100 chars): `budget,money,finance,savings,spending tracker,payday,AI assistant,financial health,expense tracker`
+- Privacy: Financial Info for App Functionality, not linked to user; Age 4+
+- IAP: `com.noa.app.monthly_noa` £6.99/mo, `com.noa.app.monthly_pro` £9.99/mo
+- Plaid sandbox: user_good / pass_good
+- June 7th timeline: 07:00 submit → 07:15 LinkedIn → 07:30 Twitter
+
+### TASK 2 — Noa: Retention mechanics ✅
+**2a — Weekly summary cron**
+`api/weekly-summary.js` — Vercel cron endpoint (Monday 09:00 UTC):
+- GET only, verifies `CRON_SECRET` (allows localhost without it)
+- Logs summary template to Vercel function logs (Observability tab)
+- Optional `WAITLIST_WEBHOOK_URL` forwarding
+- Returns `{ ok, message, generatedAt, nextStep }` with instructions for adding Loops/Resend
+
+`vercel.json` — added `{ path: '/api/weekly-summary', schedule: '0 9 * * 1' }` to crons array
+
+**2b — Streak protection at 8pm**
+`public/sw.js` — added to message handler:
+- `_streakTimerId` / `_streakTimerDate` state vars (guard against same-day double-scheduling)
+- `SCHEDULE_STREAK_NOTIF` handler: calculates `msUntil8pm`, schedules `setTimeout`; fires "Your X-day streak ends at midnight. Noa's waiting." notification
+- `CANCEL_STREAK_NOTIF` handler: clears pending timer on app open
+
+`src/vela/screens/VelaCore.js` — `scheduleStreakProtection(reg)` function:
+- Called on SW registration; posts `CANCEL_STREAK_NOTIF` immediately (user is in app), then schedules new `SCHEDULE_STREAK_NOTIF` if streak ≥ 1 and before 8pm
+
+**2c — Payday week banner**
+`src/vela/screens/VelaCore.js` — gold banner above hero orb when `daysToNextPay >= 1 && daysToNextPay <= 7`:
+- "💰 Payday in X day(s) — Your plan is ready — Open →"
+- Taps → opens PaydayPlan modal (fetches if not cached)
+
+### TASK 3 — FitLink: Workout logging end to end ✅
+`fitlink/lib/xp.ts` — added `WORKOUT_QUICK_LOG: 150` and `WORKOUT_TARGET_HIT: 50`
+
+`fitlink/app/api/workouts/log/route.ts` — new POST endpoint:
+- Body: `{ workoutType, durationMinutes, intensity (1-10), caloriesBurned?, notes?, hitTarget }`
+- Creates COMPLETED workout directly; `exercises` JSON stores intensity/caloriesBurned/hitTarget
+- Awards 150 XP + optional 50 XP hitTarget bonus; upserts DailyProgressSnapshot
+- Returns `{ ok, workout, awarded, hitTarget, newXp, newLevel }`
+
+`fitlink/app/dashboard/workouts/page.tsx`:
+- `QuickLogModal` component: workout type chips (10 suggestions), intensity slider (1-10, colour-coded Easy→Max), optional calories/notes, hit-target toggle (+50 XP preview), live XP total preview
+- `+ Log Workout` primary button → opens `QuickLogModal` (Plan button retained for future workouts)
+- `handleQuickLogged` adds workout to list, switches to history tab
+- `XpBanner` updated: optional `label` prop, shows "target hit! 🎯" message when hitTarget=true
+
+### TASK 4 — FitLink: Daily check-in ✅ (already complete)
+All components were already fully implemented:
+- `fitlink/app/api/health-logs/submit/route.ts` — awards 100 XP, creates DailySummary
+- `fitlink/app/dashboard/checkin/page.tsx` — mood/energy/weight/note steps, calls API, shows `+{awarded} XP`
+- `fitlink/app/dashboard/page.tsx` — queries DailySummary today, shows `✅ Checked in` / `📋 Check in today`
+
+### TASK 5 — Aldric: Nav consistency ✅
+Added "⚡ Engagement" and "📋 CRM"/"📊 KPIs" links to headers of:
+- `public/agency/crm.html` — `.top-actions` bar
+- `public/agency/kpi.html` — `.header-right`
+- `public/agency/contract.html` — `.header-actions`
+
+`engagement-agent.html` already had full nav linking back to all three pages.
+
+### TASK 6 — Noa: Onboarding email flow ✅
+`api/waitlist.js` — extended to accept `{ email, name?, context?, welcome? }`:
+- Logs `[waitlist:signup]` vs `[waitlist:upgrade-interest]` distinctly
+- Forwards both to `WAITLIST_WEBHOOK_URL` if set; `context` auto-set to `'welcome'` when `welcome: true`
+
+`src/vela/storage.js` — added:
+- `SIGNUP_LOGGED: 'vela_signup_logged'` key
+- `isSignupLogged()` and `markSignupLogged()` exports
+
+`src/vela/screens/Onboarding.js` — on "Let's get to work →" click:
+- Checks `isSignupLogged()` — fires once per user only
+- If email present: `markSignupLogged()` then `POST /api/waitlist` with `{email, name, context:'welcome', welcome:true}`
+- Fire-and-forget (`catch(() => {})`) — non-fatal, never blocks onboarding
+
+---
+
 ## Session: 2026-05-28 — Part 7 (Aldric automation dashboard, client setup, discovery call, Noa push notifications, financial insights, social sharing, Axontra discovery guide, launch checklist)
 
 ### Commits
