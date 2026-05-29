@@ -1128,7 +1128,31 @@ export default function VelaCore({ onReset }) {
       const highRate = getDebts().reduce((mx, d) => d.rate > mx ? d.rate : mx, 0);
       msg = `Debt Destruction Mode is active${hi} — £${totalD.toLocaleString('en-GB')} total, highest rate at ${highRate}%. Every extra pound you throw at it today costs the lender money, not you. What shall we attack first?`;
     } else {
-      msg = `Hi${hi}. I'm Noa, your personal financial navigator. How can I help you today?`;
+      // Personalised default — real £ figures, payday countdown, goals & streak
+      const dtp = daysUntilPayday(payday);
+      if (income === 0) {
+        msg = `Hey${hi} — let's get your numbers in. Set your income and I'll build your full picture from there.`;
+      } else if (dtp <= 3) {
+        const dtpStr = dtp === 0 ? 'today' : dtp === 1 ? 'tomorrow' : `in ${dtp} days`;
+        msg = surplus >= 0
+          ? `Payday ${dtpStr}${hi}. Month ends with £${surplus.toFixed(0)} to spare — where does it go?`
+          : `Payday ${dtpStr}${hi}. Month ran £${Math.abs(surplus).toFixed(0)} short. Let's do a quick debrief.`;
+      } else if (goals.length > 0) {
+        const activePots = goals.filter(g => (g.saved || 0) < g.target);
+        const topPot = activePots.sort((a, b) => ((b.saved || 0) / b.target) - ((a.saved || 0) / a.target))[0];
+        if (topPot) {
+          const pct = Math.round(((topPot.saved || 0) / topPot.target) * 100);
+          msg = `Hey${hi}. ${topPot.name} is ${pct}% funded — payday in ${dtp} day${dtp === 1 ? '' : 's'}. Want to plan the next push?`;
+        } else {
+          msg = `Hey${hi} — all pots funded. £${surplus.toFixed(0)} surplus to deploy. What's the next move?`;
+        }
+      } else if (streak > 2) {
+        msg = `${streak}-day streak${hi}. £${surplus.toFixed(0)} surplus and ${dtp} day${dtp === 1 ? '' : 's'} to payday. You're on track — what's the focus today?`;
+      } else {
+        msg = surplus >= 0
+          ? `Hey${hi}. £${surplus.toFixed(0)} surplus this month, payday in ${dtp} day${dtp === 1 ? '' : 's'}. What shall we work on?`
+          : `Hey${hi}. Month's running £${Math.abs(surplus).toFixed(0)} short — ${dtp} day${dtp === 1 ? '' : 's'} to payday. Let's see what we can do.`;
+      }
     }
 
     const tid = setTimeout(() => { pushCard('vela', msg); speak(msg); }, 700);
