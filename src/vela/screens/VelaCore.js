@@ -5048,10 +5048,14 @@ function Label({ children }) {
 // ── Bank Connect Modal (Plaid Link) ──────────────────────────────────────────
 // Loads the Plaid Link SDK from CDN, fetches a link_token, opens the Plaid
 // UI overlay, exchanges the public_token on success, then calls onConnected.
+// Falls back to manual balance entry on failure.
 
 function BankConnectModal({ onClose, onConnected }) {
-  const [step, setStep]     = useState('idle'); // idle | loading | error
-  const [errMsg, setErrMsg] = useState('');
+  const [step, setStep]         = useState('idle'); // idle | loading | error | manual
+  const [errMsg, setErrMsg]     = useState('');
+  const [manualName, setManualName]   = useState('');
+  const [manualBal, setManualBal]     = useState('');
+  const [manualErr, setManualErr]     = useState('');
 
   async function openPlaidLink() {
     setStep('loading');
@@ -5102,14 +5106,14 @@ function BankConnectModal({ onClose, onConnected }) {
           } catch (e) {
             console.error('[BankConnectModal onSuccess]', e);
             setStep('error');
-            setErrMsg('Connected but could not import data. Try syncing again.');
+            setErrMsg("Connected but couldn't import data. You can enter your balance manually below.");
           }
         },
 
         onExit: (err) => {
           if (err) {
             setStep('error');
-            setErrMsg('Connection cancelled or an error occurred. Please try again.');
+            setErrMsg("Connection didn't complete. You can try again or enter your balance manually.");
           } else {
             setStep('idle');
           }
@@ -5120,8 +5124,24 @@ function BankConnectModal({ onClose, onConnected }) {
     } catch (e) {
       console.error('[BankConnectModal]', e);
       setStep('error');
-      setErrMsg('Could not start bank connection. Check your internet and try again.');
+      setErrMsg("Couldn't connect to your bank right now. Enter your balance manually instead.");
     }
+  }
+
+  function saveManual() {
+    const bal = parseFloat(manualBal.replace(/[£,]/g, ''));
+    if (!manualName.trim()) { setManualErr('Enter an account name'); return; }
+    if (isNaN(bal) || bal < 0) { setManualErr('Enter a valid balance'); return; }
+    const inst = manualName.trim();
+    saveBankingInstitution(inst);
+    setBankingLastSync();
+    // Save as a manual account entry
+    const existing = getAccounts();
+    const already = existing.find(a => a.name === inst);
+    if (!already) {
+      saveAccounts([...existing, { id: Date.now(), name: inst, balance: bal, purpose: 'main', manual: true }]);
+    }
+    onConnected(inst);
   }
 
   return (
@@ -5130,9 +5150,13 @@ function BankConnectModal({ onClose, onConnected }) {
       style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.82)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, zIndex: 70 }}
     >
       <div style={{ background: 'rgba(16,14,36,0.97)', border: '1px solid rgba(200,184,154,0.22)', borderRadius: 26, padding: 28, width: '100%', maxWidth: 320, animation: 'cardIn 0.28s ease-out' }}>
-        <div style={{ fontSize: 17, fontWeight: 700, color: '#E8DDD0', marginBottom: 6 }}>Connect your bank</div>
+        <div style={{ fontSize: 17, fontWeight: 700, color: '#E8DDD0', marginBottom: 6 }}>
+          {step === 'manual' ? 'Enter balance manually' : 'Connect your bank'}
+        </div>
         <div style={{ fontSize: 12, color: 'rgba(232,221,208,0.38)', marginBottom: 20, lineHeight: 1.5 }}>
-          Read-only access. Noa can never move or touch your money.
+          {step === 'manual'
+            ? "No account sync — just tell Noa your current balance."
+            : 'Read-only access. Noa can never move or touch your money.'}
         </div>
 
         {step === 'loading' && (
@@ -5143,18 +5167,51 @@ function BankConnectModal({ onClose, onConnected }) {
         )}
 
         {step === 'error' && (
-          <div style={{ fontSize: 12, color: '#E24B4A', marginBottom: 16, lineHeight: 1.5 }}>{errMsg}</div>
+          <div style={{ fontSize: 12, color: 'rgba(226,75,74,0.85)', marginBottom: 14, lineHeight: 1.5, padding: '10px 12px', background: 'rgba(226,75,74,0.08)', borderRadius: 10, border: '1px solid rgba(226,75,74,0.15)' }}>
+            {errMsg}
+          </div>
         )}
 
-        {step !== 'loading' && (
-          <button
-            onClick={openPlaidLink}
-            style={{ width: '100%', padding: '13px 0', background: 'rgba(124,174,158,0.12)', border: '1px solid rgba(124,174,158,0.3)', borderRadius: 14, color: '#7CAE9E', fontSize: 15, fontWeight: 600, cursor: 'pointer', marginBottom: 10, fontFamily: 'inherit' }}
-          >🔗 Connect your bank</button>
+        {/* Manual entry form */}
+        {step === 'manual' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
+            <input
+              placeholder="Account name (e.g. Monzo)"
+              value={manualName}
+              onChange={e => { setManualName(e.target.value); setManualErr(''); }}
+              style={{ background: 'rgba(232,221,208,0.07)', border: '1px solid rgba(232,221,208,0.14)', borderRadius: 10, padding: '10px 14px', color: '#E8DDD0', fontSize: 14, fontFamily: 'inherit', outline: 'none' }}
+            />
+            <input
+              placeholder="Current balance (e.g. £1,200)"
+              value={manualBal}
+              onChange={e => { setManualBal(e.target.value); setManualErr(''); }}
+              style={{ background: 'rgba(232,221,208,0.07)', border: '1px solid rgba(232,221,208,0.14)', borderRadius: 10, padding: '10px 14px', color: '#E8DDD0', fontSize: 14, fontFamily: 'inherit', outline: 'none' }}
+            />
+            {manualErr && <div style={{ fontSize: 11, color: 'rgba(226,75,74,0.85)' }}>{manualErr}</div>}
+            <button
+              onClick={saveManual}
+              style={{ width: '100%', padding: '12px 0', background: 'rgba(200,184,154,0.12)', border: '1px solid rgba(200,184,154,0.3)', borderRadius: 12, color: '#C8B89A', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+            >Save balance</button>
+          </div>
         )}
 
-        <button onClick={onClose} style={{ width: '100%', padding: 11, background: 'none', border: 'none', color: 'rgba(232,221,208,0.3)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
-          Cancel
+        {/* Plaid connect button — not shown while loading or in manual mode */}
+        {(step === 'idle' || step === 'error') && (
+          <>
+            <button
+              onClick={openPlaidLink}
+              style={{ width: '100%', padding: '13px 0', background: 'rgba(124,174,158,0.12)', border: '1px solid rgba(124,174,158,0.3)', borderRadius: 14, color: '#7CAE9E', fontSize: 15, fontWeight: 600, cursor: 'pointer', marginBottom: 8, fontFamily: 'inherit' }}
+            >🔗 Connect your bank</button>
+            <button
+              onClick={() => { setStep('manual'); setErrMsg(''); }}
+              style={{ width: '100%', padding: '10px 0', background: 'none', border: '1px solid rgba(232,221,208,0.1)', borderRadius: 12, color: 'rgba(232,221,208,0.5)', fontSize: 13, cursor: 'pointer', marginBottom: 8, fontFamily: 'inherit' }}
+            >Enter balance manually</button>
+          </>
+        )}
+
+        {/* Prominent skip — always visible */}
+        <button onClick={onClose} style={{ width: '100%', padding: 11, background: 'none', border: 'none', color: 'rgba(232,221,208,0.35)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
+          {step === 'manual' ? 'Cancel' : 'Connect bank later'}
         </button>
       </div>
     </div>
