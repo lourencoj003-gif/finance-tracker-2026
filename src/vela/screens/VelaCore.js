@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
-import { getData, saveData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin, getGoals, saveGoals, getLastOpen, setLastOpen, getLastCeremonyYM, setLastCeremonyYM, getDebts, saveDebts, getChallenge, saveChallenge, getExpenseLog, saveExpenseLog, getEveningDate, setEveningDate, appendEveningLog, getUserName, setUserName, getDailyInsight, saveDailyInsight, getNotifPrefs, saveNotifPrefs, getNotifLast, saveNotifLast, savePushSub, getPrivacyMode, setPrivacyMode as savePrivacyMode, appendConvoMemory, getConvoMemory, clearConvoMemory, getAccounts, saveAccounts, getFinancialPersonality, saveFinancialPersonality, getFirstWeekShown, markFirstWeekShown, getPlanType, getWaitlistEmail, saveWaitlistEmail, incrementPaywallViews, getMemoryStart, setMemoryStart, setAppStart, getBankingAccessToken, saveBankingAccessToken, getBankingInstitution, saveBankingInstitution, getBankingLastSync, setBankingLastSync, clearBanking, getVoiceOn, saveVoiceOn, isProfileCardDismissed, dismissProfileCard, getOnboardingDate } from '../storage';
+import { getData, saveData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin, getGoals, saveGoals, getLastOpen, setLastOpen, getLastCeremonyYM, setLastCeremonyYM, getDebts, saveDebts, getChallenge, saveChallenge, getExpenseLog, saveExpenseLog, getEveningDate, setEveningDate, appendEveningLog, getUserName, setUserName, getDailyInsight, saveDailyInsight, getNotifPrefs, saveNotifPrefs, getNotifLast, saveNotifLast, savePushSub, getPrivacyMode, setPrivacyMode as savePrivacyMode, appendConvoMemory, getConvoMemory, clearConvoMemory, getAccounts, saveAccounts, getFinancialPersonality, saveFinancialPersonality, getFirstWeekShown, markFirstWeekShown, getPlanType, getWaitlistEmail, saveWaitlistEmail, incrementPaywallViews, getMemoryStart, setMemoryStart, setAppStart, getBankingAccessToken, saveBankingAccessToken, getBankingInstitution, saveBankingInstitution, getBankingLastSync, setBankingLastSync, clearBanking, getVoiceOn, saveVoiceOn, isProfileCardDismissed, dismissProfileCard, getOnboardingDate, getEmail } from '../storage';
 import Orb from '../Orb';
 import { speak as voiceSpeak, stopSpeaking } from '../voice';
 
@@ -536,7 +536,7 @@ export default function VelaCore({ onReset }) {
   // Task 3 — Monetisation: memory paywall + upgrade screen
   const [showUpgrade, setShowUpgrade]         = useState(false);
   const [memoryBannerDays, setMemoryBannerDays] = useState(0);
-  const [waitlistEmail, setWaitlistEmail]     = useState(() => getWaitlistEmail());
+  const [waitlistEmail, setWaitlistEmail]     = useState(() => getWaitlistEmail() || getEmail());
   const [waitlistSubmitted, setWaitlistSubmitted] = useState(() => !!getWaitlistEmail());
   const [planType]                            = useState(() => getPlanType());
 
@@ -765,6 +765,20 @@ export default function VelaCore({ onReset }) {
       setMemoryBannerDays(daysLeft);
       incrementPaywallViews();
     }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Trial day-11 upgrade nudge — show upgrade modal once at day 11 ──
+  useEffect(() => {
+    if (planType !== 'free') return;
+    const onbDate = getOnboardingDate();
+    if (!onbDate) return;
+    const daysSince = Math.floor((Date.now() - new Date(onbDate).getTime()) / 86400000);
+    if (daysSince < 11) return;
+    if (localStorage.getItem('noa_day11_shown')) return;
+    localStorage.setItem('noa_day11_shown', '1');
+    // Small delay so the app has fully rendered before showing modal
+    const tid = setTimeout(() => setShowUpgrade(true), 2000);
+    return () => clearTimeout(tid);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── PWA install prompt — show once after 2nd visit ────────────────
@@ -4377,11 +4391,18 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
                           style={{ flex: 1, background: 'rgba(232,221,208,0.07)', border: '1px solid rgba(232,221,208,0.12)', borderRadius: 9, padding: '8px 10px', color: '#E8DDD0', fontSize: 12, outline: 'none', fontFamily: 'inherit' }}
                         />
                         <button
-                          onClick={() => {
-                            if (waitlistEmail.includes('@')) {
-                              saveWaitlistEmail(waitlistEmail);
-                              setWaitlistSubmitted(true);
-                            }
+                          onClick={async () => {
+                            if (!waitlistEmail.includes('@')) return;
+                            saveWaitlistEmail(waitlistEmail);
+                            setWaitlistSubmitted(true);
+                            // Fire-and-forget to server — captures email server-side
+                            try {
+                              await fetch('/api/waitlist', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ email: waitlistEmail, context: 'upgrade_modal' }),
+                              });
+                            } catch (_) { /* non-fatal */ }
                           }}
                           style={{ flexShrink: 0, padding: '8px 12px', background: `rgba(200,184,154,0.15)`, border: `1px solid ${tier.border}`, borderRadius: 9, color: tier.textColor, fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
                         >Notify me</button>
