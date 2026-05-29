@@ -1812,14 +1812,17 @@ Output the quote only — no quotes around it, no emoji.`;
     return code;
   }
 
-  // Task 6 — Generate Instagram story card via HTML Canvas (1080×1920)
+  // Task 4 / Task 6 — Generate Instagram story card via HTML Canvas (1080×1920)
   async function generateShareCanvas() {
-    const vScore = calcVelaScore({ income, expenses, debt, streak });
-    const mood   = calcMood({ income, expenses, surplus: income - expenses, savingsGoal: goals.length > 0 ? goals[0].target : 0, savingsBalance: savings });
+    const vScore    = calcVelaScore({ income, expenses, debt, streak });
+    const surp      = income - expenses;
+    const savRate   = income > 0 ? Math.round((surp / income) * 100) : 0;
+    const mood      = calcMood({ income, expenses, surplus: surp, savingsGoal: goals.length > 0 ? goals[0].target : 0, savingsBalance: savings });
     const moodLabel = MOOD_CFG[mood]?.label || 'STEADY';
-    const moodColor = MOOD_CFG[mood]?.labelColor || '#888';
-    const fp     = getFinancialPersonality();
-    const refCode = getOrCreateReferralCode();
+    const moodColor = MOOD_CFG[mood]?.labelColor || '#C8B89A';
+    const fp        = getFinancialPersonality();
+    const refCode   = getOrCreateReferralCode();
+    const scoreColor = vScore >= 70 ? '#7CAE9E' : vScore >= 50 ? '#C9A96E' : '#E24B4A';
 
     return new Promise(resolve => {
       const W = 1080, H = 1920;
@@ -1827,116 +1830,184 @@ Output the quote only — no quotes around it, no emoji.`;
       canvas.width = W; canvas.height = H;
       const ctx = canvas.getContext('2d');
 
-      // Background gradient
+      // ── Background ───────────────────────────────────────────────────
       const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
       bgGrad.addColorStop(0,   '#111318');
-      bgGrad.addColorStop(0.5, '#0f1015');
-      bgGrad.addColorStop(1,   '#0a0b0e');
+      bgGrad.addColorStop(0.6, '#0d0f13');
+      bgGrad.addColorStop(1,   '#080b0e');
       ctx.fillStyle = bgGrad;
       ctx.fillRect(0, 0, W, H);
 
-      // Subtle radial glow top-centre
-      const glowGrad = ctx.createRadialGradient(W/2, H*0.38, 0, W/2, H*0.38, 420);
-      glowGrad.addColorStop(0,   'rgba(200,184,154,0.12)');
-      glowGrad.addColorStop(1,   'transparent');
-      ctx.fillStyle = glowGrad;
+      // Subtle centre glow
+      const cGlow = ctx.createRadialGradient(W/2, H*0.35, 0, W/2, H*0.35, 520);
+      cGlow.addColorStop(0, 'rgba(200,184,154,0.10)');
+      cGlow.addColorStop(1, 'transparent');
+      ctx.fillStyle = cGlow;
       ctx.fillRect(0, 0, W, H);
 
-      // Orb
-      const orbR = 120;
-      const orbX = W/2, orbY = H*0.32;
-      const orbGrad = ctx.createRadialGradient(orbX - orbR*0.25, orbY - orbR*0.25, 0, orbX, orbY, orbR);
-      orbGrad.addColorStop(0,   '#d8cebe');
-      orbGrad.addColorStop(0.55,'#C8B89A');
-      orbGrad.addColorStop(1,   '#7a6a52');
-      ctx.shadowColor = 'rgba(200,184,154,0.6)';
-      ctx.shadowBlur  = 80;
+      // Bottom ambient glow (score colour)
+      const bGlow = ctx.createRadialGradient(W/2, H*0.82, 0, W/2, H*0.82, 460);
+      bGlow.addColorStop(0, `${scoreColor}18`);
+      bGlow.addColorStop(1, 'transparent');
+      ctx.fillStyle = bGlow;
+      ctx.fillRect(0, 0, W, H);
+
+      // ── Top accent line ──────────────────────────────────────────────
+      const topLine = ctx.createLinearGradient(W*0.15, 0, W*0.85, 0);
+      topLine.addColorStop(0,   'transparent');
+      topLine.addColorStop(0.5, 'rgba(200,184,154,0.55)');
+      topLine.addColorStop(1,   'transparent');
+      ctx.strokeStyle = topLine;
+      ctx.lineWidth   = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(W*0.15, 110); ctx.lineTo(W*0.85, 110);
+      ctx.stroke();
+
+      // ── Noa wordmark ────────────────────────────────────────────────
+      ctx.textAlign    = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font         = '300 88px sans-serif';
+      ctx.fillStyle    = 'rgba(232,221,208,0.85)';
+      ctx.letterSpacing = '28px';
+      ctx.fillText('NOA', W/2, 200);
+
+      ctx.font         = '400 30px sans-serif';
+      ctx.fillStyle    = 'rgba(200,184,154,0.4)';
+      ctx.letterSpacing = '9px';
+      ctx.fillText('YOUR FINANCIAL NAVIGATOR', W/2, 268);
+
+      // ── Orb ──────────────────────────────────────────────────────────
+      const orbR = 160;
+      const orbX = W/2, orbY = H*0.36;
+      const orbGrad = ctx.createRadialGradient(orbX - orbR*0.28, orbY - orbR*0.28, 0, orbX, orbY, orbR);
+      orbGrad.addColorStop(0,    '#e0d8cc');
+      orbGrad.addColorStop(0.45, '#C8B89A');
+      orbGrad.addColorStop(1,    '#7a6a52');
+      ctx.shadowColor = 'rgba(200,184,154,0.55)';
+      ctx.shadowBlur  = 120;
       ctx.fillStyle   = orbGrad;
       ctx.beginPath();
       ctx.arc(orbX, orbY, orbR, 0, Math.PI * 2);
       ctx.fill();
       ctx.shadowBlur = 0;
 
-      // "noa" wordmark
-      ctx.font         = '180 260px serif';
-      ctx.fillStyle    = 'rgba(232,221,208,0.85)';
-      ctx.textAlign    = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.letterSpacing = '60px';
-      ctx.fillText('noa', W/2, H*0.52);
+      // ── Score ring behind score ───────────────────────────────────
+      const ringY = H*0.555;
+      const ringR2 = 148;
+      const ringCirc = 2 * Math.PI * ringR2;
+      const ringDash = (vScore / 100) * ringCirc;
+      // Track
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.lineWidth   = 10;
+      ctx.beginPath();
+      ctx.arc(W/2, ringY, ringR2, 0, Math.PI * 2);
+      ctx.stroke();
+      // Progress arc
+      ctx.strokeStyle = scoreColor;
+      ctx.lineWidth   = 10;
+      ctx.lineCap     = 'round';
+      ctx.shadowColor = scoreColor;
+      ctx.shadowBlur  = 24;
+      ctx.beginPath();
+      ctx.arc(W/2, ringY, ringR2, -Math.PI/2, -Math.PI/2 + (vScore/100) * Math.PI * 2);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.lineCap    = 'butt';
+      // Score number
+      ctx.font         = '800 130px sans-serif';
+      ctx.fillStyle    = scoreColor;
+      ctx.letterSpacing = '0';
+      ctx.fillText(String(vScore), W/2, ringY - 16);
+      ctx.font         = '600 34px sans-serif';
+      ctx.fillStyle    = 'rgba(232,221,208,0.3)';
+      ctx.letterSpacing = '7px';
+      ctx.fillText('VELA SCORE', W/2, ringY + 62);
 
-      // Tagline
-      ctx.font      = '500 44px sans-serif';
-      ctx.fillStyle = 'rgba(200,184,154,0.45)';
-      ctx.letterSpacing = '8px';
-      ctx.fillText('YOUR FINANCIAL NAVIGATOR', W/2, H*0.60);
+      // ── Mood badge ───────────────────────────────────────────────────
+      const moodY = H*0.665;
+      ctx.font      = '700 48px sans-serif';
+      ctx.fillStyle = moodColor;
+      ctx.letterSpacing = '9px';
+      ctx.shadowColor = moodColor;
+      ctx.shadowBlur  = 18;
+      ctx.fillText(moodLabel, W/2, moodY);
+      ctx.shadowBlur = 0;
 
-      // Divider
-      ctx.strokeStyle = 'rgba(232,221,208,0.1)';
+      // ── Metrics row ────────────────────────────────────────────────
+      const metricsY = H*0.745;
+      const metrics = [
+        { label: 'STREAK',     value: `${streak}d`,         color: streak >= 7 ? '#7CAE9E' : 'rgba(232,221,208,0.7)' },
+        { label: 'SAVINGS',    value: `${Math.max(0, savRate)}%`, color: savRate > 10 ? '#7CAE9E' : savRate >= 0 ? '#C9A96E' : '#E24B4A' },
+        fp ? { label: 'TYPE', value: fp.slice(0,7).toUpperCase(), color: '#C8B89A' } : null,
+      ].filter(Boolean);
+      const mCols = metrics.length;
+      metrics.forEach((m, i) => {
+        const x = W * (0.25 + i * (0.5 / Math.max(1, mCols - 1)));
+        ctx.font         = '800 64px sans-serif';
+        ctx.fillStyle    = m.color;
+        ctx.letterSpacing = '0';
+        ctx.fillText(m.value, x, metricsY);
+        ctx.font         = '500 28px sans-serif';
+        ctx.fillStyle    = 'rgba(232,221,208,0.28)';
+        ctx.letterSpacing = '5px';
+        ctx.fillText(m.label, x, metricsY + 52);
+      });
+
+      // ── Centre divider ────────────────────────────────────────────
+      ctx.strokeStyle = 'rgba(232,221,208,0.08)';
       ctx.lineWidth   = 1;
       ctx.beginPath();
-      ctx.moveTo(W*0.2, H*0.64); ctx.lineTo(W*0.8, H*0.64);
+      ctx.moveTo(W*0.2, H*0.795); ctx.lineTo(W*0.8, H*0.795);
       ctx.stroke();
 
-      // VELA Score
-      ctx.font      = '800 120px sans-serif';
-      ctx.fillStyle = 'rgba(232,221,208,0.9)';
-      ctx.letterSpacing = '0';
-      ctx.fillText(String(vScore), W/2 - (fp ? 140 : 0), H*0.70);
-      ctx.font      = '600 38px sans-serif';
-      ctx.fillStyle = 'rgba(232,221,208,0.35)';
-      ctx.letterSpacing = '6px';
-      ctx.fillText('VELA SCORE', W/2 - (fp ? 140 : 0), H*0.74);
-
-      // Personality (if available)
-      if (fp) {
-        ctx.font      = '700 72px sans-serif';
-        ctx.fillStyle = '#C8B89A';
-        ctx.letterSpacing = '0';
-        ctx.fillText(fp.toUpperCase(), W/2 + 160, H*0.70);
-        ctx.font      = '600 38px sans-serif';
-        ctx.fillStyle = 'rgba(200,184,154,0.35)';
-        ctx.letterSpacing = '6px';
-        ctx.fillText('PERSONALITY', W/2 + 160, H*0.74);
-      }
-
-      // Mood
-      ctx.font      = '700 52px sans-serif';
-      ctx.fillStyle = moodColor;
-      ctx.letterSpacing = '8px';
-      ctx.fillText(moodLabel, W/2, H*0.79);
-
-      // Quote
+      // ── Quote ────────────────────────────────────────────────────
       if (shareQuote) {
-        ctx.font       = '300 italic 46px serif';
-        ctx.fillStyle  = 'rgba(232,221,208,0.55)';
-        ctx.letterSpacing = '0';
-        const words = shareQuote.split(' ');
-        let line1 = '', line2 = '';
-        let lineW = 0;
+        const quoteText = `"${shareQuote}"`;
+        const words     = quoteText.split(' ');
+        const maxLineW  = 34; // chars
+        const lines     = [];
+        let cur         = '';
         words.forEach(w => {
-          lineW += w.length;
-          if (lineW <= 32) line1 += (line1 ? ' ' : '') + w;
-          else line2 += (line2 ? ' ' : '') + w;
+          if ((cur + ' ' + w).trim().length > maxLineW) {
+            if (cur) lines.push(cur);
+            cur = w;
+          } else {
+            cur = (cur + ' ' + w).trim();
+          }
         });
-        ctx.fillText(`"${line1}`, W/2, H*0.845);
-        if (line2) ctx.fillText(`${line2}"`, W/2, H*0.875);
-        else ctx.fillText('"', W/2 + ctx.measureText(`"${line1}`).width/2, H*0.845);
+        if (cur) lines.push(cur);
+        ctx.font         = '300 italic 46px serif';
+        ctx.fillStyle    = 'rgba(232,221,208,0.52)';
+        ctx.letterSpacing = '0';
+        const qStartY = H*0.838;
+        const lineH   = 74;
+        lines.forEach((l, i) => ctx.fillText(l, W/2, qStartY + i * lineH));
       }
 
-      // Referral code
-      ctx.font      = '600 42px sans-serif';
-      ctx.fillStyle = 'rgba(200,184,154,0.5)';
+      // ── Referral ────────────────────────────────────────────────
+      ctx.font      = '600 38px sans-serif';
+      ctx.fillStyle = 'rgba(200,184,154,0.42)';
       ctx.letterSpacing = '3px';
-      ctx.fillText(`Use my code: ${refCode}`, W/2, H*0.934);
+      ctx.fillText(`code: ${refCode}`, W/2, H*0.938);
 
-      // URL
-      ctx.font      = '400 34px sans-serif';
-      ctx.fillStyle = 'rgba(232,221,208,0.2)';
+      // ── URL ──────────────────────────────────────────────────────
+      ctx.font      = '400 28px sans-serif';
+      ctx.fillStyle = 'rgba(232,221,208,0.16)';
       ctx.letterSpacing = '1px';
       ctx.fillText('finance-tracker-2026-navy.vercel.app', W/2, H*0.963);
 
-      canvas.toBlob(blob => resolve(blob), 'image/png', 0.9);
+      // ── Bottom accent line ────────────────────────────────────────
+      const botLine = ctx.createLinearGradient(W*0.15, 0, W*0.85, 0);
+      botLine.addColorStop(0,   'transparent');
+      botLine.addColorStop(0.5, 'rgba(200,184,154,0.35)');
+      botLine.addColorStop(1,   'transparent');
+      ctx.strokeStyle = botLine;
+      ctx.lineWidth   = 1;
+      ctx.beginPath();
+      ctx.moveTo(W*0.15, H*0.982); ctx.lineTo(W*0.85, H*0.982);
+      ctx.stroke();
+
+      canvas.toBlob(blob => resolve(blob), 'image/png', 0.92);
     });
   }
 
@@ -4602,69 +4673,94 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
           Styled share card preview → Web Share API / clipboard fallback.
       ══════════════════════════════════════════ */}
       {showShare && (() => {
-        const vScore = calcVelaScore({ income, expenses, debt, streak });
-        const mood   = calcMood({ income, expenses, surplus: income - expenses, savingsGoal: goals.length > 0 ? goals[0].target : 0, savingsBalance: savings });
-        const moodLabel = MOOD_CFG[mood]?.label || 'STEADY';
-        const moodColor = MOOD_CFG[mood]?.labelColor || 'rgba(232,221,208,0.32)';
-        const fp = getFinancialPersonality();
+        const vScore    = calcVelaScore({ income, expenses, debt, streak });
+        const surpShare = income - expenses;
+        const savRateShare = income > 0 ? Math.round((surpShare / income) * 100) : 0;
+        const moodShare = calcMood({ income, expenses, surplus: surpShare, savingsGoal: goals.length > 0 ? goals[0].target : 0, savingsBalance: savings });
+        const moodLabel = MOOD_CFG[moodShare]?.label || 'STEADY';
+        const moodColor = MOOD_CFG[moodShare]?.labelColor || PURPLE;
+        const fp        = getFinancialPersonality();
+        const scoreColor = vScore >= 70 ? GREEN : vScore >= 50 ? AMBER : RED;
         return (
           <div
             onClick={e => { if (e.target === e.currentTarget) setShowShare(false); }}
-            style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.9)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, zIndex: 210 }}
+            style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.92)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 20, zIndex: 210 }}
           >
-            {/* Card preview */}
+            {/* Story card preview — 9:16 proportioned */}
             <div style={{
-              background: 'linear-gradient(145deg, #1a1520, #111318)',
-              border: '1px solid rgba(200,184,154,0.22)',
-              borderRadius: 24, padding: '32px 28px',
-              width: '100%', maxWidth: 300,
+              background: 'linear-gradient(170deg, #111318 0%, #0d0f13 60%, #080b0e 100%)',
+              border: '1px solid rgba(200,184,154,0.18)',
+              borderRadius: 20,
+              width: '100%', maxWidth: 280,
+              aspectRatio: '9/16',
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '22px 20px 18px',
               textAlign: 'center',
-              boxShadow: '0 0 48px 8px rgba(200,184,154,0.07)',
-              marginBottom: 24,
+              boxShadow: `0 0 60px 12px rgba(200,184,154,0.06), 0 0 20px 4px ${scoreColor}14`,
+              marginBottom: 18,
+              position: 'relative', overflow: 'hidden',
             }}>
-              {/* Orb */}
-              <div style={{
-                width: 56, height: 56, borderRadius: '50%', margin: '0 auto 16px',
-                background: 'radial-gradient(circle at 35% 35%, #d8cebe, #C8B89A 55%, #7a6a52)',
-                boxShadow: '0 0 22px 8px rgba(200,184,154,0.38)',
-              }} />
-              {/* Noa wordmark */}
-              <div style={{ fontSize: 28, fontWeight: 300, color: '#E8DDD0', letterSpacing: '0.3em', marginBottom: 4 }}>noa</div>
-              <div style={{ fontSize: 8, color: 'rgba(200,184,154,0.4)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 20 }}>Your Financial Navigator</div>
-              {/* Score + mood */}
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginBottom: 20 }}>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: 24, fontWeight: 800, color: '#E8DDD0' }}>{vScore}</div>
-                  <div style={{ fontSize: 9, color: 'rgba(232,221,208,0.32)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>VELA Score</div>
+              {/* Ambient score glow */}
+              <div style={{ position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: 280, height: 180, background: `radial-gradient(ellipse at bottom, ${scoreColor}18, transparent)`, pointerEvents: 'none' }} />
+              {/* Top section */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'radial-gradient(circle at 32% 32%, #e0d8cc, #C8B89A 50%, #7a6a52)', boxShadow: '0 0 16px 6px rgba(200,184,154,0.32)', marginBottom: 2 }} />
+                <div style={{ fontSize: 18, fontWeight: 300, color: '#E8DDD0', letterSpacing: '0.22em' }}>NOA</div>
+                <div style={{ fontSize: 7, color: 'rgba(200,184,154,0.38)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Your Financial Navigator</div>
+              </div>
+              {/* Score ring (CSS-drawn) */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                <div style={{ position: 'relative', width: 88, height: 88 }}>
+                  <svg width="88" height="88" viewBox="0 0 88 88" style={{ position: 'absolute', inset: 0 }}>
+                    <circle cx="44" cy="44" r="36" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="5" />
+                    <circle cx="44" cy="44" r="36" fill="none" stroke={scoreColor} strokeWidth="5"
+                      strokeLinecap="round"
+                      strokeDasharray={`${(vScore/100)*226} 226`}
+                      transform="rotate(-90 44 44)"
+                    />
+                  </svg>
+                  <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: scoreColor, lineHeight: 1 }}>{vScore}</div>
+                  </div>
                 </div>
-                {fp && (
-                  <div style={{ width: 1, background: 'rgba(232,221,208,0.1)', alignSelf: 'stretch' }} />
-                )}
-                {fp && (
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: PURPLE }}>{fp}</div>
-                    <div style={{ fontSize: 9, color: 'rgba(232,221,208,0.32)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Personality</div>
+                <div style={{ fontSize: 7, color: 'rgba(232,221,208,0.28)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>VELA SCORE</div>
+                <div style={{ fontSize: 9, fontWeight: 700, color: moodColor, letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: 2 }}>{moodLabel}</div>
+              </div>
+              {/* Metrics row */}
+              <div style={{ display: 'flex', gap: 14, justifyContent: 'center' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: streak >= 7 ? GREEN : 'rgba(232,221,208,0.7)' }}>{streak}d</div>
+                  <div style={{ fontSize: 7, color: 'rgba(232,221,208,0.28)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>STREAK</div>
+                </div>
+                <div style={{ width: 1, background: 'rgba(232,221,208,0.1)', alignSelf: 'stretch' }} />
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: savRateShare > 10 ? GREEN : savRateShare >= 0 ? AMBER : RED }}>{Math.max(0, savRateShare)}%</div>
+                  <div style={{ fontSize: 7, color: 'rgba(232,221,208,0.28)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>SAVINGS</div>
+                </div>
+                {fp && <><div style={{ width: 1, background: 'rgba(232,221,208,0.1)', alignSelf: 'stretch' }} />
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: PURPLE }}>{fp.slice(0,7)}</div>
+                  <div style={{ fontSize: 7, color: 'rgba(232,221,208,0.28)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>TYPE</div>
+                </div></>}
+              </div>
+              {/* Quote */}
+              <div style={{ borderTop: '1px solid rgba(232,221,208,0.07)', paddingTop: 10, width: '100%' }}>
+                {shareQuoteLoading ? (
+                  <div style={{ fontSize: 9, color: 'rgba(232,221,208,0.3)', animation: 'blink 1.4s ease-in-out infinite' }}>Writing your quote…</div>
+                ) : (
+                  <div style={{ fontSize: 9, color: 'rgba(232,221,208,0.6)', fontStyle: 'italic', lineHeight: 1.55 }}>
+                    "{shareQuote || 'Managing money is mostly about knowing where it went.'}"
                   </div>
                 )}
               </div>
-              {/* Mood label */}
-              <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.16em', color: moodColor, textTransform: 'uppercase', marginBottom: 18 }}>{moodLabel}</div>
-              {/* Quote */}
-              {shareQuoteLoading ? (
-                <div style={{ fontSize: 12, color: 'rgba(232,221,208,0.3)', animation: 'blink 1.4s ease-in-out infinite', marginBottom: 16 }}>Writing your quote…</div>
-              ) : (
-                <div style={{ fontSize: 13, color: 'rgba(232,221,208,0.65)', fontStyle: 'italic', lineHeight: 1.6, marginBottom: 16, paddingTop: 14, borderTop: '1px solid rgba(232,221,208,0.07)' }}>
-                  "{shareQuote || 'Managing money is mostly about knowing where it went.'}"
-                </div>
-              )}
-              {/* Referral code */}
-              {(() => { const rc = getOrCreateReferralCode(); return (
-                <div style={{ fontSize: 9, color: 'rgba(200,184,154,0.4)', letterSpacing: '0.12em', marginBottom: 4 }}>
-                  Referral code: <strong style={{ color: 'rgba(200,184,154,0.65)' }}>{rc}</strong>
-                </div>
-              ); })()}
-              {/* URL badge */}
-              <div style={{ fontSize: 9, color: 'rgba(232,221,208,0.18)', letterSpacing: '0.06em' }}>finance-tracker-2026-navy.vercel.app</div>
+              {/* Footer */}
+              <div>
+                {(() => { const rc = getOrCreateReferralCode(); return (
+                  <div style={{ fontSize: 7, color: 'rgba(200,184,154,0.38)', letterSpacing: '0.08em', marginBottom: 3 }}>code: <strong style={{ color: 'rgba(200,184,154,0.58)' }}>{rc}</strong></div>
+                ); })()}
+                <div style={{ fontSize: 6.5, color: 'rgba(232,221,208,0.16)', letterSpacing: '0.05em' }}>finance-tracker-2026-navy.vercel.app</div>
+              </div>
             </div>
 
             {/* Action buttons */}
@@ -4672,34 +4768,34 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
               onClick={doShare}
               disabled={shareQuoteLoading}
               style={{
-                width: '100%', maxWidth: 300,
-                padding: '14px 0', background: 'rgba(200,184,154,0.15)',
-                border: '1px solid rgba(200,184,154,0.32)', borderRadius: 14,
-                color: PURPLE, fontSize: 15, fontWeight: 600,
+                width: '100%', maxWidth: 280,
+                padding: '13px 0', background: `rgba(200,184,154,0.14)`,
+                border: `1px solid rgba(200,184,154,0.3)`, borderRadius: 14,
+                color: PURPLE, fontSize: 14, fontWeight: 600,
                 cursor: shareQuoteLoading ? 'default' : 'pointer',
                 opacity: shareQuoteLoading ? 0.5 : 1,
-                marginBottom: 8,
+                marginBottom: 7,
                 transition: 'opacity 0.15s',
               }}
             >
-              {shareCopied ? '✓ Copied to clipboard' : '↗ Share Noa'}
+              {shareCopied ? '✓ Copied to clipboard' : '↗ Share'}
             </button>
 
             <button
               onClick={downloadShareCard}
               style={{
-                width: '100%', maxWidth: 300,
-                padding: '11px 0', background: 'rgba(232,221,208,0.05)',
-                border: '1px solid rgba(232,221,208,0.12)', borderRadius: 14,
-                color: 'rgba(232,221,208,0.45)', fontSize: 13, fontWeight: 500,
+                width: '100%', maxWidth: 280,
+                padding: '11px 0', background: 'rgba(232,221,208,0.04)',
+                border: '1px solid rgba(232,221,208,0.1)', borderRadius: 14,
+                color: 'rgba(232,221,208,0.42)', fontSize: 12, fontWeight: 500,
                 cursor: 'pointer',
-                marginBottom: 10,
+                marginBottom: 8,
               }}
-            >⬇ Download Story Card (PNG)</button>
+            >⬇ Save Story Card (1080×1920 PNG)</button>
 
             <button
               onClick={() => setShowShare(false)}
-              style={{ background: 'none', border: 'none', color: 'rgba(232,221,208,0.3)', fontSize: 14, cursor: 'pointer', padding: 8 }}
+              style={{ background: 'none', border: 'none', color: 'rgba(232,221,208,0.28)', fontSize: 13, cursor: 'pointer', padding: 6 }}
             >
               Cancel
             </button>
