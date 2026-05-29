@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { parseAmount } from '../scoring';
-import { saveData, saveInsights, markReady, markOnboardingDone, setUserName, saveAccounts, saveEmail } from '../storage';
+import { saveData, saveInsights, markReady, markOnboardingDone, setUserName, saveAccounts, saveEmail, isSignupLogged, markSignupLogged } from '../storage';
 import { speak as voiceSpeak, stopSpeaking } from '../voice';
 import Orb from '../Orb';
 
@@ -641,7 +641,23 @@ export default function Onboarding({ onDone }) {
           </div>
 
           <button
-            onClick={() => { setExpanding(true); setTimeout(onDone, 2400); }}
+            onClick={() => {
+              setExpanding(true);
+              // Fire onboarding signup to waitlist API (once per user, fire-and-forget)
+              if (!isSignupLogged()) {
+                const email = savedData?.email || '';
+                const name  = savedData?.name  || '';
+                if (email) {
+                  markSignupLogged();
+                  fetch('/api/waitlist', {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({ email, name, context: 'welcome', welcome: true }),
+                  }).catch(() => {}); // non-fatal
+                }
+              }
+              setTimeout(onDone, 2400);
+            }}
             style={{
               marginTop: 20, width: '100%', maxWidth: 360, padding: '15px 32px',
               background: 'rgba(200,184,154,0.18)',

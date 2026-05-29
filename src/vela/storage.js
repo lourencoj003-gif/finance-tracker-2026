@@ -52,6 +52,8 @@ const K = {
   // Profile completion tracking
   PROFILE_CARD_DISMISSED: 'noa_profile_card_dismissed',
   ONBOARDING_DATE: 'noa_onboarding_date',
+  // Onboarding signup logged — fires once per user after onboarding completes
+  SIGNUP_LOGGED: 'vela_signup_logged',
 };
 
 export const getPin              = ()    => localStorage.getItem(K.PIN);
@@ -65,6 +67,8 @@ export const getEmail            = ()    => localStorage.getItem(K.EMAIL) || '';
 export const saveEmail           = (e)   => localStorage.setItem(K.EMAIL, e);
 export const isProfileCardDismissed = () => localStorage.getItem(K.PROFILE_CARD_DISMISSED) === '1';
 export const dismissProfileCard  = ()    => localStorage.setItem(K.PROFILE_CARD_DISMISSED, '1');
+export const isSignupLogged      = ()    => localStorage.getItem(K.SIGNUP_LOGGED) === '1';
+export const markSignupLogged    = ()    => localStorage.setItem(K.SIGNUP_LOGGED, '1');
 export const markReady           = ()    => localStorage.setItem(K.READY, '1');
 export const isReady             = ()    => {
   if (!isOnboardingDone()) return false;
