@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
-import { getData, saveData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin, getGoals, saveGoals, getLastOpen, setLastOpen, getLastCeremonyYM, setLastCeremonyYM, getDebts, saveDebts, getChallenge, saveChallenge, getExpenseLog, saveExpenseLog, getEveningDate, setEveningDate, appendEveningLog, getUserName, setUserName, getDailyInsight, saveDailyInsight, getNotifPrefs, saveNotifPrefs, getNotifLast, saveNotifLast, savePushSub, getPrivacyMode, setPrivacyMode as savePrivacyMode, appendConvoMemory, getConvoMemory, clearConvoMemory, getAccounts, saveAccounts, getFinancialPersonality, saveFinancialPersonality, getFirstWeekShown, markFirstWeekShown, getPlanType, getWaitlistEmail, saveWaitlistEmail, incrementPaywallViews, getMemoryStart, setMemoryStart, setAppStart, getBankingAccessToken, saveBankingAccessToken, getBankingInstitution, saveBankingInstitution, getBankingLastSync, setBankingLastSync, clearBanking, getVoiceOn, saveVoiceOn } from '../storage';
+import { getData, saveData, getInsights, clearAll, tickStreak, shouldShowCheckin, markCheckin, getGoals, saveGoals, getLastOpen, setLastOpen, getLastCeremonyYM, setLastCeremonyYM, getDebts, saveDebts, getChallenge, saveChallenge, getExpenseLog, saveExpenseLog, getEveningDate, setEveningDate, appendEveningLog, getUserName, setUserName, getDailyInsight, saveDailyInsight, getNotifPrefs, saveNotifPrefs, getNotifLast, saveNotifLast, savePushSub, getPrivacyMode, setPrivacyMode as savePrivacyMode, appendConvoMemory, getConvoMemory, clearConvoMemory, getAccounts, saveAccounts, getFinancialPersonality, saveFinancialPersonality, getFirstWeekShown, markFirstWeekShown, getPlanType, getWaitlistEmail, saveWaitlistEmail, incrementPaywallViews, getMemoryStart, setMemoryStart, setAppStart, getBankingAccessToken, saveBankingAccessToken, getBankingInstitution, saveBankingInstitution, getBankingLastSync, setBankingLastSync, clearBanking, getVoiceOn, saveVoiceOn, isProfileCardDismissed, dismissProfileCard, getOnboardingDate } from '../storage';
 import Orb from '../Orb';
 import { speak as voiceSpeak, stopSpeaking } from '../voice';
 
@@ -593,6 +593,9 @@ export default function VelaCore({ onReset }) {
   const [newPotTarget, setNewPotTarget]     = useState('');
   const [newPotDate, setNewPotDate]         = useState('');
   const [newPotError, setNewPotError]       = useState('');
+
+  // Profile completion card — dismissable, shows after day 1
+  const [profileCardDismissed, setProfileCardDismissed] = useState(() => isProfileCardDismissed());
 
   // Task 4d — Dual-failure state: shown when both Groq (chat) + ElevenLabs (voice) fail together
   const [dualFail, setDualFail]               = useState(false);
@@ -2299,6 +2302,18 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
   const velaScoreColor = velaScore >= 70 ? GREEN : velaScore >= 50 ? AMBER : RED;
   const containerH     = vpH ? `${vpH}px` : '100dvh';
 
+  // Profile completion card — show if: not dismissed, data is incomplete, and >1 day since onboarding
+  const showProfileCard = (() => {
+    if (profileCardDismissed) return false;
+    const d = getData() || {};
+    const isIncomplete = !d.debt && !d.lifestyleSpend && (!getAccounts().length);
+    if (!isIncomplete) return false;
+    const onbDate = getOnboardingDate();
+    if (!onbDate) return false;
+    const daysSince = (Date.now() - new Date(onbDate).getTime()) / 86400000;
+    return daysSince >= 1;
+  })();
+
   // Days of Financial Freedom (target for display; freedomDays state animates to it)
   const dailyExpenses      = expenses > 0 ? expenses / 30 : 1;
   const freedomDaysTarget  = savings > 0 ? Math.floor(savings / dailyExpenses) : 0;
@@ -2568,6 +2583,88 @@ ${accs.length > 0 ? `Account allocations: ${allocationHint}` : `No accounts set 
             WebkitOverflowScrolling: 'touch',
           }}
         >
+
+        {/* ── Profile completion card ────────────────────────────────── */}
+        {showProfileCard && (
+          <div style={{
+            marginBottom: 10, position: 'relative',
+            background: 'rgba(200,184,154,0.07)',
+            border: '1px solid rgba(200,184,154,0.2)',
+            borderRadius: 16, padding: '14px 16px',
+            animation: 'cardIn 0.4s ease-out',
+          }}>
+            {/* Dismiss button */}
+            <button
+              onClick={() => { dismissProfileCard(); setProfileCardDismissed(true); }}
+              style={{
+                position: 'absolute', top: 10, right: 12,
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: 'rgba(232,221,208,0.3)', fontSize: 17, lineHeight: 1, padding: 4,
+                fontFamily: 'inherit',
+              }}
+            >×</button>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#C8B89A', letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: 6 }}>
+              Complete your profile
+            </div>
+            <div style={{ fontSize: 12, color: 'rgba(232,221,208,0.45)', lineHeight: 1.5, marginBottom: 12 }}>
+              Takes 2 minutes. Makes Noa significantly smarter about your money.
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {/* Bank connect */}
+              <button
+                onClick={() => setShowBankConnect(true)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  background: 'rgba(124,174,158,0.08)', border: '1px solid rgba(124,174,158,0.2)',
+                  borderRadius: 12, padding: '10px 14px', cursor: 'pointer',
+                  textAlign: 'left', width: '100%', fontFamily: 'inherit',
+                }}
+              >
+                <span style={{ fontSize: 18 }}>🔗</span>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#7CAE9E' }}>Connect your bank</div>
+                  <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.35)' }}>Auto-import transactions &amp; balances</div>
+                </div>
+              </button>
+              {/* Debt info */}
+              {!debt && (
+                <button
+                  onClick={() => setShowSettings(true)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    background: 'rgba(226,75,74,0.07)', border: '1px solid rgba(226,75,74,0.15)',
+                    borderRadius: 12, padding: '10px 14px', cursor: 'pointer',
+                    textAlign: 'left', width: '100%', fontFamily: 'inherit',
+                  }}
+                >
+                  <span style={{ fontSize: 18 }}>💳</span>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(226,75,74,0.85)' }}>Add debt info</div>
+                    <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.35)' }}>Noa will optimise your payoff plan</div>
+                  </div>
+                </button>
+              )}
+              {/* Lifestyle spend */}
+              {!(getData() || {}).lifestyleSpend && (
+                <button
+                  onClick={() => setShowSettings(true)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    background: 'rgba(232,221,208,0.04)', border: '1px solid rgba(232,221,208,0.1)',
+                    borderRadius: 12, padding: '10px 14px', cursor: 'pointer',
+                    textAlign: 'left', width: '100%', fontFamily: 'inherit',
+                  }}
+                >
+                  <span style={{ fontSize: 18 }}>☕</span>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(232,221,208,0.7)' }}>Lifestyle spending</div>
+                    <div style={{ fontSize: 11, color: 'rgba(232,221,208,0.35)' }}>Eating out, coffees, subscriptions</div>
+                  </div>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Task C — Payday Health Score ring */}
         {income > 0 && (() => {

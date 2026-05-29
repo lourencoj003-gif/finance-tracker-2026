@@ -47,6 +47,11 @@ const K = {
   BANKING_INSTITUTION:  'vela_banking_institution',  // e.g. 'Monzo'
   // Voice preference
   VOICE_ON: 'noa_voice_on', // persisted voice toggle (default true)
+  // Email capture (onboarding step 1)
+  EMAIL: 'vela_email',
+  // Profile completion tracking
+  PROFILE_CARD_DISMISSED: 'noa_profile_card_dismissed',
+  ONBOARDING_DATE: 'noa_onboarding_date',
 };
 
 export const getPin              = ()    => localStorage.getItem(K.PIN);
@@ -54,7 +59,12 @@ export const setPin              = (p)   => localStorage.setItem(K.PIN, p);
 export const getUserName         = ()    => localStorage.getItem(K.USER_NAME);
 export const setUserName         = (n)   => { localStorage.setItem(K.USER_NAME, n); localStorage.setItem(K.NAME, n); };
 export const isOnboardingDone    = ()    => localStorage.getItem(K.ONBOARDING_DONE) === '1';
-export const markOnboardingDone  = ()    => localStorage.setItem(K.ONBOARDING_DONE, '1');
+export const markOnboardingDone  = ()    => { localStorage.setItem(K.ONBOARDING_DONE, '1'); if (!localStorage.getItem(K.ONBOARDING_DATE)) localStorage.setItem(K.ONBOARDING_DATE, new Date().toISOString()); };
+export const getOnboardingDate   = ()    => localStorage.getItem(K.ONBOARDING_DATE);
+export const getEmail            = ()    => localStorage.getItem(K.EMAIL) || '';
+export const saveEmail           = (e)   => localStorage.setItem(K.EMAIL, e);
+export const isProfileCardDismissed = () => localStorage.getItem(K.PROFILE_CARD_DISMISSED) === '1';
+export const dismissProfileCard  = ()    => localStorage.setItem(K.PROFILE_CARD_DISMISSED, '1');
 export const markReady           = ()    => localStorage.setItem(K.READY, '1');
 export const isReady             = ()    => {
   if (!isOnboardingDone()) return false;
