@@ -1896,8 +1896,6 @@ Output the quote only — no quotes around it, no emoji.`;
       // ── Score ring behind score ───────────────────────────────────
       const ringY = H*0.555;
       const ringR2 = 148;
-      const ringCirc = 2 * Math.PI * ringR2;
-      const ringDash = (vScore / 100) * ringCirc;
       // Track
       ctx.strokeStyle = 'rgba(255,255,255,0.06)';
       ctx.lineWidth   = 10;
