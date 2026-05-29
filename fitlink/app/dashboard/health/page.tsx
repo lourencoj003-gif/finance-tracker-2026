@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { href: '/dashboard/nutrition',  label: 'Nutrition', icon: '🥦' },
   { href: '/dashboard/workouts',   label: 'Workouts',  icon: '💪' },
   { href: '/dashboard/progress',   label: 'Progress',  icon: '📈' },
+  { href: '/dashboard/tasks',      label: 'Tasks',     icon: '✓' },
 ]
 
 interface HealthLog {

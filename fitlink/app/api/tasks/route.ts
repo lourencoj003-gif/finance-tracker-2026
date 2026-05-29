@@ -2,6 +2,36 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 
+// GET /api/tasks
+// Returns the current user's tasks, newest first.
+// Query params:
+//   status=PENDING|IN_PROGRESS|COMPLETED|SKIPPED  (optional filter)
+//   userId=<id>  (trainer only — fetch tasks for a specific client)
+export async function GET(req: NextRequest) {
+  const session = await auth()
+  if (!session?.user?.id)
+    return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
+
+  const { searchParams } = new URL(req.url)
+  const statusFilter = searchParams.get('status') ?? undefined
+  const userId       = searchParams.get('userId') ?? session.user.id
+
+  // Only trainers may query other users' tasks
+  if (userId !== session.user.id && session.user.role !== 'TRAINER') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  const tasks = await prisma.task.findMany({
+    where: {
+      userId,
+      ...(statusFilter ? { status: statusFilter as 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED' } : {}),
+    },
+    orderBy: { createdAt: 'desc' },
+  })
+
+  return NextResponse.json({ tasks })
+}
+
 // POST /api/tasks
 // Creates a task for a user.
 // Trainers can create for any of their clients (pass userId in body).

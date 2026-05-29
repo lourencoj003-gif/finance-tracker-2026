@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { getLevelFromXp, getLevelProgress, LEVEL_TITLES, getStreakMultiplier, computeStreakFromSnapshots } from '@/lib/xp'
+import DashboardTasks from './DashboardTasks'
 
 const NAV_ITEMS = [
   { href: '/dashboard',            label: 'Home',      icon: '⌂' },
@@ -9,6 +10,7 @@ const NAV_ITEMS = [
   { href: '/dashboard/nutrition',  label: 'Nutrition', icon: '🥦' },
   { href: '/dashboard/workouts',   label: 'Workouts',  icon: '💪' },
   { href: '/dashboard/progress',   label: 'Progress',  icon: '📈' },
+  { href: '/dashboard/tasks',      label: 'Tasks',     icon: '✓' },
 ]
 
 function ProgressRing({ pct, color }: { pct: number; color: string }) {
@@ -262,28 +264,11 @@ export default async function DashboardPage() {
           <div className="bg-[#1a1a1a] border border-white/8 rounded-2xl p-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-heading text-xl font-bold">Today&apos;s Tasks</h2>
-              <button className="text-xs text-primary font-medium hover:underline">+ Add task</button>
+              <Link href="/dashboard/tasks" className="text-xs text-primary font-medium hover:underline">
+                + Add task
+              </Link>
             </div>
-
-            {tasks.length === 0 ? (
-              <div className="flex flex-col items-center py-10 text-center">
-                <div className="text-4xl mb-3">📋</div>
-                <p className="text-[#888] text-sm">No tasks yet.</p>
-                <p className="text-[#555] text-xs mt-1">Your trainer or you can add tasks here.</p>
-              </div>
-            ) : (
-              <ul className="flex flex-col gap-2">
-                {tasks.map(task => (
-                  <li key={task.id} className="flex items-center gap-3 py-2 border-b border-white/4 last:border-0">
-                    <div className="w-4 h-4 rounded border border-white/20 flex-shrink-0" />
-                    <span className="text-sm text-[#ccc]">{task.title}</span>
-                    <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-[#666] uppercase tracking-wider">
-                      {task.status.toLowerCase().replace('_', ' ')}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <DashboardTasks initialTasks={tasks} />
           </div>
         </div>
       </main>
