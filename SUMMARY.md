@@ -2,6 +2,73 @@
 
 ---
 
+## Session: 2026-05-29 — Part 9 (build fix, FitLink TypeScript + tasks system, Noa greeting personalisation)
+
+### Commits
+- `7d0b50d` — fix: resolve build compilation error
+- `121fab4` — fix: FitLink TypeScript errors — smart quote, NextAuth session types, Recharts formatter
+- `c151d10` — feat: FitLink tasks system — GET/PATCH/DELETE API, Tasks page, interactive dashboard
+- `86c3df9` — feat: Noa chat greeting — personalised with surplus, payday countdown, goals, streak
+
+### TASK 1 — Noa: Vercel build compilation fix ✅
+**Root cause:** `CI=true` on Vercel treats ESLint `no-unused-vars` as fatal errors.
+`src/vela/screens/VelaCore.js` — removed 2 unused lines:
+- `const ringCirc = 2 * Math.PI * ringR2;`
+- `const ringDash = (vScore / 100) * ringCirc;`
+
+`ringDash` was computed but never used — the SVG arc already used an inline `(vScore/100) * Math.PI * 2` calculation.
+Local build: clean. `npm run build` → zero warnings → `109.52 kB` gzip.
+
+### TASK 2 — FitLink: TypeScript error pass ✅
+Fixed 4 distinct TS errors that blocked the FitLink build:
+
+**1. Smart quote (`TS1005`)** — `fitlink/app/onboarding/page.tsx:10` had a Unicode right-single-quote (U+2019) inside a single-quoted string → changed surrounding quotes to double-quotes.
+
+**2. NextAuth type augmentation (`TS2339`)** — created `fitlink/types/next-auth.d.ts` augmenting `Session.user`, `User`, and `JWT` with `id: string` and `role: string`. Affected: `api/tasks`, `api/trainers/*`.
+
+**3. Date vs string (`TS2322`)** — `fitlink/app/dashboard/clients/[clientId]/page.tsx` `serialise()` typed as `(obj: Record<string, unknown>) => any` with explicit casts on return fields.
+
+**4. Recharts Tooltip formatter (`TS2322`)** — `fitlink/app/dashboard/health/page.tsx` changed `formatter={(v: number) => ...}` to `formatter={(v) => [`${Number(v ?? 0).toLocaleString()} steps`, '']}`.
+
+### TASK 3 — FitLink: Tasks system ✅
+
+**`fitlink/app/api/tasks/route.ts`** — added GET handler (all tasks for user, optional `?status=` filter, trainer can query other users).
+
+**`fitlink/app/api/tasks/[id]/route.ts`** (new) — GET, PATCH, DELETE:
+- PATCH marks `COMPLETED`, awards `task.xpReward ?? 50` XP, creates `XpEvent`, upserts `DailyProgressSnapshot`
+- Returns `{ task, xpResult: { awarded, newXp, newLevel } | null }`
+
+**`fitlink/app/dashboard/tasks/page.tsx`** (new) — full Tasks page:
+- `TaskCard`: checkbox → complete, category badge, due date + overdue indicator, XP badge, delete
+- `CreateModal`: title, description, category chips (6), due date picker
+- `XpBanner`: "+{awarded} XP — task complete!" fades after 4s
+- Tabs: active (overdue-first) / done; summary strip: active / done this week / total done
+
+**`fitlink/app/dashboard/DashboardTasks.tsx`** (new) — client component for interactive checkboxes on main dashboard page (server component pattern preserved).
+
+**`fitlink/app/dashboard/page.tsx`** — imports `DashboardTasks`, Tasks nav item added, static task JSX replaced.
+
+**All nav pages** — Tasks item added to sidebar + bottom nav in: `health`, `nutrition`, `workouts`, `progress`.
+
+### TASK 4 — Noa: Chat greeting personalisation ✅
+`src/vela/screens/VelaCore.js` — replaced generic fallback in the chat greeting `useEffect`.
+
+**Before:** `Hi${hi}. I'm Noa, your personal financial navigator. How can I help you today?`
+
+**After — tiered, uses real data:**
+| Condition | Message pattern |
+|---|---|
+| `income === 0` | Prompt to set up income |
+| `dtp <= 3` | "Payday [today/tomorrow/in N days]. Month ends with £X to spare — where does it go?" |
+| Active goals exist | "Hey. [PotName] is N% funded — payday in N days. Want to plan the next push?" |
+| All pots complete | "All pots funded. £X surplus to deploy. What's the next move?" |
+| `streak > 2` | "N-day streak. £X surplus and N days to payday. You're on track — what's the focus today?" |
+| Default | "Hey. £X surplus this month, payday in N days. What shall we work on?" |
+
+Uses `daysUntilPayday(payday)`, `income`, `expenses`, `surplus`, `goals`, `streak` (all in component closure). Build verified clean.
+
+---
+
 ## Session: 2026-05-29 — Part 8 (App Store prep, retention mechanics, FitLink workout logging, FitLink check-in, Aldric nav, Noa onboarding email)
 
 ### Commits
