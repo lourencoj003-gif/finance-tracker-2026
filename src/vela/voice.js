@@ -1,5 +1,10 @@
 let currentAudio = null;
 
+// Generation counter — incremented on every speak() call.
+// Any in-flight fetch from a PREVIOUS speak() call checks this before playing;
+// if it no longer matches, the result is discarded so stale audio never plays.
+let speakGeneration = 0;
+
 const EMOJI_RE = /[\u{1F000}-\u{1FFFF}\u{2600}-\u{27FF}\u{2300}-\u{23FF}\u{2B00}-\u{2BFF}\u{1F300}-\u{1F9FF}\u{FE00}-\u{FE0F}\u{1FA00}-\u{1FFFF}]/gu;
 
 // cleanText — makes text natural for text-to-speech before sending to ElevenLabs.
@@ -74,18 +79,37 @@ function privacyScrub(t) {
 }
 
 export async function speak(text, { onStart, onEnd, onError, onFail, privacyMode = false } = {}) {
+  // ── Single speech lock ────────────────────────────────────────────────────
+  // Increment generation BEFORE stopping so any parallel in-flight fetch
+  // from a prior speak() call can detect it's been superseded.
+  const myGen = ++speakGeneration;
+
+  // Cancel whatever is currently playing (ElevenLabs audio or browser TTS).
   stopSpeaking();
+
   let clean = cleanText(text);
   if (privacyMode) clean = privacyScrub(clean);
   if (!clean) { if (onEnd) onEnd(); return; }
   if (onStart) onStart();
-  console.log('[voice] calling /api/speak, text length:', clean.length);
+  console.log('[voice] calling /api/speak, gen=%d, text length: %d', myGen, clean.length);
+
   try {
     const res = await fetch('/api/speak', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: clean }),
     });
+
+    // ── Stale-call guard ─────────────────────────────────────────────────────
+    // By the time this fetch resolves, a newer speak() may have been called.
+    // If so, discard this audio entirely — playing it would cause overlap.
+    if (myGen !== speakGeneration) {
+      console.log('[voice] gen=%d stale (current=%d), discarding audio', myGen, speakGeneration);
+      try { const b = await res.blob(); URL.revokeObjectURL(URL.createObjectURL(b)); } catch (_) {}
+      if (onEnd) onEnd(); // resolve the caller's promise cleanly
+      return;
+    }
+
     if (!res.ok) {
       let errBody = '';
       try { errBody = await res.text(); } catch (_) {}
@@ -94,7 +118,16 @@ export async function speak(text, { onStart, onEnd, onError, onFail, privacyMode
       fallback(clean, onEnd, onError);
       return;
     }
+
     const blob = await res.blob();
+
+    // Check again after the blob read — the fetch + blob together can take 1-2s
+    if (myGen !== speakGeneration) {
+      console.log('[voice] gen=%d stale after blob read, discarding', myGen);
+      if (onEnd) onEnd();
+      return;
+    }
+
     const url  = URL.createObjectURL(blob);
     const audio = new Audio(url);
     currentAudio = audio;

@@ -235,25 +235,41 @@ function buildInsightPrompt() {
 
 // ── Payday helpers — correct month-boundary calculation ──────────────
 // Uses today's date (not datetime) so payday-today shows 0, not next-month.
+// Rules:
+//   today < paydayDay  → payday is still this month
+//   today === paydayDay → today IS payday (returns today's date)
+//   today > paydayDay  → payday already passed → roll to same day NEXT month
+//   Month-end: if next month is shorter, use last day of that month (e.g. payday 31 in June → June 30)
+//
+// Inline test cases (verified):
+//   payday=28, today=30 (May 30)  → nextPay=June 28  → daysUntilPayday=29  ✓ (NOT today)
+//   payday=7,  today=30 (May 30)  → nextPay=June 7   → daysUntilPayday=8   ✓
+//   payday=30, today=30 (May 30)  → nextPay=May 30   → daysUntilPayday=0   ✓ (today IS payday)
+//   payday=31, today=30 (June 30) → nextPay=June 30  → daysUntilPayday=0   ✓ (last day of June)
+//   payday=28, today=26 (June 26) → nextPay=June 28  → daysUntilPayday=2   ✓ (2 days away)
 function calcNextPayday(paydayDay) {
   const now      = new Date();
   const todayDay = now.getDate();
   if (todayDay > paydayDay) {
-    // payday already passed this month → next month
+    // payday already passed this month → roll to NEXT month
     const nm  = now.getMonth() + 1;
     const ny  = nm > 11 ? now.getFullYear() + 1 : now.getFullYear();
     const nm2 = nm > 11 ? 0 : nm;
-    return new Date(ny, nm2, Math.min(paydayDay, new Date(ny, nm2 + 1, 0).getDate()));
+    // Clamp to last day of next month (handles payday 31 in a 30-day month)
+    const lastDayOfNextMonth = new Date(ny, nm2 + 1, 0).getDate();
+    return new Date(ny, nm2, Math.min(paydayDay, lastDayOfNextMonth));
   } else {
-    const dim = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    return new Date(now.getFullYear(), now.getMonth(), Math.min(paydayDay, dim));
+    // payday is today or still coming this month
+    const lastDayOfThisMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    return new Date(now.getFullYear(), now.getMonth(), Math.min(paydayDay, lastDayOfThisMonth));
   }
 }
 function daysUntilPayday(paydayDay) {
   const nextPay = calcNextPayday(paydayDay);
   const t       = new Date();
   const today   = new Date(t.getFullYear(), t.getMonth(), t.getDate());
-  return Math.round((nextPay - today) / 86400000);
+  // Always >= 0: 0 = today is payday, positive = days until next payday
+  return Math.max(0, Math.round((nextPay - today) / 86400000));
 }
 
 // Task C — Payday Health Score: compute days elapsed and total days in pay period
@@ -979,12 +995,16 @@ export default function VelaCore({ onReset }) {
     setScoreDelta(todayScore - prevScore);
     localStorage.setItem('vela_prev_score', String(todayScore));
 
-    // Payday ceremony — trigger within 2 days of payday, once per calendar month
+    // Payday ceremony — trigger within 2 days BEFORE payday (never after), once per calendar month.
+    // Uses daysUntilPayday() so it correctly handles month-rollover edge cases.
+    // payday=28, today=30 → daysUntilPayday=29 → does NOT fire ✓
+    // payday=28, today=26 → daysUntilPayday=2  → fires ✓
+    // payday=28, today=28 → daysUntilPayday=0  → fires ✓ (today is payday)
     if (income > 0) {
       const now2   = new Date();
-      const dom    = now2.getDate();
       const thisYM = `${now2.getFullYear()}-${String(now2.getMonth() + 1).padStart(2, '0')}`;
-      if (Math.abs(dom - payday) <= 2 && getLastCeremonyYM() !== thisYM) {
+      const dtp    = daysUntilPayday(payday);
+      if (dtp <= 2 && getLastCeremonyYM() !== thisYM) {
         setTimeout(() => setShowCeremony(true), 600);
       }
     }
