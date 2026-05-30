@@ -1,0 +1,1 @@
+This is the deprecated Next.js + Prisma version of FitLink. It is no longer maintained. The live FitLink codebase is the TanStack Start + Supabase app in the separate repo: github.com/lourencoj003-gif/fitlink-app. Do not build features here. Do not deploy this. All FitLink development happens in fitlink-app.
